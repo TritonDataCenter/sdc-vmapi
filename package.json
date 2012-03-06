@@ -5,15 +5,15 @@
   "author": "Joyent (joyent.com)",
   "private": true,
   "dependencies": {
-    "restify": "https://github.com/mcavage/node-restify/tarball/master#0dfba4fdfd9def5111c29dffd241f344ff1293a8",
+    "restify": "git://github.com/mcavage/node-restify.git",
     "node-uuid": "1.2.0",
-    "filed": "0.0.5"
+    "filed": "0.0.5",
+    "bunyan": "0.5.3"
   },
   "devDependencies": {
-    "tap": "0.1"
+    "tap": "0.2"
   },
   "scripts": {
-    "start": "node ./server.js",
     "start": "node ./server.js"
   }
 }
