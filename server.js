@@ -4,66 +4,132 @@
  * Main entry-point for the Zones API.
  */
 
+var path = require('path');
+var fs = require('fs');
+
 var filed = require('filed');
 var restify = require('restify');
-var uuid = require('node-uuid');
+var ldap = require('ldapjs');
 var Logger = require('bunyan');
 
+var Machines = require('./lib/machines');
 
 var log = new Logger({
-    name: 'boilerplateapi',
-    level: 'debug',
-    serializers: {
-        err: Logger.stdSerializers.err,
-        req: Logger.stdSerializers.req,
-        res: restify.bunyan.serializers.response
+  name: 'zapi',
+  level: 'debug',
+  serializers: {
+    err: Logger.stdSerializers.err,
+    req: Logger.stdSerializers.req,
+    res: restify.bunyan.serializers.response
+  }
+});
+
+
+/*
+ * Loads and parse the configuration file at config.json
+ */
+function loadConfig() {
+  var configPath = path.join(__dirname, 'config.json');
+
+  if (!path.existsSync(configPath)) {
+    log.error('Config file not found: "' + configPath +
+      '" does not exist. Aborting.');
+    process.exit(1);
+  }
+
+  var config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+  return config;
+}
+
+var config = loadConfig();
+
+
+/*
+ * ZAPI constructor
+ */
+function ZAPI(options) {
+  this.config = options;
+
+  this.server = restify.createServer({
+      name: 'Zones API',
+      log: log
+  });
+
+  this.ufds = ldap.createClient({
+    url: options.ufds.url,
+    connectTimeout: options.ufds.connectTimeout * 1000
+  });
+}
+
+
+/*
+ * Inits a UFDS connection. Receives a callback as an argument. An error will
+ * be the argument to the callback when the connection could not be established
+ */
+ZAPI.prototype.initUfds = function(callback) {
+  log.trace({rootDn: this.config.ufds.rootDn}, 'bind to UFDS');
+
+  this.ufds.bind(this.config.ufds.rootDn, this.config.ufds.password, function (err) {
+    if (err) {
+      callback(err);
+    } else {
+      callback(null);
     }
-});
+  });
+}
+
+
+/*
+ * Sets all routes for static content
+ */
+ZAPI.prototype.setStaticRoutes = function() {
+
+  // TODO: static serve the docs, favicon, etc.
+  //  waiting on https://github.com/mcavage/node-restify/issues/56 for this.
+  this.server.get('/favicon.ico', function (req, res, next) {
+      filed(__dirname + '/docs/media/img/favicon.ico').pipe(res);
+      next();
+  });
+}
+
+
+/*
+ * Sets all routes for the ZAPI server
+ */
+ZAPI.prototype.setRoutes = function() {
+
+  var machines = new Machines({ ufds: this.ufds });
+
+  this.server.get({path: '/machines', name: 'ListMachines'}, machines.listMachines);
+  this.server.post({path: '/machines', name: 'CreateMachine'}, machines.createMachine);
+  this.server.get({path: '/machines/:uuid', name: 'GetEgg'}, machines.getMachine);
+}
+
+
+/*
+ * Starts listening on the port given specified by config.api.port. Takes a
+ * callback as an argument. The callback is called with no arguments
+ */
+ZAPI.prototype.listen = function(callback) {
+  this.server.listen(this.config.api.port, '0.0.0.0', callback);
+}
 
 
 
-var server = restify.createServer({
-    name: 'Zones API',
-    log: log
-});
+var zapi = new ZAPI(config);
 
-// TODO: Add usage of the restify auditLog plugin.
+zapi.initUfds(function(err) {
 
+  if (err) {
+    log.error(err, 'error connecting to UFDS. Aborting.');
+    process.exit(1);
+  }
 
-// '/eggs/...' endpoints.
-var eggs = {}; // My lame in-memory database.
-server.get({path: '/eggs', name: 'ListEggs'}, function (req, res, next) {
-    req.log.info('ListEggs start');
-    var eggsArray = [];
-    Object.keys(eggs).forEach(function (u) { eggsArray.push(eggs[u]); });
-    res.send(eggsArray);
-    return next();
-});
-server.post({path: '/eggs', name: 'CreateEgg'}, function (req, res, next) {
-    var newUuid = uuid();
-    var newEgg = {'uuid': newUuid};
-    eggs[newUuid] = newEgg;
-    res.send(newEgg);
-    return next();
-});
-server.get({path: '/eggs/:uuid', name: 'GetEgg'}, function (req, res, next) {
-    var egg = eggs[req.params.uuid];
-    if (!egg) {
-        return next(new restify.ResourceNotFoundError('No such egg.'));
-    }
-    res.send(egg);
-    return next();
-});
+  zapi.setStaticRoutes();
+  zapi.setRoutes();
 
+  zapi.listen(function() {
+    log.info({url: zapi.server.url}, '%s listening', zapi.server.name);
+  });
 
-// TODO: static serve the docs, favicon, etc.
-//  waiting on https://github.com/mcavage/node-restify/issues/56 for this.
-server.get('/favicon.ico', function (req, res, next) {
-    filed(__dirname + '/docs/media/img/favicon.ico').pipe(res);
-    next();
-});
-
-
-server.listen(8080, function () {
-    log.info({url: server.url}, '%s listening', server.name);
 });

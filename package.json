@@ -8,7 +8,8 @@
     "restify": "git://github.com/mcavage/node-restify.git",
     "node-uuid": "1.2.0",
     "filed": "0.0.5",
-    "bunyan": "0.5.3"
+    "bunyan": "0.5.3",
+    "ldapjs": "0.4.8"
   },
   "devDependencies": {
     "tap": "0.2"

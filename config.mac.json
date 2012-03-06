@@ -1,0 +1,8 @@
+{
+  "ufds": {
+    "url": "ldaps://10.88.88.50:636",
+    "rootDn": "cn=root",
+    "password": "secret",
+    "caching": true
+  }
+}
