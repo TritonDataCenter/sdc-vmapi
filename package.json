@@ -1,8 +1,8 @@
 {
-  "name": "boilerplateapi",
-  "description": "SmartDataCenter Boilerplate API",
+  "name": "zapi",
+  "description": "Zones API",
   "version": "1.0.0",
-  "author": "Joyent (joyent.com)",
+  "author": "Andres Rodriguez (joyent.com)",
   "private": true,
   "dependencies": {
     "restify": "git://github.com/mcavage/node-restify.git",

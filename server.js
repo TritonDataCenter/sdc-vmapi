@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2012, Joyent, Inc. All rights reserved.
  *
- * Main entry-point for the Boilerplate API.
+ * Main entry-point for the Zones API.
  */
 
 var filed = require('filed');
@@ -23,7 +23,7 @@ var log = new Logger({
 
 
 var server = restify.createServer({
-    name: 'Boilerplate API',
+    name: 'Zones API',
     log: log
 });
 
