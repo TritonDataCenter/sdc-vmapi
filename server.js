@@ -14,15 +14,6 @@ var Logger = require('bunyan');
 
 var machines = require('./lib/machines');
 
-var log = new Logger({
-  name: 'zapi',
-  level: 'debug',
-  serializers: {
-    err: Logger.stdSerializers.err,
-    req: Logger.stdSerializers.req,
-    res: restify.bunyan.serializers.response
-  }
-});
 
 
 /*
@@ -43,6 +34,16 @@ function loadConfig() {
 
 var config = loadConfig();
 
+var log = new Logger({
+  name: 'zapi',
+  level: config.logLevel,
+  serializers: {
+    err: Logger.stdSerializers.err,
+    req: Logger.stdSerializers.req,
+    res: restify.bunyan.serializers.response
+  }
+});
+
 
 /*
  * ZAPI constructor
@@ -60,7 +61,7 @@ function ZAPI(options) {
     connectTimeout: options.ufds.connectTimeout * 1000
   });
 
-  this.ufds.log4js.setGlobalLogLevel('Trace');
+  this.ufds.log4js.setGlobalLogLevel(config.logLevel);
 }
 
 
@@ -114,8 +115,7 @@ ZAPI.prototype.setRoutes = function() {
   ];
 
   this.server.get({path: '/machines', name: 'ListMachines'}, before, machines.listMachines);
-  this.server.post({path: '/machines', name: 'CreateMachine'}, before, machines.createMachine);
-  this.server.get({path: '/machines/:uuid', name: 'GetEgg'}, before, machines.getMachine);
+  this.server.get({path: '/machines/:uuid', name: 'GetMachine'}, before, machines.getMachine);
 }
 
 

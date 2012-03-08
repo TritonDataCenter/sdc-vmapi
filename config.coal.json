@@ -1,4 +1,8 @@
 {
+  "logLevel": "debug",
+  "api": {
+    "port": 8080
+  },
   "ufds": {
     "url": "ldaps://10.88.88.50:636",
     "rootDn": "cn=root",
