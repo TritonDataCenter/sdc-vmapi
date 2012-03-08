@@ -12,7 +12,7 @@ var restify = require('restify');
 var ldap = require('ldapjs');
 var Logger = require('bunyan');
 
-var Machines = require('./lib/machines');
+var machines = require('./lib/machines');
 
 var log = new Logger({
   name: 'zapi',
@@ -51,14 +51,16 @@ function ZAPI(options) {
   this.config = options;
 
   this.server = restify.createServer({
-      name: 'Zones API',
-      log: log
+    name: 'Zones API',
+    log: log
   });
 
   this.ufds = ldap.createClient({
     url: options.ufds.url,
     connectTimeout: options.ufds.connectTimeout * 1000
   });
+
+  this.ufds.log4js.setGlobalLogLevel('Trace');
 }
 
 
@@ -76,6 +78,15 @@ ZAPI.prototype.initUfds = function(callback) {
       callback(null);
     }
   });
+}
+
+
+/*
+ * Sets custom middlewares to use for the API
+ */
+ZAPI.prototype.setMiddleware = function() {
+  this.server.use(restify.bodyParser());
+  this.server.use(restify.queryParser());
 }
 
 
@@ -98,11 +109,13 @@ ZAPI.prototype.setStaticRoutes = function() {
  */
 ZAPI.prototype.setRoutes = function() {
 
-  var machines = new Machines({ ufds: this.ufds });
+  var before = [
+    addProxies
+  ];
 
-  this.server.get({path: '/machines', name: 'ListMachines'}, machines.listMachines);
-  this.server.post({path: '/machines', name: 'CreateMachine'}, machines.createMachine);
-  this.server.get({path: '/machines/:uuid', name: 'GetEgg'}, machines.getMachine);
+  this.server.get({path: '/machines', name: 'ListMachines'}, before, machines.listMachines);
+  this.server.post({path: '/machines', name: 'CreateMachine'}, before, machines.createMachine);
+  this.server.get({path: '/machines/:uuid', name: 'GetEgg'}, before, machines.getMachine);
 }
 
 
@@ -115,6 +128,15 @@ ZAPI.prototype.listen = function(callback) {
 }
 
 
+/*
+ * Loads UFDS into the request chain
+ */
+function addProxies(req, res, next) {
+  req.ufds = zapi.ufds;
+
+  return next();
+}
+
 
 var zapi = new ZAPI(config);
 
@@ -125,6 +147,7 @@ zapi.initUfds(function(err) {
     process.exit(1);
   }
 
+  zapi.setMiddleware();
   zapi.setStaticRoutes();
   zapi.setRoutes();
 
@@ -133,3 +156,4 @@ zapi.initUfds(function(err) {
   });
 
 });
+
