@@ -46,6 +46,7 @@ var n = parseInt(process.argv[2]) || 10;
 //   destroyed: 1
 // }
 
+var TYPES = ["zone", "vm"];
 var STATUS = ["running", "off"];
 var RAM = [128, 256, 512, 1024];
 var DISK = [5120, 10240, 20480, 51200];
@@ -78,7 +79,7 @@ var ufds = ldap.createClient({
 
 // ufds.log4js.setGlobalLogLevel('Trace');
 
-ufds.bind(config.ufds.rootDn, config.ufds.password, function (err) {
+ufds.bind(config.ufds.bindDN, config.ufds.bindPassword, function (err) {
   if (err) {
     log.error("Could not bind to UFDS. Aborting.");
     process.exit(1);
@@ -135,6 +136,7 @@ function createMachines(n) {
     machine.cpushares = CPU_SHARES;
     machine.zfsiopriority = ZFS_IO;
     machine.alias = randAlias();
+    machine.type = TYPES[randNumber(TYPES.length)];
     machine.status = STATUS[randNumber(STATUS.length)];
     machine.setup = date;
 
