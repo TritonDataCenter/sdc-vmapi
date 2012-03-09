@@ -14,6 +14,7 @@ var Logger = require('bunyan');
 
 var machines = require('./lib/machines');
 
+var UFDS = require('sdc-clients').UFDS;
 
 
 /*
@@ -54,30 +55,6 @@ function ZAPI(options) {
   this.server = restify.createServer({
     name: 'Zones API',
     log: log
-  });
-
-  this.ufds = ldap.createClient({
-    url: options.ufds.url,
-    connectTimeout: options.ufds.connectTimeout * 1000
-  });
-
-  this.ufds.log4js.setGlobalLogLevel(config.logLevel);
-}
-
-
-/*
- * Inits a UFDS connection. Receives a callback as an argument. An error will
- * be the argument to the callback when the connection could not be established
- */
-ZAPI.prototype.initUfds = function(callback) {
-  log.trace({rootDn: this.config.ufds.rootDn}, 'bind to UFDS');
-
-  this.ufds.bind(this.config.ufds.rootDn, this.config.ufds.password, function (err) {
-    if (err) {
-      callback(err);
-    } else {
-      callback(null);
-    }
   });
 }
 
@@ -132,21 +109,25 @@ ZAPI.prototype.listen = function(callback) {
  * Loads UFDS into the request chain
  */
 function addProxies(req, res, next) {
-  req.ufds = zapi.ufds;
+  req.ufds = ufds;
 
   return next();
 }
 
 
+var ufds;
 var zapi = new ZAPI(config);
 
-zapi.initUfds(function(err) {
+try {
+  ufds = new UFDS(config.ufds);
+  ufds.setLogLevel(config.logLevel);
+} catch (e) {
+  console.error('Invalid UFDS config: ' + e.message);
+  process.exit(1);
+}
 
-  if (err) {
-    log.error(err, 'error connecting to UFDS. Aborting.');
-    process.exit(1);
-  }
 
+ufds.on('ready', function() {
   zapi.setMiddleware();
   zapi.setStaticRoutes();
   zapi.setRoutes();
@@ -154,6 +135,9 @@ zapi.initUfds(function(err) {
   zapi.listen(function() {
     log.info({url: zapi.server.url}, '%s listening', zapi.server.name);
   });
-
 });
 
+ufds.on('error', function(err) {
+  log.error(err, 'error connecting to UFDS. Aborting.');
+  process.exit(1);
+});

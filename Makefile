@@ -37,6 +37,9 @@ SMF_MANIFESTS	 = smf/manifests/bapi.xml
 all:
 	$(NPM) install
 
+	git clone git@git.joyent.com:node-sdc-clients.git node_modules/sdc-clients
+	(cd node_modules/sdc-clients && $(NPM) install)
+
 .PHONY: test
 test: $(TAP)
 	TAP=1 $(TAP) test/*.test.js
