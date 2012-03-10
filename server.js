@@ -12,6 +12,7 @@ var restify = require('restify');
 var ldap = require('ldapjs');
 var Logger = require('bunyan');
 
+var interceptors = require('./lib/interceptors');
 var machines = require('./lib/machines');
 
 var UFDS = require('sdc-clients').UFDS;
@@ -54,8 +55,34 @@ function ZAPI(options) {
 
   this.server = restify.createServer({
     name: 'Zones API',
-    log: log
+    log: log,
+    apiVersion: '7.0',
+    serverName: 'SmartDataCenter',
+    accept: ['text/plain',
+             'application/json',
+             'text/html',
+             'image/png',
+             'text/css'],
+    contentWriters: {
+     'text/plain': function(obj) {
+       if (!obj)
+         return '';
+       if (typeof(obj) === 'string')
+         return obj;
+       return JSON.stringify(obj, null, 2);
+      }
+    }
   });
+
+  this.server.on('uncaughtException', function(req, res, route, error) {
+    req.log.info({
+      err: error,
+      url: req.url,
+      params: req.params
+    });
+
+    res.send(new restify.InternalError("Internal Server Error"));
+  })
 }
 
 
@@ -63,6 +90,8 @@ function ZAPI(options) {
  * Sets custom middlewares to use for the API
  */
 ZAPI.prototype.setMiddleware = function() {
+  this.server.use(restify.acceptParser(this.server.acceptable));
+  this.server.use(restify.authorizationParser());
   this.server.use(restify.bodyParser());
   this.server.use(restify.queryParser());
 }
@@ -88,7 +117,8 @@ ZAPI.prototype.setStaticRoutes = function() {
 ZAPI.prototype.setRoutes = function() {
 
   var before = [
-    addProxies
+    addProxies,
+    interceptors.authenticate
   ];
 
   this.server.get({path: '/machines', name: 'ListMachines'}, before, machines.listMachines);
@@ -109,10 +139,12 @@ ZAPI.prototype.listen = function(callback) {
  * Loads UFDS into the request chain
  */
 function addProxies(req, res, next) {
+  req.config = config;
   req.ufds = ufds;
 
   return next();
 }
+
 
 
 var ufds;
