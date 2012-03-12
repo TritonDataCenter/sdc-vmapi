@@ -118,7 +118,8 @@ ZAPI.prototype.setRoutes = function() {
 
   var before = [
     addProxies,
-    interceptors.authenticate
+    interceptors.authenticate,
+    interceptors.loadMachine
   ];
 
   machines.mount(this.server, before);
