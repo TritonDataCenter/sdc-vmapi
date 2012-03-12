@@ -121,9 +121,7 @@ ZAPI.prototype.setRoutes = function() {
     interceptors.authenticate
   ];
 
-  this.server.get({path: '/machines', name: 'ListMachines'}, before, machines.listMachines);
-  this.server.get({path: '/machines/:uuid', name: 'GetMachine'}, before, machines.loadMachine, machines.getMachine);
-  this.server.post({path: '/machines/:uuid', name: 'UpdateMachine'}, before, machines.loadMachine, machines.updateMachine);
+  machines.mount(this.server, before);
 }
 
 
