@@ -1,5 +1,9 @@
 {
   "logLevel": "debug",
+  "amqp": {
+    "host": "10.99.99.5",
+    "queue": "heartbeat.zapi"
+  },
   "api": {
     "username": "admin",
     "password": "z3cr3t",

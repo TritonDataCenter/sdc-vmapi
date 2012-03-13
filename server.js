@@ -12,6 +12,7 @@ var restify = require('restify');
 var ldap = require('ldapjs');
 var Logger = require('bunyan');
 
+var Heartbeater = require('./lib/heartbeater');
 var interceptors = require('./lib/interceptors');
 var machines = require('./lib/machines');
 var tags = require('./lib/tags');
@@ -46,6 +47,8 @@ var log = new Logger({
     res: restify.bunyan.serializers.response
   }
 });
+
+config.amqp.log = log;
 
 
 /*
@@ -83,7 +86,7 @@ function ZAPI(options) {
     });
 
     res.send(new restify.InternalError("Internal Server Error"));
-  })
+  });
 }
 
 
@@ -137,6 +140,29 @@ ZAPI.prototype.listen = function(callback) {
 }
 
 
+
+/*
+ * Starts listening on the heartbeater AMQP queue
+ */
+ZAPI.prototype.initHeartbeater = function(callback) {
+  var heartbeater = this.heartbeater = new Heartbeater(config.amqp);
+
+  heartbeater.on('connectionError', function(err) {
+
+    log.error("AMQP Connection Error " + err.code + ", re-trying in 5 seconds...");
+    setTimeout(function() {
+      heartbeater.reconnect();
+    }, 5000);
+
+  });
+
+  heartbeater.on('heartbeat', function(hb) {
+    // Call handler to store heartbeat on cache and update UFDS
+    log.debug(hb);
+  });
+}
+
+
 /*
  * Loads UFDS into the request chain
  */
@@ -165,6 +191,8 @@ ufds.on('ready', function() {
   zapi.setMiddleware();
   zapi.setStaticRoutes();
   zapi.setRoutes();
+
+  zapi.initHeartbeater();
 
   zapi.listen(function() {
     log.info({url: zapi.server.url}, '%s listening', zapi.server.name);

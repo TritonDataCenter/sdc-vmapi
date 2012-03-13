@@ -37,8 +37,11 @@ SMF_MANIFESTS	 = smf/manifests/bapi.xml
 all:
 	$(NPM) install
 
-	git clone git@git.joyent.com:node-sdc-clients.git node_modules/sdc-clients
+  (test -d node_modules/sdc-clients || \
+	git clone git@git.joyent.com:node-sdc-clients.git node_modules/sdc-clients)
 	(cd node_modules/sdc-clients && $(NPM) install)
+  (test -d node_modules/amqp || \
+  git clone https://github.com/postwait/node-amqp.git node_modules/amqp)
 
 .PHONY: test
 test: $(TAP)
