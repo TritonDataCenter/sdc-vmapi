@@ -14,6 +14,7 @@ var Logger = require('bunyan');
 
 var interceptors = require('./lib/interceptors');
 var machines = require('./lib/machines');
+var tags = require('./lib/tags');
 
 var UFDS = require('sdc-clients').UFDS;
 
@@ -123,6 +124,7 @@ ZAPI.prototype.setRoutes = function() {
   ];
 
   machines.mount(this.server, before);
+  tags.mount(this.server, before);
 }
 
 

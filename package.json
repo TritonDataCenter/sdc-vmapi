@@ -11,7 +11,8 @@
     "bunyan": "0.5.3",
     "ldapjs": "0.4.8",
     "expiring-lru-cache": "2.0.0",
-    "sprintf": "0.1.1"
+    "sprintf": "0.1.1",
+    "amqp": "0.1.2"
   },
   "devDependencies": {
     "tap": "0.2"
