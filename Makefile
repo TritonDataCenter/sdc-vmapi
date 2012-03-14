@@ -28,13 +28,21 @@ JS_FILES	:= $(shell find lib -name '*.js')
 JSL_CONF_NODE	 = tools/jsl.node.conf
 JSL_FILES_NODE   = server.js $(JS_FILES)
 JSSTYLE_FILES	 = $(JS_FILES)
-SMF_MANIFESTS	 = smf/manifests/bapi.xml
+JSSTYLE_FLAGS    = -o indent=2,doxygen,unparenthesized-return=0
+SMF_MANIFESTS	 = smf/manifests/zapi.xml
+
+include ./tools/mk/Makefile.defs
+include ./tools/mk/Makefile.node.defs
+include ./tools/mk/Makefile.smf.defs
 
 #
 # Repo-specific targets
 #
 .PHONY: all
-all:
+all: $(SMF_MANIFESTS) | $(TAP)
+	$(NPM) rebuild
+
+$(TAP): | $(NPM_EXEC)
 	$(NPM) install
 
   (test -d node_modules/sdc-clients || \
@@ -43,9 +51,14 @@ all:
   (test -d node_modules/amqp || \
   git clone https://github.com/postwait/node-amqp.git node_modules/amqp)
 
+CLEAN_FILES += $(TAP) ./node_modules/tap
+
 .PHONY: test
 test: $(TAP)
 	TAP=1 $(TAP) test/*.test.js
 
-include ./Makefile.deps
-include ./Makefile.targ
+
+include ./tools/mk/Makefile.deps
+include ./tools/mk/Makefile.node.targ
+include ./tools/mk/Makefile.smf.targ
+include ./tools/mk/Makefile.targ
