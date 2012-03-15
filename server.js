@@ -19,6 +19,24 @@ var tags = require('./lib/tags');
 
 var UFDS = require('sdc-clients').UFDS;
 
+var VERSION = false;
+
+
+/**
+ * Returns the current semver version stored in CloudAPI's package.json.
+ * This is used to set in the API versioning and in the Server header.
+ *
+ * @return {String} version.
+ */
+function version() {
+    if (!VERSION) {
+        var pkg = fs.readFileSync(__dirname + '/package.json', 'utf8');
+        VERSION = JSON.parse(pkg).version;
+    }
+
+    return VERSION;
+}
+
 
 /*
  * Loads and parse the configuration file at config.json
@@ -60,7 +78,7 @@ function ZAPI(options) {
   this.server = restify.createServer({
     name: 'Zones API',
     log: log,
-    apiVersion: '7.0',
+    version: version() || '7.0.0',
     serverName: 'SmartDataCenter',
     accept: ['text/plain',
              'application/json',
@@ -158,7 +176,7 @@ ZAPI.prototype.initHeartbeater = function(callback) {
 
   heartbeater.on('heartbeat', function(hb) {
     // Call handler to store heartbeat on cache and update UFDS
-    log.debug(hb);
+    // log.debug(hb);
   });
 }
 
