@@ -1,10 +1,10 @@
 ---
-title: Boilerplate API (BAPI)
-apisections: Boiled Eggs
+title: Zones API (ZAPI)
+apisections: Machines, Machine Tags
 markdown2extras: wiki-tables, code-friendly
 ---
 
-# Boilerplate API (BAPI)
+# Zones API (ZAPI)
 
 *This shows the API implemented by the example node.js server in this repo.
 The main point here is show a good way to document API endpoints. You

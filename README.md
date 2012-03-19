@@ -1,80 +1,50 @@
-# Joyent Engineering Guide
+# Zones API
 
-Repository: <git@git.joyent.com:zapi.git>
-Browsing: <https://mo.joyent.com/zapi>
-Who: ?
-Docs: <https://head.no.de/docs/zapi>
-Tickets/bugs: <https://devhub.joyent.com/jira/browse/ZAPI>
+ * Repository: git clone git@git.joyent.com:zapi.git
+ * Browsing: <https://mo.joyent.com/zapi>
+ * Docs: <https://mo.joyent.com/docs/zapi>
+ * Who: Andres Rodriguez
+ * Tickets/bugs: <https://devhub.joyent.com/jira/browse/ZAPI>
 
+# Introduction
 
-# Overview
+Zones API allows clients to get information about machines on a datacenter by using an HTTP API. ZAPI offers the following features:
 
-TBD
-
-# Repository
-
-    deps/           Git submodules and/or commited 3rd-party deps should go
-                    here. See "node_modules/" for node.js deps.
-    docs/           Project docs (restdown)
-    lib/            Source files.
-    node_modules/   Node.js deps, either populated at build time or commited.
-                    See Managing Dependencies.
-    pkg/            Package lifecycle scripts
-    smf/manifests   SMF manifests
-    smf/methods     SMF method scripts
-    test/           Test suite (using node-tap)
-    tools/          Miscellaneous dev/upgrade/deployment tools and data.
-    Makefile
-    package.json    npm module info (holds the project version)
-    README.md
+ * Search machines by specific criteria such as ram, owner, tags, server, dataset, etc.
+ * Get information about a single machine
+ * Create new machines
+ * Perform actions on an existing machine such as start, stop, reboot and resize
+ * Update machines
+ * Destroy machines
 
 
-# Development
+# Design & Requirements
 
-To run the boilerplate API server:
+* Node.js restify HTTP server
+* UFDS is the remote datastore for ZAPI. ZAPI does not have persistency and all zones data living on UFDS should be considered a cache
+* A heartbeater AMQP client listens for zone heartbeats so ZAPI can return status information for zones
+ * ZAPI is only concerned for exposing zones information to users the same way CNAPI does for compute nodes
+ * There is one ZAPI instance per datacenter
+ * ZAPI is stateless: when any machine action is called (create, destroy, reboot, etc) the message is passed through a workflow API instance that takes care of it
+ * ZAPI should be as dumb as possible. Contrary to MAPI, ZAPI does not have complicated logic that prevents users to call actions on zones (and even creating zones). Much of the required logic for this is moved to the corresponding workflow and other participant APIs
+ * ...
 
-    git clone git@git.joyent.com:eng.git
-    cd eng
-    git submodule update --init
+# Development and Local Installation
+
+    # Get the source and build.
+    git clone git@git.joyent.com:zapi.git
+    cd zapi/
     make all
-    node server.js
 
-To update the guidelines, edit "docs/index.restdown" and run `make docs`
-to update "docs/index.html".
+    # Setup config.
+    # Note that there is a dependency on a headnode instance with a running UFDS
+    cp config.mac.json config.json
+    vi config.json
 
-Before commiting/pushing run `make prepush` and, if possible, get a code
-review.
-
+    # node server.js
 
 
 # Testing
 
     make test
-
-If you project has setup steps necessary for testing, then describe those
-here.
-
-
-
-# Other Sections Here
-
-Add other sections to your README as necessary. E.g. Running a demo, adding
-development data.
-
-
-
-# TODO
-
-Remaining work for this repo:
-
-- any "TODO" or "XXX" in the repo
-- review from engineering group
-- [Trent] Finish the restdown "public" dir and other work as discussed with
-  Philip. `git rm docs/media/css`
-- Give a little starter guide on using this repo as a starter template for the
-  new repos (for NAPI, CNAPI, FWAPI, DAPI, Workflow API, ZAPI). Include
-  getting on mo.joyent.com and head.no.de/docs for this.
-- Should we spec JIRA projects for the new APIs?
-- Add the node/npm local build support a la Amon and DSAPI. I.e. deps/node
-  and deps/npm git submodules and build handling in the Makefile.
 

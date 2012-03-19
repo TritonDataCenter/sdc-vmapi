@@ -23,7 +23,7 @@ TAP		:= ./node_modules/.bin/tap
 #
 # Files
 #
-DOC_FILES	 = index.restdown boilerplateapi.restdown
+DOC_FILES	 = index.restdown zapi.restdown
 JS_FILES	:= $(shell find lib -name '*.js')
 JSL_CONF_NODE	 = tools/jsl.node.conf
 JSL_FILES_NODE   = server.js $(JS_FILES)
