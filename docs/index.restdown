@@ -4,6 +4,14 @@ apisections: Machines, Machine Tags
 markdown2extras: wiki-tables, code-friendly
 ---
 
+# ZAPI
+
+* Repository: git clone git@git.joyent.com:zapi.git
+* Browsing: <https://mo.joyent.com/zapi>
+* Docs: <https://mo.joyent.com/docs/zapi>
+* Who: Andres Rodriguez
+* Tickets/bugs: <https://devhub.joyent.com/jira/browse/ZAPI>
+
 # Introduction to Zones API
 
 ## What is ZAPI?
@@ -81,3 +89,60 @@ Queues an update operation on a machine. Only four operations are supported at t
 ||uuid||UUID||Machine UUID||
 ||owner_uuid||UUID||Machine Owner||
 ||action||String||start, stop, reboot or resize||
+
+
+# Machine Tags
+
+Machine Tags allow machines to be grouped by any criteria. Tags are key/value pairs that can be assigned to any machine. For example, machines can be grouped by tagging them as a database role with a tag such as '{ role: "database" }'.
+
+## ListMachines (GET /machines/:uuid/tags)
+
+Returns a list of tags assigned to machine.
+
+### Inputs
+
+||uuid||UUID||Machine UUID||
+||owner_uuid||UUID||Machine Owner||
+
+
+## GetTag (GET /machines/:uuid/tags/:key)
+
+Returns a machine tag.
+
+### Inputs
+
+||uuid||UUID||Machine UUID||
+||owner_uuid||UUID||Machine Owner||
+||key||String||Tag Key||
+
+
+## AddTags (POST /machines/:uuid/tags)
+
+Adds a new tag to a machine.
+
+### Inputs
+
+||uuid||UUID||Machine UUID||
+||owner_uuid||UUID||Machine Owner||
+||key||String||Tag Key||
+
+
+## DeleteTag (DELETE /machines/:uuid/tags/:key)
+
+Deletes a tag from a machine.
+
+### Inputs
+
+||uuid||UUID||Machine UUID||
+||owner_uuid||UUID||Machine Owner||
+||key||String||Tag Key||
+
+
+## DeleteTags (DELETE /machines/:uuid/tags)
+
+Deletes all tags from a machine.
+
+### Inputs
+
+||uuid||UUID||Machine UUID||
+||owner_uuid||UUID||Machine Owner||
