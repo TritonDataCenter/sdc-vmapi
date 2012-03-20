@@ -25,23 +25,27 @@ module.exports = {
         assert.ok(callback);
 
         var user = 'a' + uuid().substr(0, 7) + '@joyent.com';
-        var client = restify.createJsonClient({
+
+        var logger = new Logger({
+            level: process.env.LOG_LEVEL || 'info',
+            name: 'zapi_unit_test',
+            stream: process.stderr,
+            serializers: {
+                err: Logger.stdSerializers.err,
+                req: Logger.stdSerializers.req,
+                res: restify.bunyan.serializers.response
+            }
+        });
+
+        var client = restify.createStringClient({
             url: 'http://localhost:8080',
             version: '*',
             retryOptions: {
                 retry: 0
             },
-            log: new Logger({
-                level: process.env.LOG_LEVEL || 'info',
-                name: 'zapi_unit_test',
-                stream: process.stderr,
-                serializers: {
-                    err: Logger.stdSerializers.err,
-                    req: Logger.stdSerializers.req,
-                    res: restify.bunyan.serializers.response
-                }
-            })
+            log: logger
         });
+
         client.basicAuth(USER, PASSWD);
         client.testUser = user;
 

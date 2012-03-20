@@ -10,6 +10,7 @@ var createMachine = require('../tools/create_machine');
 ///--- Globals
 
 var client;
+var stringClient;
 var newMachine;
 var muuid;
 var ouuid;
@@ -25,6 +26,7 @@ test('setup', function(t) {
     t.ifError(err);
     t.ok(_client);
     client = _client;
+    // stringClient = _stringClient;
     ouuid = client.testUser.uuid;
     t.end();
   });
@@ -39,7 +41,8 @@ test('ListTags (empty)', function(t) {
 
     var path = '/machines/' + muuid + '/tags?owner_uuid=' + ouuid;
 
-    client.get(path, function(err, req, res, body) {
+    client.get(path, function(err, req, res, data) {
+      body = JSON.parse(data);
       t.ifError(err);
       t.equal(res.statusCode, 200);
       common.checkHeaders(t, res.headers);
@@ -51,20 +54,56 @@ test('ListTags (empty)', function(t) {
 });
 
 
-// test('SetTag OK', function(t) {
-//   var tagKey = "role";
-//   var tagValue = "db";
-//   var path = '/machines/' + muuid + '/tags/' + tagKey + '?owner_uuid=' + ouuid;
-//
-//   client.put(path, { value: tagValue }, function(err, req, res, body) {
-//     t.ifError(err);
-//     t.equal(res.statusCode, 200);
-//     common.checkHeaders(t, res.headers);
-//     t.ok(body);
-//     t.ok(!Object.keys(body).length);
-//     t.end();
-//   });
-// });
+test('AddTags OK', function(t) {
+  var path = '/machines/' + muuid + '/tags?owner_uuid=' + ouuid;
+
+  client.post(path, "role=database&group=deployment", function(err, req, res, data) {
+    body = JSON.parse(data);
+    t.ifError(err);
+    t.equal(res.statusCode, 200);
+    common.checkHeaders(t, res.headers);
+    t.ok(body);
+    t.end();
+  });
+});
+
+
+test('GetTag OK', function(t) {
+  var path = '/machines/' + muuid + '/tags/role?owner_uuid=' + ouuid;
+
+  client.get(path, function(err, req, res, data) {
+    t.ifError(err);
+    t.equal(res.statusCode, 200);
+    common.checkHeaders(t, res.headers);
+    t.ok(body);
+    t.equal(data, "database");
+    t.end();
+  });
+});
+
+
+test('DeleteTag OK', function(t) {
+  var path = '/machines/' + muuid + '/tags/role?owner_uuid=' + ouuid;
+
+  client.del(path, function(err, req, res) {
+    t.ifError(err);
+    t.equal(res.statusCode, 204);
+    common.checkHeaders(t, res.headers);
+    t.end();
+  });
+});
+
+
+test('DeleteTags OK', function(t) {
+  var path = '/machines/' + muuid + '/tags?owner_uuid=' + ouuid;
+
+  client.del(path, function(err, req, res) {
+    t.ifError(err);
+    t.equal(res.statusCode, 204);
+    common.checkHeaders(t, res.headers);
+    t.end();
+  });
+});
 
 
 test('teardown', function(t) {

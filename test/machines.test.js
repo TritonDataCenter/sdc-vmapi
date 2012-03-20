@@ -48,7 +48,8 @@ test('setup', function(t) {
 
 
 test('ListMachines (empty)', function(t) {
-  client.get('/machines?owner_uuid=' + ouuid, function(err, req, res, body) {
+  client.get('/machines?owner_uuid=' + ouuid, function(err, req, res, data) {
+    body = JSON.parse(data);
     t.ifError(err);
     t.equal(res.statusCode, 200);
     common.checkHeaders(t, res.headers);
@@ -66,7 +67,8 @@ test('ListMachines OK', function(t) {
     t.ifError(err);
     newMachine = machine;
 
-    client.get('/machines?owner_uuid=' + ouuid, function(err, req, res, body) {
+    client.get('/machines?owner_uuid=' + ouuid, function(err, req, res, data) {
+      body = JSON.parse(data);
       t.ifError(err);
       t.equal(res.statusCode, 200);
       common.checkHeaders(t, res.headers);
@@ -86,7 +88,8 @@ test('ListMachines OK', function(t) {
 test('ListMachines by ram (empty)', function(t) {
   var path = '/machines?ram=32&owner_uuid=' + ouuid;
 
-  client.get(path, function(err, req, res, body) {
+  client.get(path, function(err, req, res, data) {
+    body = JSON.parse(data);
     t.ifError(err);
     t.equal(res.statusCode, 200);
     common.checkHeaders(t, res.headers);
@@ -101,7 +104,8 @@ test('ListMachines by ram (empty)', function(t) {
 test('ListMachines by ram OK', function(t) {
   var path = '/machines?ram=' + newMachine.ram + '&owner_uuid=' + ouuid;
 
-  client.get(path, function(err, req, res, body) {
+  client.get(path, function(err, req, res, data) {
+    body = JSON.parse(data);
     t.ifError(err);
     t.equal(res.statusCode, 200);
     common.checkHeaders(t, res.headers);
@@ -128,7 +132,8 @@ test('GetMachine (Not Found)', function(t) {
 
 
 test('GetMachine OK', function(t) {
-  client.get('/machines/' + muuid + '?owner_uuid=' + ouuid, function(err, req, res, body) {
+  client.get('/machines/' + muuid + '?owner_uuid=' + ouuid, function(err, req, res, data) {
+    body = JSON.parse(data);
     t.ifError(err);
     t.equal(res.statusCode, 200);
     common.checkHeaders(t, res.headers);
