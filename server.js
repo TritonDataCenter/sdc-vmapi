@@ -17,7 +17,10 @@ var interceptors = require('./lib/interceptors');
 var machines = require('./lib/machines');
 var tags = require('./lib/tags');
 
-var UFDS = require('sdc-clients').UFDS;
+var Cache = require('expiring-lru-cache');
+
+// var UFDS = require('sdc-clients').UFDS;
+var UFDS = require('./lib/ufds');
 
 var VERSION = false;
 
@@ -174,6 +177,8 @@ ZAPI.prototype.initHeartbeater = function(callback) {
 
   });
 
+  //  ID   zonename  status
+  // [ 0, 'global', 'running', '/', '', 'liveimg', 'shared', '0'
   heartbeater.on('heartbeat', function(hb) {
     // Call handler to store heartbeat on cache and update UFDS
     // log.debug(hb);
@@ -197,8 +202,8 @@ var ufds;
 var zapi = new ZAPI(config);
 
 try {
+  config.ufds.logLevel = config.logLevel;
   ufds = new UFDS(config.ufds);
-  ufds.setLogLevel(config.logLevel);
 } catch (e) {
   console.error('Invalid UFDS config: ' + e.message);
   process.exit(1);
