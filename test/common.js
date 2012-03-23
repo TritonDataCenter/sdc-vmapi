@@ -10,18 +10,18 @@ var UFDS = require('sdc-clients').UFDS;
 
 
 
-///--- Globals
+// --- Globals
 
 var USER = 'admin'
 var PASSWD = 'z3cr3t';
 
 
 
-///--- Library
+// --- Library
 
 module.exports = {
 
-    setup: function(callback) {
+    setup: function (callback) {
         assert.ok(callback);
 
         var user = 'a' + uuid().substr(0, 7) + '@joyent.com';
@@ -54,27 +54,27 @@ module.exports = {
             bindDN: 'cn=root',
             bindPassword: 'secret',
         });
-        ufds.on('error', function(err) {
+        ufds.on('error', function (err) {
             return callback(err);
         });
-        ufds.on('ready', function() {
+        ufds.on('ready', function () {
             var entry = {
                 login: client.testUser,
                 email: client.testUser,
                 userpassword: PASSWD
             };
-            return ufds.addUser(entry, function(err, newUser) {
+            return ufds.addUser(entry, function (err, newUser) {
                 if (err)
                     return callback(err);
 
                 client.testUser = newUser;
                 client.ufds = ufds;
                 client.teardown = function teardown(callback) {
-                    client.ufds.deleteUser(client.testUser, function(err) {
+                    client.ufds.deleteUser(client.testUser, function (err) {
                         if (err) // blindly ignore
                             return callback(err);
 
-                        ufds.close(function() {});
+                        ufds.close(function () {});
                         return callback(null);
                     });
                 };
@@ -84,7 +84,7 @@ module.exports = {
         });
     },
 
-    checkHeaders: function(t, headers) {
+    checkHeaders: function (t, headers) {
         assert.ok(t);
 
         t.ok(headers);

@@ -38,8 +38,8 @@ var MACHINE_FMT = 'machineid=%s, ' + USER_FMT;
 //   destroyed: 1
 // }
 
-var TYPES = ["zone", "vm"];
-var STATUS = ["running", "off"];
+var TYPES = ['zone', 'vm'];
+var STATUS = ['running', 'off'];
 var RAM = [128, 256, 512, 1024];
 var DISK = [5120, 10240, 20480, 51200];
 var LWPS = 2000;
@@ -62,8 +62,8 @@ function randNumber(limit) {
  * Very simple random string generator
  */
 function randAlias() {
-  var text = "";
-  var possible = "abcdefghijklmnopqrstuvwxyz";
+  var text = '';
+  var possible = 'abcdefghijklmnopqrstuvwxyz';
 
   for (var i = 0; i < 8; i++)
     text += possible.charAt(Math.floor(Math.random() * possible.length));
@@ -104,7 +104,7 @@ function createMachine(ufds, owner, callback) {
 
   dn = sprintf(MACHINE_FMT, muuid, owner);
 
-  ufds.add(dn, machine, function(err) {
+  ufds.add(dn, machine, function (err) {
     if (err)
       callback(err, machine);
     else

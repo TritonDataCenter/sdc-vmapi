@@ -7,7 +7,7 @@ var common = require('./common');
 var createMachine = require('../tools/create_machine');
 
 
-///--- Globals
+// --- Globals
 
 var client;
 var newMachine;
@@ -15,7 +15,7 @@ var muuid;
 var ouuid;
 
 
-///--- Helpers
+// --- Helpers
 
 function checkMachine(t, machine) {
   t.ok(machine);
@@ -34,10 +34,10 @@ function checkMachine(t, machine) {
   t.ok(machine.owner_uuid);
 }
 
-///--- Tests
+// --- Tests
 
-test('setup', function(t) {
-  common.setup(function(err, _client) {
+test('setup', function (t) {
+  common.setup(function (err, _client) {
     t.ifError(err);
     t.ok(_client);
     client = _client;
@@ -47,8 +47,8 @@ test('setup', function(t) {
 });
 
 
-test('ListMachines (empty)', function(t) {
-  client.get('/machines?owner_uuid=' + ouuid, function(err, req, res, data) {
+test('ListMachines (empty)', function (t) {
+  client.get('/machines?owner_uuid=' + ouuid, function (err, req, res, data) {
     body = JSON.parse(data);
     t.ifError(err);
     t.equal(res.statusCode, 200);
@@ -62,12 +62,12 @@ test('ListMachines (empty)', function(t) {
 
 
 // Need to stub creating a machince workflow API is not ready yet
-test('ListMachines OK', function(t) {
-  createMachine(client.ufds, ouuid, function(err, machine) {
+test('ListMachines OK', function (t) {
+  createMachine(client.ufds, ouuid, function (err, machine) {
     t.ifError(err);
     newMachine = machine;
 
-    client.get('/machines?owner_uuid=' + ouuid, function(err, req, res, data) {
+    client.get('/machines?owner_uuid=' + ouuid, function (err, req, res, data) {
       body = JSON.parse(data);
       t.ifError(err);
       t.equal(res.statusCode, 200);
@@ -75,7 +75,7 @@ test('ListMachines OK', function(t) {
       t.ok(body);
       t.ok(Array.isArray(body));
       t.ok(body.length);
-      body.forEach(function(m) {
+      body.forEach(function (m) {
         checkMachine(t, m);
         muuid = m.uuid;
       });
@@ -85,10 +85,10 @@ test('ListMachines OK', function(t) {
 });
 
 
-test('ListMachines by ram (empty)', function(t) {
+test('ListMachines by ram (empty)', function (t) {
   var path = '/machines?ram=32&owner_uuid=' + ouuid;
 
-  client.get(path, function(err, req, res, data) {
+  client.get(path, function (err, req, res, data) {
     body = JSON.parse(data);
     t.ifError(err);
     t.equal(res.statusCode, 200);
@@ -101,10 +101,10 @@ test('ListMachines by ram (empty)', function(t) {
 });
 
 
-test('ListMachines by ram OK', function(t) {
+test('ListMachines by ram OK', function (t) {
   var path = '/machines?ram=' + newMachine.ram + '&owner_uuid=' + ouuid;
 
-  client.get(path, function(err, req, res, data) {
+  client.get(path, function (err, req, res, data) {
     body = JSON.parse(data);
     t.ifError(err);
     t.equal(res.statusCode, 200);
@@ -112,7 +112,7 @@ test('ListMachines by ram OK', function(t) {
     t.ok(body);
     t.ok(Array.isArray(body));
     t.ok(body.length);
-    body.forEach(function(m) {
+    body.forEach(function (m) {
         checkMachine(t, m);
         muuid = m.uuid;
     });
@@ -121,9 +121,11 @@ test('ListMachines by ram OK', function(t) {
 });
 
 
-test('GetMachine (Not Found)', function(t) {
+test('GetMachine (Not Found)', function (t) {
   var nouuid = uuid();
-  client.get('/machines/' + nouuid + '?owner_uuid=' + ouuid, function(err, req, res, body) {
+  var path = '/machines/' + nouuid + '?owner_uuid=' + ouuid;
+
+  client.get(path, function (err, req, res, body) {
     t.equal(res.statusCode, 404);
     common.checkHeaders(t, res.headers);
     t.end();
@@ -131,8 +133,10 @@ test('GetMachine (Not Found)', function(t) {
 });
 
 
-test('GetMachine OK', function(t) {
-  client.get('/machines/' + muuid + '?owner_uuid=' + ouuid, function(err, req, res, data) {
+test('GetMachine OK', function (t) {
+  var path = '/machines/' + muuid + '?owner_uuid=' + ouuid;
+
+  client.get(path, function (err, req, res, data) {
     body = JSON.parse(data);
     t.ifError(err);
     t.equal(res.statusCode, 200);
@@ -144,13 +148,13 @@ test('GetMachine OK', function(t) {
 });
 
 
-test('teardown', function(t) {
-  var machineDn = "machineid=" + muuid + ", " + client.testUser.dn;
+test('teardown', function (t) {
+  var machineDn = 'machineid=' + muuid + ', ' + client.testUser.dn;
 
-  client.ufds.del(machineDn, function(err) {
+  client.ufds.del(machineDn, function (err) {
     t.ifError(err);
 
-    client.teardown(function(err) {
+    client.teardown(function (err) {
       t.ifError(err);
       t.end();
     });

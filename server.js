@@ -48,8 +48,8 @@ function loadConfig() {
   var configPath = path.join(__dirname, 'config.json');
 
   if (!path.existsSync(configPath)) {
-    log.error('Config file not found: "' + configPath +
-      '" does not exist. Aborting.');
+    log.error('Config file not found: ' + configPath +
+      ' does not exist. Aborting.');
     process.exit(1);
   }
 
@@ -89,24 +89,24 @@ function ZAPI(options) {
              'image/png',
              'text/css'],
     contentWriters: {
-     'text/plain': function(obj) {
+     'text/plain': function (obj) {
        if (!obj)
          return '';
-       if (typeof(obj) === 'string')
+       if (typeof (obj) === 'string')
          return obj;
        return JSON.stringify(obj, null, 2);
       }
     }
   });
 
-  this.server.on('uncaughtException', function(req, res, route, error) {
+  this.server.on('uncaughtException', function (req, res, route, error) {
     req.log.info({
       err: error,
       url: req.url,
       params: req.params
     });
 
-    res.send(new restify.InternalError("Internal Server Error"));
+    res.send(new restify.InternalError('Internal Server Error'));
   });
 }
 
@@ -114,7 +114,7 @@ function ZAPI(options) {
 /*
  * Sets custom middlewares to use for the API
  */
-ZAPI.prototype.setMiddleware = function() {
+ZAPI.prototype.setMiddleware = function () {
   this.server.use(restify.acceptParser(this.server.acceptable));
   this.server.use(restify.authorizationParser());
   this.server.use(restify.bodyParser());
@@ -125,7 +125,7 @@ ZAPI.prototype.setMiddleware = function() {
 /*
  * Sets all routes for static content
  */
-ZAPI.prototype.setStaticRoutes = function() {
+ZAPI.prototype.setStaticRoutes = function () {
 
   // TODO: static serve the docs, favicon, etc.
   //  waiting on https://github.com/mcavage/node-restify/issues/56 for this.
@@ -139,7 +139,7 @@ ZAPI.prototype.setStaticRoutes = function() {
 /*
  * Sets all routes for the ZAPI server
  */
-ZAPI.prototype.setRoutes = function() {
+ZAPI.prototype.setRoutes = function () {
 
   var before = [
     addProxies,
@@ -156,7 +156,7 @@ ZAPI.prototype.setRoutes = function() {
  * Starts listening on the port given specified by config.api.port. Takes a
  * callback as an argument. The callback is called with no arguments
  */
-ZAPI.prototype.listen = function(callback) {
+ZAPI.prototype.listen = function (callback) {
   this.server.listen(this.config.api.port, '0.0.0.0', callback);
 }
 
@@ -165,13 +165,14 @@ ZAPI.prototype.listen = function(callback) {
 /*
  * Starts listening on the heartbeater AMQP queue
  */
-ZAPI.prototype.initHeartbeater = function(callback) {
+ZAPI.prototype.initHeartbeater = function (callback) {
   var heartbeater = this.heartbeater = new Heartbeater(config.amqp);
 
-  heartbeater.on('connectionError', function(err) {
+  heartbeater.on('connectionError', function (err) {
 
-    log.error("AMQP Connection Error " + err.code + ", re-trying in 5 seconds...");
-    setTimeout(function() {
+    log.error('AMQP Connection Error ' + err.code +
+              ', re-trying in 5 seconds...');
+    setTimeout(function () {
       heartbeater.reconnect();
     }, 5000);
 
@@ -179,7 +180,7 @@ ZAPI.prototype.initHeartbeater = function(callback) {
 
   //  ID   zonename  status
   // [ 0, 'global', 'running', '/', '', 'liveimg', 'shared', '0'
-  heartbeater.on('heartbeat', function(hb) {
+  heartbeater.on('heartbeat', function (hb) {
     // Call handler to store heartbeat on cache and update UFDS
     // log.debug(hb);
   });
@@ -210,19 +211,19 @@ try {
 }
 
 
-ufds.on('ready', function() {
+ufds.on('ready', function () {
   zapi.setMiddleware();
   zapi.setStaticRoutes();
   zapi.setRoutes();
 
   zapi.initHeartbeater();
 
-  zapi.listen(function() {
+  zapi.listen(function () {
     log.info({url: zapi.server.url}, '%s listening', zapi.server.name);
   });
 });
 
-ufds.on('error', function(err) {
+ufds.on('error', function (err) {
   log.error(err, 'error connecting to UFDS. Aborting.');
   process.exit(1);
 });

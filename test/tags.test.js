@@ -7,7 +7,7 @@ var common = require('./common');
 var createMachine = require('../tools/create_machine');
 
 
-///--- Globals
+// --- Globals
 
 var client;
 var stringClient;
@@ -16,13 +16,13 @@ var muuid;
 var ouuid;
 
 
-///--- Helpers
+// --- Helpers
 
 
-///--- Tests
+// --- Tests
 
-test('setup', function(t) {
-  common.setup(function(err, _client) {
+test('setup', function (t) {
+  common.setup(function (err, _client) {
     t.ifError(err);
     t.ok(_client);
     client = _client;
@@ -33,15 +33,15 @@ test('setup', function(t) {
 });
 
 
-test('ListTags (empty)', function(t) {
-  createMachine(client.ufds, ouuid, function(err, machine) {
+test('ListTags (empty)', function (t) {
+  createMachine(client.ufds, ouuid, function (err, machine) {
     t.ifError(err);
     newMachine = machine;
     muuid = newMachine.machineid;
 
     var path = '/machines/' + muuid + '/tags?owner_uuid=' + ouuid;
 
-    client.get(path, function(err, req, res, data) {
+    client.get(path, function (err, req, res, data) {
       body = JSON.parse(data);
       t.ifError(err);
       t.equal(res.statusCode, 200);
@@ -54,10 +54,11 @@ test('ListTags (empty)', function(t) {
 });
 
 
-test('AddTags OK', function(t) {
+test('AddTags OK', function (t) {
   var path = '/machines/' + muuid + '/tags?owner_uuid=' + ouuid;
+  var query = 'role=database&group=deployment';
 
-  client.post(path, "role=database&group=deployment", function(err, req, res, data) {
+  client.post(path, query, function (err, req, res, data) {
     body = JSON.parse(data);
     t.ifError(err);
     t.equal(res.statusCode, 200);
@@ -68,24 +69,24 @@ test('AddTags OK', function(t) {
 });
 
 
-test('GetTag OK', function(t) {
+test('GetTag OK', function (t) {
   var path = '/machines/' + muuid + '/tags/role?owner_uuid=' + ouuid;
 
-  client.get(path, function(err, req, res, data) {
+  client.get(path, function (err, req, res, data) {
     t.ifError(err);
     t.equal(res.statusCode, 200);
     common.checkHeaders(t, res.headers);
     t.ok(body);
-    t.equal(data, "database");
+    t.equal(data, 'database');
     t.end();
   });
 });
 
 
-test('DeleteTag OK', function(t) {
+test('DeleteTag OK', function (t) {
   var path = '/machines/' + muuid + '/tags/role?owner_uuid=' + ouuid;
 
-  client.del(path, function(err, req, res) {
+  client.del(path, function (err, req, res) {
     t.ifError(err);
     t.equal(res.statusCode, 204);
     common.checkHeaders(t, res.headers);
@@ -94,10 +95,10 @@ test('DeleteTag OK', function(t) {
 });
 
 
-test('DeleteTags OK', function(t) {
+test('DeleteTags OK', function (t) {
   var path = '/machines/' + muuid + '/tags?owner_uuid=' + ouuid;
 
-  client.del(path, function(err, req, res) {
+  client.del(path, function (err, req, res) {
     t.ifError(err);
     t.equal(res.statusCode, 204);
     common.checkHeaders(t, res.headers);
@@ -106,13 +107,13 @@ test('DeleteTags OK', function(t) {
 });
 
 
-test('teardown', function(t) {
-  var machineDn = "machineid=" + muuid + ", " + client.testUser.dn;
+test('teardown', function (t) {
+  var machineDn = 'machineid=' + muuid + ', ' + client.testUser.dn;
 
-  client.ufds.del(machineDn, function(err) {
+  client.ufds.del(machineDn, function (err) {
     t.ifError(err);
 
-    client.teardown(function(err) {
+    client.teardown(function (err) {
       t.ifError(err);
       t.end();
     });

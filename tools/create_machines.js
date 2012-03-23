@@ -18,7 +18,7 @@ var log = new Logger({
   level: 'debug'
 });
 
-var OWNER_UUID = "930896af-bf8c-48d4-885c-6573a94b1853";
+var OWNER_UUID = '930896af-bf8c-48d4-885c-6573a94b1853';
 
 var n = parseInt(process.argv[2]) || 1;
 
@@ -27,8 +27,8 @@ var config = function loadConfig() {
   var configPath = path.join(__dirname, '..', 'config.json');
 
   if (!path.existsSync(configPath)) {
-    log.error('Config file not found: "' + configPath +
-      '" does not exist. Aborting.');
+    log.error('Config file not found: '' + configPath +
+      '' does not exist. Aborting.');
     process.exit(1);
   }
 
@@ -49,17 +49,17 @@ var done = n;
 
 ufds.bind(config.ufds.bindDN, config.ufds.bindPassword, function (err) {
   if (err) {
-    log.error("Could not bind to UFDS. Aborting.");
+    log.error('Could not bind to UFDS. Aborting.');
     process.exit(1);
   }
 
   for (i = 0; i < n; i++) {
-    createMachine(ufds, OWNER_UUID, function(err, machine) {
+    createMachine(ufds, OWNER_UUID, function (err, machine) {
       if (err) {
-        log.error("Could not create machine");
+        log.error('Could not create machine');
         log.error(err);
       } else {
-        log.info("Machine created.");
+        log.info('Machine created.');
       }
 
       done--;
