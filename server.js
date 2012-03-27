@@ -19,7 +19,6 @@ var tags = require('./lib/tags');
 
 var Cache = require('expiring-lru-cache');
 
-// var UFDS = require('sdc-clients').UFDS;
 var UFDS = require('./lib/ufds');
 
 var VERSION = false;

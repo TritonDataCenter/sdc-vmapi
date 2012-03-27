@@ -11,13 +11,13 @@ var SUFFIX = 'o=smartdc';
 
 var USERS = 'ou=users, ' + SUFFIX;
 var USER_FMT = 'uuid=%s, ' + USERS;
-var MACHINE_FMT = 'machineid=%s, ' + USER_FMT;
+var MACHINE_FMT = 'uuid=%s, ' + USER_FMT;
 
 
 // Machine schema
 //
 // required: {
-//   machineid: 1,
+//   uuid: 1,
 //   ram: 1,
 //   disk: 1,
 //   swap: 1,
@@ -40,6 +40,7 @@ var MACHINE_FMT = 'machineid=%s, ' + USER_FMT;
 
 var TYPES = ['zone', 'vm'];
 var STATUS = ['running', 'off'];
+var BRANDS = ['joyent', 'kvm'];
 var RAM = [128, 256, 512, 1024];
 var DISK = [5120, 10240, 20480, 51200];
 var LWPS = 2000;
@@ -85,7 +86,7 @@ function createMachine(ufds, owner, callback) {
 
   ram = RAM[randNumber(RAM.length)];
 
-  machine.machineid = muuid;
+  machine.uuid = muuid;
   machine.ram = ram;
   machine.swap = ram * 2;
   machine.disk = DISK[randNumber(DISK.length)];
@@ -94,8 +95,11 @@ function createMachine(ufds, owner, callback) {
   machine.cpushares = CPU_SHARES;
   machine.zfsiopriority = ZFS_IO;
   machine.alias = randAlias();
+
   machine.type = TYPES[randNumber(TYPES.length)];
+  machine.brand = BRANDS[randNumber(BRANDS.length)];
   machine.status = STATUS[randNumber(STATUS.length)];
+
   machine.setup = date;
 
   machine.internalmetadata = {

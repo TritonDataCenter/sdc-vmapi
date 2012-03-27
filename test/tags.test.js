@@ -37,7 +37,7 @@ test('ListTags (empty)', function (t) {
   createMachine(client.ufds, ouuid, function (err, machine) {
     t.ifError(err);
     newMachine = machine;
-    muuid = newMachine.machineid;
+    muuid = newMachine.uuid;
 
     var path = '/machines/' + muuid + '/tags?owner_uuid=' + ouuid;
 
@@ -108,7 +108,7 @@ test('DeleteTags OK', function (t) {
 
 
 test('teardown', function (t) {
-  var machineDn = 'machineid=' + muuid + ', ' + client.testUser.dn;
+  var machineDn = 'uuid=' + muuid + ', ' + client.testUser.dn;
 
   client.ufds.del(machineDn, function (err) {
     t.ifError(err);

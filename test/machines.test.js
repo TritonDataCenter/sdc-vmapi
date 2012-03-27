@@ -149,7 +149,7 @@ test('GetMachine OK', function (t) {
 
 
 test('teardown', function (t) {
-  var machineDn = 'machineid=' + muuid + ', ' + client.testUser.dn;
+  var machineDn = 'uuid=' + muuid + ', ' + client.testUser.dn;
 
   client.ufds.del(machineDn, function (err) {
     t.ifError(err);
