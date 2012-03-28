@@ -7,20 +7,7 @@
 var path = require('path');
 var fs = require('fs');
 
-var filed = require('filed');
-var restify = require('restify');
-var ldap = require('ldapjs');
-var Logger = require('bunyan');
-
-var Heartbeater = require('./lib/heartbeater');
-var interceptors = require('./lib/interceptors');
-var machines = require('./lib/machines');
-var tags = require('./lib/tags');
-
-var Cache = require('expiring-lru-cache');
-
-var UFDS = require('./lib/ufds');
-var CNAPI = require('./lib/cnapi');
+var ZAPI = require('./lib/zapi');
 
 var VERSION = false;
 
@@ -58,213 +45,28 @@ function loadConfig() {
 }
 
 var config = loadConfig();
-
-var log = new Logger({
-  name: 'zapi',
-  level: config.logLevel,
-  serializers: {
-    err: Logger.stdSerializers.err,
-    req: Logger.stdSerializers.req,
-    res: restify.bunyan.serializers.response
-  }
-});
-
-config.amqp.log = log;
-config.cnapi.log = log;
+config.version = version() || '7.0.0';
 
 
-/*
- * ZAPI constructor
- */
-function ZAPI(options) {
-  this.config = options;
-
-  this.server = restify.createServer({
-    name: 'Zones API',
-    log: log,
-    version: version() || '7.0.0',
-    serverName: 'SmartDataCenter',
-    accept: ['text/plain',
-             'application/json',
-             'text/html',
-             'image/png',
-             'text/css'],
-    contentWriters: {
-     'text/plain': function (obj) {
-       if (!obj)
-         return '';
-       if (typeof (obj) === 'string')
-         return obj;
-       return JSON.stringify(obj, null, 2);
-      }
-    }
-  });
-
-  this.server.on('uncaughtException', function (req, res, route, error) {
-    req.log.info({
-      err: error,
-      url: req.url,
-      params: req.params
-    });
-
-    res.send(new restify.InternalError('Internal Server Error'));
-  });
-}
-
-
-/*
- * Sets custom middlewares to use for the API
- */
-ZAPI.prototype.setMiddleware = function () {
-  this.server.use(restify.acceptParser(this.server.acceptable));
-  this.server.use(restify.authorizationParser());
-  this.server.use(restify.bodyParser());
-  this.server.use(restify.queryParser());
-}
-
-
-/*
- * Sets all routes for static content
- */
-ZAPI.prototype.setStaticRoutes = function () {
-
-  // TODO: static serve the docs, favicon, etc.
-  //  waiting on https://github.com/mcavage/node-restify/issues/56 for this.
-  this.server.get('/favicon.ico', function (req, res, next) {
-      filed(__dirname + '/docs/media/img/favicon.ico').pipe(res);
-      next();
-  });
-}
-
-
-/*
- * Sets all routes for the ZAPI server
- */
-ZAPI.prototype.setRoutes = function () {
-
-  var before = [
-    addProxies,
-    interceptors.authenticate,
-    interceptors.loadMachine
-  ];
-
-  machines.mount(this.server, before);
-  tags.mount(this.server, before);
-}
-
-
-
-/*
- * Process each heartbeat. For each heartbeat we need to check if the machine
- * exists and create it on UFDS if they don't
- *
- * Sample heartbeat:
- *    ID   zonename  status
- *   [ 0, 'global', 'running', '/', '', 'liveimg', 'shared', '0'
- */
-ZAPI.prototype.onHeartbeats = function (serverUuid, hbs) {
-  var self = this;
-
-  for (var i = 0; i < hbs.length; i++) {
-    var hb = hbs[i];
-    var uuid = hb[1];
-    var status = hb[2];
-
-    if (uuid != 'global' && !machinesCache.get(uuid)) {
-      machinesCache.set(uuid, status);
-
-      cnapi.getMachine(serverUuid, uuid, function (err, machine) {
-        if (err)
-          log.error('Error talking to CNAPI', err);
-        else
-          self.addMachine(machine);
-      });
-    }
-  }
-}
-
-
-
-ZAPI.prototype.addMachine = function (machine) {
-  var params = {
-    uuid: machine.zonename,
-    owner_uuid: machine.owner_uuid
-  }
-
-  ufds.getMachine(params, function (err, m) {
-    if (err)
-      log.error('Error getting machine info from UFDS', err);
-
-    if (!m) {
-      ufds.addMachine(machine, function (err) {
-        if (err)
-          log.error('Could not create machine on UFDS', err);
-        else
-          log.debug('Added machine ' + machine.zonename + ' to UFDS');
-      });
-    }
-  });
-}
-
-
-
-/*
- * Starts listening on the port given specified by config.api.port. Takes a
- * callback as an argument. The callback is called with no arguments
- */
-ZAPI.prototype.listen = function (callback) {
-  this.server.listen(this.config.api.port, '0.0.0.0', callback);
-}
-
-
-
-/*
- * Loads UFDS into the request chain
- */
-function addProxies(req, res, next) {
-  req.config = config;
-  req.ufds = ufds;
-
-  return next();
-}
-
-
-
-var ufds;
-var zapi = new ZAPI(config);
-var cnapi = new CNAPI(config.cnapi);
-var heartbeater = new Heartbeater(config.amqp);
-
-heartbeater.on('heartbeat', zapi.onHeartbeats.bind(zapi));
-
-var machinesCache = new Cache({
-  size: 100,
-  expiry: 3600 * 1000,
-  log: log,
-  name: 'machinesCache'
-});
-
+var zapi;
 
 try {
-  config.ufds.logLevel = config.logLevel;
-  ufds = new UFDS(config.ufds);
+
+  var zapi = new ZAPI(config);
+  zapi.init();
+
 } catch (e) {
   console.error('Invalid UFDS config: ' + e.message);
   process.exit(1);
 }
 
 
-ufds.on('ready', function () {
-  zapi.setMiddleware();
-  zapi.setStaticRoutes();
-  zapi.setRoutes();
-
-  zapi.listen(function () {
-    log.info({url: zapi.server.url}, '%s listening', zapi.server.name);
-  });
+zapi.on('ready', function () {
+  zapi.listen();
 });
 
-ufds.on('error', function (err) {
-  log.error(err, 'error connecting to UFDS. Aborting.');
+
+zapi.on('error', function (err) {
+  zapi.log.error(err, 'error connecting to UFDS. Aborting.');
   process.exit(1);
 });
