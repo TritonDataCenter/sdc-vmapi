@@ -87,14 +87,14 @@ module.exports = {
     checkHeaders: function (t, headers) {
         assert.ok(t);
 
-        t.ok(headers);
-        t.ok(headers['access-control-allow-origin']);
-        t.ok(headers['access-control-allow-methods']);
-        t.ok(headers.date);
-        t.ok(headers['x-request-id']);
-        t.ok(headers['x-response-time'] >= 0);
-        t.equal(headers.server, 'Zones API');
-        t.equal(headers.connection, 'close');
+        t.ok(headers, 'good headers');
+        t.ok(headers['access-control-allow-origin'], 'allow origin header');
+        t.ok(headers['access-control-allow-methods'], 'allow methods header');
+        t.ok(headers.date, 'date header');
+        t.ok(headers['x-request-id'], 'request id header');
+        t.ok(headers['x-response-time'] >= 0, 'response time header');
+        t.equal(headers.server, 'Zones API', 'server header');
+        t.equal(headers.connection, 'Keep-Alive', 'connection header');
         // t.equal(headers['x-api-version'], '7.0.0');
     }
 

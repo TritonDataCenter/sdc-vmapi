@@ -44,10 +44,10 @@ test('ListTags (empty)', function (t) {
     client.get(path, function (err, req, res, data) {
       body = JSON.parse(data);
       t.ifError(err);
-      t.equal(res.statusCode, 200);
+      t.equal(res.statusCode, 200, "200 OK");
       common.checkHeaders(t, res.headers);
-      t.ok(body);
-      t.ok(!Object.keys(body).length);
+      t.ok(body, "body");
+      t.ok(!Object.keys(body).length, "empty body");
       t.end();
     });
   });

@@ -18,20 +18,19 @@ var ouuid;
 // --- Helpers
 
 function checkMachine(t, machine) {
-  t.ok(machine);
-  t.ok(machine.uuid);
-  t.ok(machine.alias);
-  t.ok(machine.type);
-  t.ok(machine.ram);
-  t.ok(machine.swap);
-  t.ok(machine.disk);
-  t.ok(machine.cpu_cap);
-  t.ok(machine.cpu_shares);
-  t.ok(machine.lightweight_processes);
-  t.ok(machine.setup);
-  t.ok(machine.status);
-  t.ok(machine.zfs_io_priority);
-  t.ok(machine.owner_uuid);
+  t.ok(machine.uuid, 'uuid');
+  t.ok(machine.alias, 'alias');
+  t.ok(machine.type, 'type');
+  t.ok(machine.ram, 'ram');
+  t.ok(machine.swap, 'swap');
+  t.ok(machine.disk, 'disk');
+  t.ok(machine.cpu_cap, 'cpu cap');
+  t.ok(machine.cpu_shares, 'cpu shares');
+  t.ok(machine.lightweight_processes, 'lwps');
+  t.ok(machine.setup, 'setup');
+  t.ok(machine.status, 'status');
+  t.ok(machine.zfs_io_priority, 'zfs io');
+  t.ok(machine.owner_uuid, 'owner uuid');
 }
 
 // --- Tests
@@ -39,7 +38,7 @@ function checkMachine(t, machine) {
 test('setup', function (t) {
   common.setup(function (err, _client) {
     t.ifError(err);
-    t.ok(_client);
+    t.ok(_client, 'restify client');
     client = _client;
     ouuid = client.testUser.uuid;
     t.end();
@@ -51,11 +50,11 @@ test('ListMachines (empty)', function (t) {
   client.get('/machines?owner_uuid=' + ouuid, function (err, req, res, data) {
     body = JSON.parse(data);
     t.ifError(err);
-    t.equal(res.statusCode, 200);
+    t.equal(res.statusCode, 200, "200 OK");
     common.checkHeaders(t, res.headers);
     t.ok(body);
-    t.ok(Array.isArray(body));
-    t.ok(!body.length);
+    t.ok(Array.isArray(body), "is array");
+    t.ok(!body.length, "empty array");
     t.end();
   });
 });
@@ -139,9 +138,9 @@ test('GetMachine OK', function (t) {
   client.get(path, function (err, req, res, data) {
     body = JSON.parse(data);
     t.ifError(err);
-    t.equal(res.statusCode, 200);
+    t.equal(res.statusCode, 200, "200 OK");
     common.checkHeaders(t, res.headers);
-    t.ok(body);
+    t.ok(body, "machine ok");
     checkMachine(t, body);
     t.end();
   });
