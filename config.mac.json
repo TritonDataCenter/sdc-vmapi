@@ -2,12 +2,17 @@
   "logLevel": "debug",
   "amqp": {
     "host": "10.99.99.5",
-    "queue": "heartbeat.zapi"
+    "queue": "heartbeat.zapi",
+    "reconnect": 5
   },
   "api": {
     "username": "admin",
     "password": "z3cr3t",
     "port": 8080
+  },
+  "cnapi": {
+    "maxSockets": 10,
+    "url": "http://10.99.99.7:8080"
   },
   "ufds": {
     "url": "ldaps://10.88.88.50:636",

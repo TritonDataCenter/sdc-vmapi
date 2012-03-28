@@ -20,6 +20,7 @@ var tags = require('./lib/tags');
 var Cache = require('expiring-lru-cache');
 
 var UFDS = require('./lib/ufds');
+var CNAPI = require('./lib/cnapi');
 
 var VERSION = false;
 
@@ -69,6 +70,7 @@ var log = new Logger({
 });
 
 config.amqp.log = log;
+config.cnapi.log = log;
 
 
 /*
@@ -151,6 +153,61 @@ ZAPI.prototype.setRoutes = function () {
 }
 
 
+
+/*
+ * Process each heartbeat. For each heartbeat we need to check if the machine
+ * exists and create it on UFDS if they don't
+ *
+ * Sample heartbeat:
+ *    ID   zonename  status
+ *   [ 0, 'global', 'running', '/', '', 'liveimg', 'shared', '0'
+ */
+ZAPI.prototype.onHeartbeats = function (serverUuid, hbs) {
+  var self = this;
+
+  for (var i = 0; i < hbs.length; i++) {
+    var hb = hbs[i];
+    var uuid = hb[1];
+    var status = hb[2];
+
+    if (uuid != 'global' && !machinesCache.get(uuid)) {
+      machinesCache.set(uuid, status);
+
+      cnapi.getMachine(serverUuid, uuid, function (err, machine) {
+        if (err)
+          log.error('Error talking to CNAPI', err);
+        else
+          self.addMachine(machine);
+      });
+    }
+  }
+}
+
+
+
+ZAPI.prototype.addMachine = function (machine) {
+  var params = {
+    uuid: machine.zonename,
+    owner_uuid: machine.owner_uuid
+  }
+
+  ufds.getMachine(params, function (err, m) {
+    if (err)
+      log.error('Error getting machine info from UFDS', err);
+
+    if (!m) {
+      ufds.addMachine(machine, function (err) {
+        if (err)
+          log.error('Could not create machine on UFDS', err);
+        else
+          log.debug('Added machine ' + machine.zonename + ' to UFDS');
+      });
+    }
+  });
+}
+
+
+
 /*
  * Starts listening on the port given specified by config.api.port. Takes a
  * callback as an argument. The callback is called with no arguments
@@ -159,31 +216,6 @@ ZAPI.prototype.listen = function (callback) {
   this.server.listen(this.config.api.port, '0.0.0.0', callback);
 }
 
-
-
-/*
- * Starts listening on the heartbeater AMQP queue
- */
-ZAPI.prototype.initHeartbeater = function (callback) {
-  var heartbeater = this.heartbeater = new Heartbeater(config.amqp);
-
-  heartbeater.on('connectionError', function (err) {
-
-    log.error('AMQP Connection Error ' + err.code +
-              ', re-trying in 5 seconds...');
-    setTimeout(function () {
-      heartbeater.reconnect();
-    }, 5000);
-
-  });
-
-  //  ID   zonename  status
-  // [ 0, 'global', 'running', '/', '', 'liveimg', 'shared', '0'
-  heartbeater.on('heartbeat', function (hb) {
-    // Call handler to store heartbeat on cache and update UFDS
-    // log.debug(hb);
-  });
-}
 
 
 /*
@@ -200,6 +232,18 @@ function addProxies(req, res, next) {
 
 var ufds;
 var zapi = new ZAPI(config);
+var cnapi = new CNAPI(config.cnapi);
+var heartbeater = new Heartbeater(config.amqp);
+
+heartbeater.on('heartbeat', zapi.onHeartbeats.bind(zapi));
+
+var machinesCache = new Cache({
+  size: 100,
+  expiry: 3600 * 1000,
+  log: log,
+  name: 'machinesCache'
+});
+
 
 try {
   config.ufds.logLevel = config.logLevel;
@@ -214,8 +258,6 @@ ufds.on('ready', function () {
   zapi.setMiddleware();
   zapi.setStaticRoutes();
   zapi.setRoutes();
-
-  zapi.initHeartbeater();
 
   zapi.listen(function () {
     log.info({url: zapi.server.url}, '%s listening', zapi.server.name);
