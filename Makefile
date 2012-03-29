@@ -29,10 +29,11 @@ JSL_CONF_NODE	 = tools/jsl.node.conf
 JSL_FILES_NODE   = server.js $(JS_FILES)
 JSSTYLE_FILES	 = server.js $(JS_FILES)
 JSSTYLE_FLAGS    = -o indent=2,doxygen,unparenthesized-return=0
-SMF_MANIFESTS	 = smf/manifests/zapi.xml
+SMF_MANIFESTS_IN	 = smf/manifests/zapi.xml.in
 
 include ./tools/mk/Makefile.defs
 include ./tools/mk/Makefile.node.defs
+include ./tools/mk/Makefile.node_deps.defs
 include ./tools/mk/Makefile.smf.defs
 
 ROOT            := $(shell pwd)
@@ -44,17 +45,18 @@ TMPDIR          := /tmp/$(STAMP)
 # Repo-specific targets
 #
 .PHONY: all
-all: $(SMF_MANIFESTS) | $(TAP)
+all: $(SMF_MANIFESTS) | $(TAP) $(REPO_DEPS)
 	$(NPM) rebuild
-
-$(TAP): | $(NPM_EXEC)
-	$(NPM) install
 
   (test -d node_modules/sdc-clients || \
 	git clone git@git.joyent.com:node-sdc-clients.git node_modules/sdc-clients)
 	(cd node_modules/sdc-clients && $(NPM) install)
   (test -d node_modules/amqp || \
   git clone https://github.com/postwait/node-amqp.git node_modules/amqp)
+
+
+$(TAP): | $(NPM_EXEC)
+	$(NPM) install
 
 CLEAN_FILES += $(TAP) ./node_modules/tap
 
@@ -95,5 +97,6 @@ test: $(TAP)
 
 include ./tools/mk/Makefile.deps
 include ./tools/mk/Makefile.node.targ
+include ./tools/mk/Makefile.node_deps.targ
 include ./tools/mk/Makefile.smf.targ
 include ./tools/mk/Makefile.targ
