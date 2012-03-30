@@ -11,7 +11,9 @@
     "bunyan": "0.6.8",
     "ldapjs": "0.4.8",
     "expiring-lru-cache": "2.0.0",
-    "sprintf": "0.1.1"
+    "sprintf": "0.1.1",
+    "sdc-clients": "git+ssh://git@git.joyent.com:node-sdc-clients.git",
+    "amqp": "git://github.com/postwait/node-amqp.git"
   },
   "devDependencies": {
     "tap": "0.2"

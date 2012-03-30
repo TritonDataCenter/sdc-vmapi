@@ -48,13 +48,6 @@ TMPDIR          := /tmp/$(STAMP)
 all: $(SMF_MANIFESTS) | $(TAP) $(REPO_DEPS)
 	$(NPM) rebuild
 
-  (test -d node_modules/sdc-clients || \
-	git clone git@git.joyent.com:node-sdc-clients.git node_modules/sdc-clients)
-	(cd node_modules/sdc-clients && $(NPM) install)
-  (test -d node_modules/amqp || \
-  git clone https://github.com/postwait/node-amqp.git node_modules/amqp)
-
-
 $(TAP): | $(NPM_EXEC)
 	$(NPM) install
 
