@@ -24,7 +24,7 @@
       type="method"
       name="start"
       exec="@@NODE@@ @@PREFIX@@/server.js &amp;"
-      timeout_seconds="30" />
+      timeout_seconds="30">
       <method_context working_directory="/opt/smartdc/zapi">
         <method_credential user="nobody" group="nobody" privileges="basic,net_privaddr"/>
         <method_environment>
