@@ -1,5 +1,5 @@
 {
-  "logLevel": "debug",
+  "logLevel": "trace",
   "amqp": {
     "host": "10.99.99.5",
     "queue": "heartbeat.zapi",
@@ -10,9 +10,14 @@
     "password": "z3cr3t",
     "port": 8080
   },
+  "wfapi": {
+    "url": "http://10.99.99.22:8080",
+    "username": "admin",
+    "password": "joypass123"
+  },
   "cnapi": {
     "maxSockets": 10,
-    "url": "http://10.99.99.7:8080"
+    "url": "http://10.99.99.23:8080"
   },
   "ufds": {
     "url": "ldaps://10.88.88.50:636",
