@@ -1,0 +1,61 @@
+version: 1
+
+dn: uuid=e2e2436f-1477-44f2-b057-db7cc221444b, ou=packages, o=smartdc
+objectclass: sdcpackage
+uuid: e2e2436f-1477-44f2-b057-db7cc221444b
+name: regular_128
+version: 1.0.0
+ram: 128
+disk: 5120
+swap: 256
+cpucap: 350
+lwps: 2000
+zfsiopriority: 1
+default: true
+vcpus: 1
+urn: sdc::regular_128:1.0.0
+
+dn: uuid=c069726d-191f-446e-9d95-985e8aee1e85, ou=packages, o=smartdc
+objectclass: sdcpackage
+uuid: c069726d-191f-446e-9d95-985e8aee1e85
+name: regular_256
+version: 1.0.0
+ram: 256
+disk: 5120
+swap: 512
+cpucap: 350
+lwps: 2000
+zfsiopriority: 2
+default: false
+vcpus: 1
+urn: sdc::regular_256:1.0.0
+
+dn: uuid=b74a5e15-84f7-41d2-a4d3-af535553e0df, ou=packages, o=smartdc
+objectclass: sdcpackage
+uuid: b74a5e15-84f7-41d2-a4d3-af535553e0df
+name: regular_512
+version: 1.0.0
+ram: 512
+disk: 10240
+swap: 1024
+cpucap: 350
+lwps: 2000
+zfsiopriority: 4
+default: false
+vcpus: 1
+urn: sdc::regular_512:1.0.0
+
+dn: uuid=e7ecc298-dbed-475c-813c-dd7dd50c098e, ou=packages, o=smartdc
+objectclass: sdcpackage
+uuid: e7ecc298-dbed-475c-813c-dd7dd50c098e
+name: regular_1024
+version: 1.0.0
+ram: 1024
+disk: 15360
+swap: 2048
+cpucap: 350
+lwps: 4000
+zfsiopriority: 8
+default: false
+vcpus: 1
+urn: sdc::regular_1024:1.0.0
