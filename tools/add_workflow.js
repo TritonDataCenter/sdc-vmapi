@@ -23,7 +23,7 @@ var client = restify.createJsonClient({
   url: 'http://10.99.99.22:8080'
 });
 
-var aWorkflow = require('../lib/workflows/get_packages');
+var aWorkflow = require('../lib/workflows/provision');
 assert.ok(aWorkflow);
 
 // API needs everything being JSON, while node-module takes care of
