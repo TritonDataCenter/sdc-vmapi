@@ -13,32 +13,6 @@ var USERS = 'ou=users, ' + SUFFIX;
 var USER_FMT = 'uuid=%s, ' + USERS;
 var MACHINE_FMT = 'uuid=%s, ' + USER_FMT;
 
-
-// Machine schema
-//
-// required: {
-//   uuid: 1,
-//   ram: 1,
-//   disk: 1,
-//   swap: 1,
-//   lwps: 1,
-//   cpucap: 1,
-//   cpushares: 1,
-//   zfsiopriority: 1
-// },
-// optional: {
-//   alias: 1,
-//   internalmetadata: 1,
-//   customermetadata: 1,
-//   delegatedataset: 1,
-//   disks: 0,
-//   vcpus: 1,
-//   status: 1,
-//   setup: 1,
-//   destroyed: 1
-// }
-
-var TYPES = ['zone', 'vm'];
 var STATUS = ['running', 'off'];
 var BRANDS = ['joyent', 'kvm'];
 var RAM = [128, 256, 512, 1024];
@@ -96,7 +70,6 @@ function createMachine(ufds, owner, callback) {
   machine.zfsiopriority = ZFS_IO;
   machine.alias = randAlias();
 
-  machine.type = TYPES[randNumber(TYPES.length)];
   machine.brand = BRANDS[randNumber(BRANDS.length)];
   machine.status = STATUS[randNumber(STATUS.length)];
 

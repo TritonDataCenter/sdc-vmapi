@@ -20,7 +20,7 @@ var ouuid;
 function checkMachine(t, machine) {
   t.ok(machine.uuid, 'uuid');
   t.ok(machine.alias, 'alias');
-  t.ok(machine.type, 'type');
+  t.ok(machine.brand, 'brand');
   t.ok(machine.ram, 'ram');
   t.ok(machine.swap, 'swap');
   t.ok(machine.disk, 'disk');
