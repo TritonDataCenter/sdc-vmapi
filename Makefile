@@ -28,7 +28,7 @@ JS_FILES	:= $(shell find lib test tools -name '*.js')
 JSL_CONF_NODE	 = tools/jsl.node.conf
 JSL_FILES_NODE   = server.js $(JS_FILES)
 JSSTYLE_FILES	 = server.js $(JS_FILES)
-JSSTYLE_FLAGS    = -o indent=2,doxygen,unparenthesized-return=0
+JSSTYLE_FLAGS    = -o indent=4,doxygen,unparenthesized-return=0
 SMF_MANIFESTS_IN	 = smf/manifests/zapi.xml.in
 
 include ./tools/mk/Makefile.defs

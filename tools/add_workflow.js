@@ -9,9 +9,9 @@
 
 
 var params = {
-  "ufdsUrl": "ldaps://10.88.88.50:636",
-  "ufdsDn": "cn=root",
-  "ufdsPassword": "secret"
+    'ufdsUrl': 'ldaps://10.88.88.50:636',
+    'ufdsDn': 'cn=root',
+    'ufdsPassword': 'secret'
 };
 
 
@@ -20,7 +20,7 @@ var restify = require('restify'),
     assert = require('assert');
 
 var client = restify.createJsonClient({
-  url: 'http://10.99.99.22:8080'
+    url: 'http://10.99.99.22:8080'
 });
 
 var aWorkflow = require('../lib/workflows/provision');
@@ -33,45 +33,44 @@ aWorkflow.chain[1].body = aWorkflow.chain[1].body.toString();
 aWorkflow.onerror[0].body = aWorkflow.onerror[0].body.toString();
 
 client.post('/workflows', aWorkflow, function (err, req, res, wf) {
-  assert.ifError(err);
-  assert.ok(wf.uuid);
-  console.log("Workflow created!");
-
-  var aJob = {
-    target: '/packages-' + wf.uuid,
-    workflow: wf.uuid,
-    ufdsUrl: "ldaps://10.88.88.50:636",
-    ufdsDn: "cn=root",
-    ufdsPassword: "secret"
-  };
-
-  client.post('/jobs', aJob, function (err, req, res, job) {
     assert.ifError(err);
-    assert.ok(job);
-    assert.equal(job.execution, 'queued');
-    assert.ok(job.uuid);
+    assert.ok(wf.uuid);
+    console.log('Workflow created!');
 
-    var intervalId = setInterval(function () {
-      client.get('/jobs/' + job.uuid, function (err, req, res, obj) {
+    var aJob = {
+        target: '/packages-' + wf.uuid,
+        workflow: wf.uuid,
+        ufdsUrl: 'ldaps://10.88.88.50:636',
+        ufdsDn: 'cn=root',
+        ufdsPassword: 'secret'
+    };
+
+    client.post('/jobs', aJob, function (err, req, res, job) {
         assert.ifError(err);
-        if (obj.execution === 'queued') {
-          console.log('Job waiting to be processed');
-        } else if (obj.execution === 'running') {
-          console.log('Job in progress ...');
-        } else {
-          console.log('Job finished. Here come the results:');
-          console.log(util.inspect(obj, false, 8));
-          // Only one workflow with the same name, need to delete it to allow
-          // creating it again:
-          client.del('/workflows/' + wf.uuid, function (err, req, res, obj) {
-            assert.ifError(err);
-            clearInterval(intervalId);
-            process.exit(0);
-          });
-        }
-      });
-    }, 3000);
+        assert.ok(job);
+        assert.equal(job.execution, 'queued');
+        assert.ok(job.uuid);
 
-  });
-
+        var intervalId = setInterval(function () {
+            client.get('/jobs/' + job.uuid, function (err, req, res, obj) {
+                assert.ifError(err);
+                if (obj.execution === 'queued') {
+                    console.log('Job waiting to be processed');
+                } else if (obj.execution === 'running') {
+                    console.log('Job in progress ...');
+                } else {
+                    console.log('Job finished. Here come the results:');
+                    console.log(util.inspect(obj, false, 8));
+                    // Only one workflow with the same name, need to delete it
+                    // to allow creating it again:
+                    client.del('/workflows/' + wf.uuid,
+                      function (err, req, res, obj) {
+                        assert.ifError(err);
+                        clearInterval(intervalId);
+                        process.exit(0);
+                    });
+                }
+            });
+        }, 3000);
+    });
 });

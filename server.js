@@ -32,16 +32,16 @@ function version() {
  * Loads and parse the configuration file at config.json
  */
 function loadConfig() {
-  var configPath = path.join(__dirname, 'config.json');
+    var configPath = path.join(__dirname, 'config.json');
 
-  if (!path.existsSync(configPath)) {
-    log.error('Config file not found: ' + configPath +
-      ' does not exist. Aborting.');
-    process.exit(1);
-  }
+    if (!path.existsSync(configPath)) {
+        log.error('Config file not found: ' + configPath +
+          ' does not exist. Aborting.');
+        process.exit(1);
+    }
 
-  var config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-  return config;
+    var config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+    return config;
 }
 
 var config = loadConfig();
@@ -52,21 +52,21 @@ var zapi;
 
 try {
 
-  var zapi = new ZAPI(config);
-  zapi.init();
+    var zapi = new ZAPI(config);
+    zapi.init();
 
 } catch (e) {
-  console.error('Invalid UFDS config: ' + e.message);
-  process.exit(1);
+    console.error('Invalid UFDS config: ' + e.message);
+    process.exit(1);
 }
 
 
 zapi.on('ready', function () {
-  zapi.listen();
+    zapi.listen();
 });
 
 
 zapi.on('error', function (err) {
-  zapi.log.error(err, 'error connecting to UFDS. Aborting.');
-  process.exit(1);
+    zapi.log.error(err, 'error connecting to UFDS. Aborting.');
+    process.exit(1);
 });

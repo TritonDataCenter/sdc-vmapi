@@ -28,7 +28,7 @@ var ZFS_IO = 10;
  * Very simple rand generator with a limit
  */
 function randNumber(limit) {
-  return Math.floor(Math.random() * limit);
+    return Math.floor(Math.random() * limit);
 }
 
 
@@ -37,13 +37,13 @@ function randNumber(limit) {
  * Very simple random string generator
  */
 function randAlias() {
-  var text = '';
-  var possible = 'abcdefghijklmnopqrstuvwxyz';
+    var text = '';
+    var possible = 'abcdefghijklmnopqrstuvwxyz';
 
-  for (var i = 0; i < 8; i++)
-    text += possible.charAt(Math.floor(Math.random() * possible.length));
+    for (var i = 0; i < 8; i++)
+        text += possible.charAt(Math.floor(Math.random() * possible.length));
 
-  return text;
+    return text;
 }
 
 
@@ -52,41 +52,41 @@ function randAlias() {
  * Creates a machine with random data, just for testing purposes
  */
 function createMachine(ufds, owner, callback) {
-  var dn, rand, machine, muuid, ram, date;
+    var dn, rand, machine, muuid, ram, date;
 
-  date = new Date();
-  machine = { objectclass: 'machine' };
-  muuid = uuid();
+    date = new Date();
+    machine = { objectclass: 'machine' };
+    muuid = uuid();
 
-  ram = RAM[randNumber(RAM.length)];
+    ram = RAM[randNumber(RAM.length)];
 
-  machine.uuid = muuid;
-  machine.ram = ram;
-  machine.swap = ram * 2;
-  machine.disk = DISK[randNumber(DISK.length)];
-  machine.lwps = LWPS;
-  machine.cpucap = CPU_CAP;
-  machine.cpushares = CPU_SHARES;
-  machine.zfsiopriority = ZFS_IO;
-  machine.alias = randAlias();
+    machine.uuid = muuid;
+    machine.ram = ram;
+    machine.swap = ram * 2;
+    machine.disk = DISK[randNumber(DISK.length)];
+    machine.lwps = LWPS;
+    machine.cpucap = CPU_CAP;
+    machine.cpushares = CPU_SHARES;
+    machine.zfsiopriority = ZFS_IO;
+    machine.alias = randAlias();
 
-  machine.brand = BRANDS[randNumber(BRANDS.length)];
-  machine.status = STATUS[randNumber(STATUS.length)];
+    machine.brand = BRANDS[randNumber(BRANDS.length)];
+    machine.status = STATUS[randNumber(STATUS.length)];
 
-  machine.setup = date;
+    machine.setup = date;
 
-  machine.internalmetadata = {
-    uuid: muuid
-  };
+    machine.internalmetadata = {
+        uuid: muuid
+    };
 
-  dn = sprintf(MACHINE_FMT, muuid, owner);
+    dn = sprintf(MACHINE_FMT, muuid, owner);
 
-  ufds.add(dn, machine, function (err) {
-    if (err)
-      callback(err, machine);
-    else
-      callback(null, machine);
-  });
+    ufds.add(dn, machine, function (err) {
+        if (err)
+            callback(err, machine);
+        else
+            callback(null, machine);
+    });
 }
 
 module.exports = createMachine;
