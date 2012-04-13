@@ -69,6 +69,31 @@ Returns a list of machines according the specified search filter.
 ||status||String||'running' or 'off'||
 ||ram||Number||Amount of memory of the machine||
 
+### Example
+
+    GET /machines
+
+    [
+      {
+        "uuid": "00956725-4689-4e2c-9d25-f2172f496f9c",
+        "alias": "",
+        "brand": "joyent",
+        "ram": "128",
+        "swap": "128",
+        "disk": "10",
+        "cpu_cap": "",
+        "cpu_shares": "100",
+        "lightweight_processes": "2000",
+        "setup": "2012-04-12T21:57:01.635Z",
+        "status": "stopped",
+        "zfs_io_priority": "100",
+        "owner_uuid": "930896af-bf8c-48d4-885c-6573a94b1853",
+        "nics": [],
+        "customer_metadata": {},
+        "internal_metadata": {}
+      }
+    ]
+
 
 ## GetMachine (GET /machines/:uuid)
 
@@ -79,10 +104,77 @@ Returns a machine with the specified UUID.
 ||uuid||UUID||Machine UUID||
 ||owner_uuid||UUID||Machine Owner||
 
+### Example
+
+    GET /machines/00956725-4689-4e2c-9d25-f2172f496f9c
+
+    {
+      "uuid": "00956725-4689-4e2c-9d25-f2172f496f9c",
+      "alias": "",
+      "brand": "joyent",
+      "ram": "128",
+      "swap": "128",
+      "disk": "10",
+      "cpu_cap": "",
+      "cpu_shares": "100",
+      "lightweight_processes": "2000",
+      "setup": "2012-04-12T21:57:01.635Z",
+      "status": "stopped",
+      "zfs_io_priority": "100",
+      "owner_uuid": "930896af-bf8c-48d4-885c-6573a94b1853",
+      "nics": [],
+      "customer_metadata": {},
+      "internal_metadata": {}
+    }
+
+
+## CreateMachine (POST /machines)
+
+Queues a machine provision. This will validate all parameters and create a new job on workflow API when the request is considered to be valid. The response is
+the same as a GET to /machines/:uuid, however some machine attributes might not be present since it has not been provisioned yet. The response also contains a Job-Location header which can be used to get more information about the provisioning job that is being executed by workflow API.
+
+### Inputs
+
+||uuid||UUID||Machine UUID||
+||owner_uuid||UUID||Machine Owner||
+||dataset_uuid||UUID||Dataset UUID||
+||brand||String||'joyent' or 'kvm'||
+||ram||Number||Machine RAM||
+
+### Example
+
+    POST /machines
+      -d owner_uuid=930896af-bf8c-48d4-885c-6573a94b1853 \
+      -d dataset_uuid=28445220-6eac-11e1-9ce8-5f14ed22e782 \
+      -d brand=joyent \
+      -d ram=128
+
+    HTTP/1.1 201 Created
+    Job-Location: /jobs/6ad3a288-31cf-44e0-8d18-9b3f2a031067
+
+    {
+      "uuid": "e9bd0ed1-7de3-4c66-a649-d675dbce6e83",
+      "alias": "",
+      "brand": "joyent",
+      "ram": "128",
+      "swap": "",
+      "disk": "",
+      "cpu_cap": "",
+      "cpu_shares": "",
+      "lightweight_processes": "",
+      "setup": "",
+      "status": "provisioning",
+      "zfs_io_priority": "",
+      "owner_uuid": "930896af-bf8c-48d4-885c-6573a94b1853",
+      "nics": [],
+      "customer_metadata": {},
+      "internal_metadata": {}
+    }
+
 
 ## UpdateMachine (POST /machines/:uuid)
 
-Queues an update operation on a machine. Only four operations are supported at this moment: start, stop, reboot and resize. Resize is the only action that takes arguments. These actions are not currently implemented in the backend, so they will return "202 Accepted" when called.
+Queues an update operation on a machine. Only four operations are supported at this moment: **start, stop, reboot and resize**. Resize is the only action that takes arguments. These actions are not currently implemented in the backend, so they will return "202 Accepted" when called.
 
 ### Inputs
 
@@ -90,12 +182,21 @@ Queues an update operation on a machine. Only four operations are supported at t
 ||owner_uuid||UUID||Machine Owner||
 ||action||String||start, stop, reboot or resize||
 
+### Example
+
+    POST /machines/e9bd0ed1-7de3-4c66-a649-d675dbce6e83 \
+      -d action=stop
+
+    HTTP/1.1 202 Accepted
+
 
 # Machine Tags
 
 Machine Tags allow machines to be grouped by any criteria. Tags are key/value pairs that can be assigned to any machine. For example, machines can be grouped by tagging them as a database role with a tag such as '{ role: "database" }'.
 
-## ListMachines (GET /machines/:uuid/tags)
+**NOTE:** currently tags are only created on UFDS and not communicated to CNAPI as a machine_update task yet.
+
+## ListTags (GET /machines/:uuid/tags)
 
 Returns a list of tags assigned to machine.
 
@@ -103,6 +204,15 @@ Returns a list of tags assigned to machine.
 
 ||uuid||UUID||Machine UUID||
 ||owner_uuid||UUID||Machine Owner||
+
+### Example
+
+    GET /machines/da0dfac1-341e-4e51-b357-99f7355f1008/tags
+
+    {
+      "role": "dns",
+      "customer": "tracy"
+    }
 
 
 ## GetTag (GET /machines/:uuid/tags/:key)
@@ -115,6 +225,12 @@ Returns a machine tag.
 ||owner_uuid||UUID||Machine Owner||
 ||key||String||Tag Key||
 
+### Example
+
+    GET /machines/da0dfac1-341e-4e51-b357-99f7355f1008/tags/role
+
+    dns
+
 
 ## AddTags (POST /machines/:uuid/tags)
 
@@ -125,6 +241,15 @@ Adds a new tag to a machine.
 ||uuid||UUID||Machine UUID||
 ||owner_uuid||UUID||Machine Owner||
 ||key||String||Tag Key||
+
+### Example
+
+    POST /machines/da0dfac1-341e-4e51-b357-99f7355f1008/tags
+      -d customer=tracy
+
+    {
+      "customer": "tracy"
+    }
 
 
 ## DeleteTag (DELETE /machines/:uuid/tags/:key)
@@ -137,6 +262,12 @@ Deletes a tag from a machine.
 ||owner_uuid||UUID||Machine Owner||
 ||key||String||Tag Key||
 
+### Example
+
+    DELETE /machines/da0dfac1-341e-4e51-b357-99f7355f1008/tags/role
+
+    HTTP/1.1 204 No Content
+
 
 ## DeleteTags (DELETE /machines/:uuid/tags)
 
@@ -146,3 +277,85 @@ Deletes all tags from a machine.
 
 ||uuid||UUID||Machine UUID||
 ||owner_uuid||UUID||Machine Owner||
+
+### Example
+
+    DELETE /machines/da0dfac1-341e-4e51-b357-99f7355f1008/tags
+
+    HTTP/1.1 204 No Content
+
+
+# Jobs
+
+Jobs are created when an operation needs to be performed on a machine. Examples of jobs that can be created are machine lifecycle tasks such as start and reboot. Provision jobs are created from calling "POST /machines". Currently a "Job-Location" header is added to the response of actions end up calling the workflow API, however this behavior might change. Due to limitations in the workflow API, it is not possible to perform a search on jobs based on parameters such as machine UUID or owner UUID, so in order to this we need to have a cached relation of jobs and machines locally.
+
+
+## GetJob (GET /jobs/:uuid)
+
+Returns a job with the specified UUID.
+
+### Inputs
+
+||uuid||UUID||Job UUID||
+
+### Example
+
+    GET /jobs/6ad3a288-31cf-44e0-8d18-9b3f2a031067
+
+    {
+      "name": "provision-4e4ff04b-5cc4-437e-92da-2403a634e74f",
+      "uuid": "6ad3a288-31cf-44e0-8d18-9b3f2a031067",
+      "execution": "succeeded",
+      "params": {
+        "owner_uuid": "930896af-bf8c-48d4-885c-6573a94b1853",
+        "dataset_uuid": "28445220-6eac-11e1-9ce8-5f14ed22e782",
+        "brand": "joyent",
+        "ram": "128",
+        "zonename": "e9bd0ed1-7de3-4c66-a649-d675dbce6e83",
+        "ufdsUrl": "ldaps://10.88.88.50:636",
+        "ufdsDn": "cn=root",
+        "ufdsPassword": "secret",
+        "dapiUrl": "http://10.99.99.24",
+        "dapiUsername": "admin",
+        "dapiPassword": "z3cr3t",
+        "cnapiUrl": "http://10.99.99.23",
+        "uuid": "e9bd0ed1-7de3-4c66-a649-d675dbce6e83",
+        "server_uuid": "564da914-5047-48f0-ba5e-26761097330a",
+        "task": {
+          "id": "70129767",
+          "progress": 100,
+          "status": "complete"
+        }
+      },
+      "info": null,
+      "exec_after": "2012-04-13T18:17:15.194Z",
+      "created_at": "2012-04-13T18:17:15.198Z",
+      "timeout": 180,
+      "chain_results": [
+        {
+          "result": "All parameters OK!",
+          "error": "",
+          "started_at": "2012-04-13T18:17:17.512Z",
+          "finished_at": "2012-04-13T18:17:18.619Z"
+        },
+        {
+          "result": "Got servers!",
+          "error": "",
+          "started_at": "2012-04-13T18:17:18.628Z",
+          "finished_at": "2012-04-13T18:17:21.737Z"
+        },
+        {
+          "result": "Server allocated!",
+          "error": "",
+          "started_at": "2012-04-13T18:17:21.743Z",
+          "finished_at": "2012-04-13T18:17:23.137Z"
+        },
+        {
+          "result": "Provision succeeded!",
+          "error": "",
+          "started_at": "2012-04-13T18:17:23.197Z",
+          "finished_at": "2012-04-13T18:18:42.726Z"
+        }
+      ]
+    }
+
