@@ -11,7 +11,7 @@ var SUFFIX = 'o=smartdc';
 
 var USERS = 'ou=users, ' + SUFFIX;
 var USER_FMT = 'uuid=%s, ' + USERS;
-var MACHINE_FMT = 'uuid=%s, ' + USER_FMT;
+var MACHINE_FMT = 'machine=%s, ' + USER_FMT;
 
 var STATUS = ['running', 'off'];
 var BRANDS = ['joyent', 'kvm'];

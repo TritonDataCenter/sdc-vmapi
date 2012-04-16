@@ -108,7 +108,7 @@ test('DeleteTags OK', function (t) {
 
 
 test('teardown', function (t) {
-    var machineDn = 'uuid=' + muuid + ', ' + client.testUser.dn;
+    var machineDn = 'machine=' + muuid + ', ' + client.testUser.dn;
 
     client.ufds.del(machineDn, function (err) {
         t.ifError(err);
