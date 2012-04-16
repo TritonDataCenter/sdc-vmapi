@@ -74,10 +74,11 @@ function createMachine(ufds, owner, callback) {
     machine.status = STATUS[randNumber(STATUS.length)];
 
     machine.setup = date;
+    machine.tags = JSON.stringify({});
 
-    machine.internalmetadata = {
+    machine.internalmetadata = JSON.stringify({
         uuid: muuid
-    };
+    });
 
     dn = sprintf(MACHINE_FMT, muuid, owner);
 
