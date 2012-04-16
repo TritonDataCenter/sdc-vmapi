@@ -13,6 +13,7 @@ var client;
 var newMachine;
 var muuid;
 var ouuid;
+var jobLocation;
 
 
 // --- Helpers
@@ -31,6 +32,13 @@ function checkMachine(t, machine) {
     t.ok(machine.status, 'status');
     t.ok(machine.zfs_io_priority, 'zfs io');
     t.ok(machine.owner_uuid, 'owner uuid');
+}
+
+function checkJob(t, job) {
+    t.ok(job.uuid, 'uuid');
+    t.ok(job.name, 'name');
+    t.ok(job.execution, 'execution');
+    t.ok(job.params, 'params');
 }
 
 // --- Tests
@@ -143,6 +151,52 @@ test('GetMachine OK', function (t) {
         common.checkHeaders(t, res.headers);
         t.ok(body, 'machine ok');
         checkMachine(t, body);
+        t.end();
+    });
+});
+
+
+test('CreateMachine NotOK', function (t) {
+    client.post('/machines', { owner_uuid: ouuid },
+      function (err, req, res, data) {
+        t.equal(res.statusCode, 409);
+        common.checkHeaders(t, res.headers);
+        t.end();
+    });
+});
+
+
+test('CreateMachine OK', function (t) {
+    var machine = {
+        owner_uuid: ouuid,
+        dataset_uuid: '28445220-6eac-11e1-9ce8-5f14ed22e782',
+        brand: 'joyent',
+        ram: 64
+    };
+
+    client.post('/machines', machine,
+      function (err, req, res, data) {
+          body = JSON.parse(data);
+          t.ifError(err);
+          t.equal(res.statusCode, 201, '201 Created');
+          common.checkHeaders(t, res.headers);
+          t.ok(body, 'machine ok');
+          t.ok(res.headers['job-location'], 'job location');
+
+          jobLocation = res.headers['job-location'];
+          t.end();
+    });
+});
+
+
+test('GetJob OK', function (t) {
+    client.get(jobLocation, function (err, req, res, data) {
+        body = JSON.parse(data);
+        t.ifError(err);
+        t.equal(res.statusCode, 200, '200 OK');
+        common.checkHeaders(t, res.headers);
+        t.ok(body, 'job ok');
+        checkJob(t, body);
         t.end();
     });
 });
