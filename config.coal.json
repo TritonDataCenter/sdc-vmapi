@@ -1,7 +1,7 @@
 {
-  "logLevel": "trace",
+  "logLevel": "debug",
   "amqp": {
-    "host": "10.99.99.5",
+    "host": "10.99.99.12",
     "queue": "heartbeat.zapi",
     "reconnect": 5
   },
@@ -11,22 +11,23 @@
     "port": 8080
   },
   "wfapi": {
-    "url": "http://10.99.99.22:8080",
+    "workflows": ["provision", "start", "stop", "reboot"],
+    "url": "http://10.99.99.19",
     "username": "admin",
     "password": "joypass123"
   },
   "cnapi": {
     "maxSockets": 10,
-    "url": "http://10.99.99.23:8080"
+    "url": "http://10.99.99.20"
   },
   "dapi": {
     "maxSockets": 10,
-    "url": "http://10.99.99.25:8080",
+    "url": "http://10.99.99.21",
     "username": "admin",
     "password": "z3cr3t"
   },
   "ufds": {
-    "url": "ldaps://10.88.88.50:636",
+    "url": "ldaps://10.88.88.8:636",
     "bindDN": "cn=root",
     "bindPassword": "secret",
     "cache": {
