@@ -11,7 +11,7 @@
     "port": 8080
   },
   "wfapi": {
-    "workflows": ["provision", "start", "stop", "reboot"],
+    "workflows": ["provision", "start", "stop", "reboot", "destroy"],
     "url": "http://10.99.99.19",
     "username": "admin",
     "password": "joypass123"
