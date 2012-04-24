@@ -15,6 +15,12 @@ var muuid;
 var ouuid;
 var jobLocation;
 
+var newUuid;
+
+var TAP_CONF = {
+    timeout: 'Infinity '
+};
+
 
 // --- Helpers
 
@@ -34,11 +40,38 @@ function checkMachine(t, machine) {
     t.ok(machine.owner_uuid, 'owner uuid');
 }
 
+
 function checkJob(t, job) {
     t.ok(job.uuid, 'uuid');
     t.ok(job.name, 'name');
     t.ok(job.execution, 'execution');
     t.ok(job.params, 'params');
+}
+
+
+function checkState(url, state, callback) {
+    return client.get(url, function(err, req, res, data) {
+        if (err)
+            return callback(err)
+
+        body = JSON.parse(data);
+        return callback(null, (body ? body.execution === state : false));
+    });
+}
+
+
+function waitForState(url, state, callback) {
+    return checkState(url, state, function(err, ready) {
+        if (err)
+            return callback(err);
+
+        if (!ready)
+            return setTimeout(function() {
+                waitForState(url, state, callback);
+            }, 3000);
+
+        return callback(null);
+    });
 }
 
 // --- Tests
@@ -184,6 +217,7 @@ test('CreateMachine OK', function (t) {
           t.ok(res.headers['job-location'], 'job location');
 
           jobLocation = res.headers['job-location'];
+          newUuid = body.uuid;
           t.end();
     });
 });
@@ -193,10 +227,41 @@ test('GetJob OK', function (t) {
     client.get(jobLocation, function (err, req, res, data) {
         body = JSON.parse(data);
         t.ifError(err);
-        t.equal(res.statusCode, 200, '200 OK');
+        t.equal(res.statusCode, 200, 'GetJob 200 OK');
         common.checkHeaders(t, res.headers);
         t.ok(body, 'job ok');
         checkJob(t, body);
+        t.end();
+    });
+});
+
+
+test('Wait For Provisioned', TAP_CONF, function(t) {
+    waitForState(jobLocation, 'succeeded', function(err) {
+        t.ifError(err);
+        t.end();
+    });
+});
+
+
+test('StopMachine OK', function (t) {
+    client.post('/machines/' + newUuid, { action: 'stop' },
+      function (err, req, res, data) {
+          body = JSON.parse(data);
+          t.ifError(err);
+          t.equal(res.statusCode, 200, 'Reboot 200 OK');
+          common.checkHeaders(t, res.headers);
+          t.ok(res.headers['job-location'], 'job location');
+
+          jobLocation = res.headers['job-location'];
+          t.end();
+    });
+});
+
+
+test('Wait For Stopped', TAP_CONF, function(t) {
+    waitForState(jobLocation, 'succeeded', function(err) {
+        t.ifError(err);
         t.end();
     });
 });
