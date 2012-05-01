@@ -12,7 +12,7 @@ var UFDS = require('sdc-clients').UFDS;
 
 // --- Globals
 
-var USER = 'admin'
+var USER = 'admin';
 var PASSWD = 'z3cr3t';
 
 
@@ -52,7 +52,7 @@ module.exports = {
         var ufds = new UFDS({
             url: 'ldaps://10.88.88.8',
             bindDN: 'cn=root',
-            bindPassword: 'secret',
+            bindPassword: 'secret'
         });
         ufds.on('error', function (err) {
             return callback(err);
@@ -69,18 +69,18 @@ module.exports = {
 
                 client.testUser = newUser;
                 client.ufds = ufds;
-                client.teardown = function teardown(callback) {
-                    client.ufds.deleteUser(client.testUser, function (err) {
+                client.teardown = function teardown(cb) {
+                    client.ufds.deleteUser(client.testUser, function (anErr) {
                         if (err) // blindly ignore
-                            return callback(err);
+                            return cb(anErr);
 
                         ufds.close(function () {});
-                        return callback(null);
+                        return cb(null);
                     });
                 };
 
                 return callback(null, client);
-            })
+            });
         });
     },
 

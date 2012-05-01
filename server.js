@@ -35,13 +35,13 @@ function loadConfig() {
     var configPath = path.join(__dirname, 'config.json');
 
     if (!path.existsSync(configPath)) {
-        log.error('Config file not found: ' + configPath +
+        console.error('Config file not found: ' + configPath +
           ' does not exist. Aborting.');
         process.exit(1);
     }
 
-    var config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-    return config;
+    var theConfig = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+    return theConfig;
 }
 
 var config = loadConfig();
@@ -52,7 +52,7 @@ var zapi;
 
 try {
 
-    var zapi = new ZAPI(config);
+    zapi = new ZAPI(config);
     zapi.init();
 
 } catch (e) {

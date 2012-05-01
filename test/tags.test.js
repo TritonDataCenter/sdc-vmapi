@@ -34,15 +34,15 @@ test('setup', function (t) {
 
 
 test('ListTags (empty)', function (t) {
-    createMachine(client.ufds, ouuid, function (err, machine) {
-        t.ifError(err);
+    createMachine(client.ufds, ouuid, function (anErr, machine) {
+        t.ifError(anErr);
         newMachine = machine;
         muuid = newMachine.uuid;
 
         var path = '/machines/' + muuid + '/tags?owner_uuid=' + ouuid;
 
         client.get(path, function (err, req, res, data) {
-            body = JSON.parse(data);
+            var body = JSON.parse(data);
             t.ifError(err);
             t.equal(res.statusCode, 200, '200 OK');
             common.checkHeaders(t, res.headers);
@@ -59,7 +59,7 @@ test('AddTags OK', function (t) {
     var query = 'role=database&group=deployment';
 
     client.post(path, query, function (err, req, res, data) {
-        body = JSON.parse(data);
+        var body = JSON.parse(data);
         t.ifError(err);
         t.equal(res.statusCode, 200);
         common.checkHeaders(t, res.headers);
@@ -73,6 +73,7 @@ test('GetTag OK', function (t) {
     var path = '/machines/' + muuid + '/tags/role?owner_uuid=' + ouuid;
 
     client.get(path, function (err, req, res, data) {
+        var body = JSON.parse(data);
         t.ifError(err);
         t.equal(res.statusCode, 200);
         common.checkHeaders(t, res.headers);
@@ -110,8 +111,8 @@ test('DeleteTags OK', function (t) {
 test('teardown', function (t) {
     var machineDn = 'machine=' + muuid + ', ' + client.testUser.dn;
 
-    client.ufds.del(machineDn, function (err) {
-        t.ifError(err);
+    client.ufds.del(machineDn, function (anErr) {
+        t.ifError(anErr);
 
         client.teardown(function (err) {
             t.ifError(err);

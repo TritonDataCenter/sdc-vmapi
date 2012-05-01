@@ -50,23 +50,23 @@ function checkJob(t, job) {
 
 
 function checkState(url, state, callback) {
-    return client.get(url, function(err, req, res, data) {
+    return client.get(url, function (err, req, res, data) {
         if (err)
-            return callback(err)
+            return callback(err);
 
-        body = JSON.parse(data);
+        var body = JSON.parse(data);
         return callback(null, (body ? body.execution === state : false));
     });
 }
 
 
 function waitForState(url, state, callback) {
-    return checkState(url, state, function(err, ready) {
+    return checkState(url, state, function (err, ready) {
         if (err)
             return callback(err);
 
         if (!ready)
-            return setTimeout(function() {
+            return setTimeout(function () {
                 waitForState(url, state, callback);
             }, 3000);
 
@@ -89,7 +89,7 @@ test('setup', function (t) {
 
 test('ListMachines (empty)', function (t) {
     client.get('/machines?owner_uuid=' + ouuid, function (err, req, res, data) {
-        body = JSON.parse(data);
+        var body = JSON.parse(data);
         t.ifError(err);
         t.equal(res.statusCode, 200, '200 OK');
         common.checkHeaders(t, res.headers);
@@ -103,13 +103,13 @@ test('ListMachines (empty)', function (t) {
 
 // Need to stub creating a machince workflow API is not ready yet
 test('ListMachines OK', function (t) {
-    createMachine(client.ufds, ouuid, function (err, machine) {
-        t.ifError(err);
+    createMachine(client.ufds, ouuid, function (anErr, machine) {
+        t.ifError(anErr);
         newMachine = machine;
 
         client.get('/machines?owner_uuid=' + ouuid,
           function (err, req, res, data) {
-            body = JSON.parse(data);
+            var body = JSON.parse(data);
             t.ifError(err);
             t.equal(res.statusCode, 200);
             common.checkHeaders(t, res.headers);
@@ -130,7 +130,7 @@ test('ListMachines by ram (empty)', function (t) {
     var path = '/machines?ram=32&owner_uuid=' + ouuid;
 
     client.get(path, function (err, req, res, data) {
-        body = JSON.parse(data);
+        var body = JSON.parse(data);
         t.ifError(err);
         t.equal(res.statusCode, 200);
         common.checkHeaders(t, res.headers);
@@ -146,7 +146,7 @@ test('ListMachines by ram OK', function (t) {
     var path = '/machines?ram=' + newMachine.ram + '&owner_uuid=' + ouuid;
 
     client.get(path, function (err, req, res, data) {
-        body = JSON.parse(data);
+        var body = JSON.parse(data);
         t.ifError(err);
         t.equal(res.statusCode, 200);
         common.checkHeaders(t, res.headers);
@@ -178,7 +178,7 @@ test('GetMachine OK', function (t) {
     var path = '/machines/' + muuid + '?owner_uuid=' + ouuid;
 
     client.get(path, function (err, req, res, data) {
-        body = JSON.parse(data);
+        var body = JSON.parse(data);
         t.ifError(err);
         t.equal(res.statusCode, 200, '200 OK');
         common.checkHeaders(t, res.headers);
@@ -209,7 +209,7 @@ test('CreateMachine OK', function (t) {
 
     client.post('/machines', machine,
       function (err, req, res, data) {
-          body = JSON.parse(data);
+          var body = JSON.parse(data);
           t.ifError(err);
           t.equal(res.statusCode, 201, '201 Created');
           common.checkHeaders(t, res.headers);
@@ -225,7 +225,7 @@ test('CreateMachine OK', function (t) {
 
 test('GetJob OK', function (t) {
     client.get(jobLocation, function (err, req, res, data) {
-        body = JSON.parse(data);
+        var body = JSON.parse(data);
         t.ifError(err);
         t.equal(res.statusCode, 200, 'GetJob 200 OK');
         common.checkHeaders(t, res.headers);
@@ -236,8 +236,8 @@ test('GetJob OK', function (t) {
 });
 
 
-test('Wait For Provisioned', TAP_CONF, function(t) {
-    waitForState(jobLocation, 'succeeded', function(err) {
+test('Wait For Provisioned', TAP_CONF, function (t) {
+    waitForState(jobLocation, 'succeeded', function (err) {
         t.ifError(err);
         t.end();
     });
@@ -247,7 +247,6 @@ test('Wait For Provisioned', TAP_CONF, function(t) {
 test('StopMachine OK', function (t) {
     client.post('/machines/' + newUuid, { action: 'stop' },
       function (err, req, res, data) {
-          body = JSON.parse(data);
           t.ifError(err);
           t.equal(res.statusCode, 200, 'Reboot 200 OK');
           common.checkHeaders(t, res.headers);
@@ -259,8 +258,8 @@ test('StopMachine OK', function (t) {
 });
 
 
-test('Wait For Stopped', TAP_CONF, function(t) {
-    waitForState(jobLocation, 'succeeded', function(err) {
+test('Wait For Stopped', TAP_CONF, function (t) {
+    waitForState(jobLocation, 'succeeded', function (err) {
         t.ifError(err);
         t.end();
     });
@@ -270,8 +269,8 @@ test('Wait For Stopped', TAP_CONF, function(t) {
 test('teardown', function (t) {
     var machineDn = 'machine=' + muuid + ', ' + client.testUser.dn;
 
-    client.ufds.del(machineDn, function (err) {
-        t.ifError(err);
+    client.ufds.del(machineDn, function (anErr) {
+        t.ifError(anErr);
 
         client.teardown(function (err) {
             t.ifError(err);
