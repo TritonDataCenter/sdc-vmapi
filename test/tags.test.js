@@ -73,11 +73,10 @@ test('GetTag OK', function (t) {
     var path = '/machines/' + muuid + '/tags/role?owner_uuid=' + ouuid;
 
     client.get(path, function (err, req, res, data) {
-        var body = JSON.parse(data);
         t.ifError(err);
         t.equal(res.statusCode, 200);
         common.checkHeaders(t, res.headers);
-        t.ok(body);
+        t.ok(data);
         t.equal(data, 'database');
         t.end();
     });

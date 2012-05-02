@@ -14,8 +14,11 @@ var newMachine;
 var muuid;
 var ouuid;
 var jobLocation;
+var machineLocation;
 
 var newUuid;
+
+var DATASET = 'a93fda38-80aa-11e1-b8c1-8b1f33cd9007';
 
 var TAP_CONF = {
     timeout: 'Infinity '
@@ -55,7 +58,7 @@ function checkState(url, state, callback) {
             return callback(err);
 
         var body = JSON.parse(data);
-        return callback(null, (body ? body.execution === state : false));
+        return callback(null, (body ? body.status === state : false));
     });
 }
 
@@ -70,7 +73,9 @@ function waitForState(url, state, callback) {
                 waitForState(url, state, callback);
             }, 3000);
 
-        return callback(null);
+        return setTimeout(function () {
+            callback(null);
+        }, 20000);
     });
 }
 
@@ -202,7 +207,7 @@ test('CreateMachine NotOK', function (t) {
 test('CreateMachine OK', function (t) {
     var machine = {
         owner_uuid: ouuid,
-        dataset_uuid: '28445220-6eac-11e1-9ce8-5f14ed22e782',
+        dataset_uuid: DATASET,
         brand: 'joyent',
         ram: 64
     };
@@ -237,7 +242,8 @@ test('GetJob OK', function (t) {
 
 
 test('Wait For Provisioned', TAP_CONF, function (t) {
-    waitForState(jobLocation, 'succeeded', function (err) {
+    machineLocation = '/machines/' + newUuid;
+    waitForState(machineLocation, 'running', function (err) {
         t.ifError(err);
         t.end();
     });
@@ -245,7 +251,51 @@ test('Wait For Provisioned', TAP_CONF, function (t) {
 
 
 test('StopMachine OK', function (t) {
-    client.post('/machines/' + newUuid, { action: 'stop' },
+    client.post(machineLocation, { action: 'stop' },
+      function (err, req, res, data) {
+          t.ifError(err);
+          t.equal(res.statusCode, 200, 'Stop 200 OK');
+          common.checkHeaders(t, res.headers);
+          t.ok(res.headers['job-location'], 'job location');
+
+          jobLocation = res.headers['job-location'];
+          t.end();
+    });
+});
+
+
+test('Wait For Stopped', TAP_CONF, function (t) {
+    waitForState(machineLocation, 'stopped', function (err) {
+        t.ifError(err);
+        t.end();
+    });
+});
+
+
+test('StartMachine OK', function (t) {
+    client.post(machineLocation, { action: 'start' },
+      function (err, req, res, data) {
+          t.ifError(err);
+          t.equal(res.statusCode, 200, 'Start 200 OK');
+          common.checkHeaders(t, res.headers);
+          t.ok(res.headers['job-location'], 'job location');
+
+          jobLocation = res.headers['job-location'];
+          t.end();
+    });
+});
+
+
+test('Wait For Started', TAP_CONF, function (t) {
+    waitForState(machineLocation, 'running', function (err) {
+        t.ifError(err);
+        t.end();
+    });
+});
+
+
+test('RebootMachine OK', function (t) {
+    client.post(machineLocation, { action: 'reboot' },
       function (err, req, res, data) {
           t.ifError(err);
           t.equal(res.statusCode, 200, 'Reboot 200 OK');
@@ -258,10 +308,23 @@ test('StopMachine OK', function (t) {
 });
 
 
-test('Wait For Stopped', TAP_CONF, function (t) {
-    waitForState(jobLocation, 'succeeded', function (err) {
+test('Wait For Rebooted', TAP_CONF, function (t) {
+    waitForState(machineLocation, 'running', function (err) {
         t.ifError(err);
         t.end();
+    });
+});
+
+
+test('DestroyMachine OK', function (t) {
+    client.del(machineLocation, function (err, req, res, data) {
+          t.ifError(err);
+          t.equal(res.statusCode, 200, 'Destroy 200 OK');
+          common.checkHeaders(t, res.headers);
+          t.ok(res.headers['job-location'], 'job location');
+
+          jobLocation = res.headers['job-location'];
+          t.end();
     });
 });
 
