@@ -62,21 +62,22 @@ function createMachine(ufds, owner, callback) {
 
     machine.uuid = muuid;
     machine.ram = ram;
-    machine.swap = ram * 2;
-    machine.disk = DISK[randNumber(DISK.length)];
-    machine.lwps = LWPS;
-    machine.cpucap = CPU_CAP;
-    machine.cpushares = CPU_SHARES;
-    machine.zfsiopriority = ZFS_IO;
+    machine.max_physical_memory = ram;
+    machine.max_swap = ram * 2;
+    machine.quota = DISK[randNumber(DISK.length)];
+    machine.max_lwps = LWPS;
+    machine.cpu_cap = CPU_CAP;
+    machine.cpu_shares = CPU_SHARES;
+    machine.zfs_io_priority = ZFS_IO;
     machine.alias = randAlias();
 
     machine.brand = BRANDS[randNumber(BRANDS.length)];
-    machine.status = STATUS[randNumber(STATUS.length)];
+    machine.state = STATUS[randNumber(STATUS.length)];
 
-    machine.setup = date;
+    machine.create_timestamp = date;
     machine.tags = JSON.stringify({});
 
-    machine.internalmetadata = JSON.stringify({
+    machine.internal_metadata = JSON.stringify({
         uuid: muuid
     });
 

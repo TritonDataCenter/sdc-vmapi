@@ -18,7 +18,7 @@ var machineLocation;
 
 var newUuid;
 
-var DATASET = 'a93fda38-80aa-11e1-b8c1-8b1f33cd9007';
+var DATASET = '01b2c898-945f-11e1-a523-af1afbe22822';
 
 var TAP_CONF = {
     timeout: 'Infinity '
@@ -32,13 +32,13 @@ function checkMachine(t, machine) {
     t.ok(machine.alias, 'alias');
     t.ok(machine.brand, 'brand');
     t.ok(machine.ram, 'ram');
-    t.ok(machine.swap, 'swap');
-    t.ok(machine.disk, 'disk');
+    t.ok(machine.max_swap, 'swap');
+    t.ok(machine.quota, 'disk');
     t.ok(machine.cpu_cap, 'cpu cap');
     t.ok(machine.cpu_shares, 'cpu shares');
-    t.ok(machine.lightweight_processes, 'lwps');
-    t.ok(machine.setup, 'setup');
-    t.ok(machine.status, 'status');
+    t.ok(machine.max_lwps, 'lwps');
+    t.ok(machine.create_timestamp, 'create timestamp');
+    t.ok(machine.state, 'state');
     t.ok(machine.zfs_io_priority, 'zfs io');
     t.ok(machine.owner_uuid, 'owner uuid');
 }
@@ -58,7 +58,7 @@ function checkState(url, state, callback) {
             return callback(err);
 
         var body = JSON.parse(data);
-        return callback(null, (body ? body.status === state : false));
+        return callback(null, (body ? body.state === state : false));
     });
 }
 
