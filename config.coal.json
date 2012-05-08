@@ -1,5 +1,6 @@
 {
   "logLevel": "debug",
+  "maxSockets": 10,
   "amqp": {
     "host": "10.99.99.12",
     "queue": "heartbeat.zapi",
@@ -17,14 +18,17 @@
     "password": "joypass123"
   },
   "cnapi": {
-    "maxSockets": 10,
     "url": "http://10.99.99.20"
   },
   "dapi": {
-    "maxSockets": 10,
     "url": "http://10.99.99.21",
     "username": "admin",
     "password": "z3cr3t"
+  },
+  "napi": {
+    "url": "http://10.99.99.22:8080",
+    "username": "admin",
+    "password": "lbpass123"
   },
   "ufds": {
     "url": "ldaps://10.88.88.8:636",
