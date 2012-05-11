@@ -50,7 +50,7 @@ module.exports = {
         client.testUser = user;
 
         var ufds = new UFDS({
-            url: 'ldaps://10.88.88.8',
+            url: 'ldaps://10.99.99.15',
             bindDN: 'cn=root',
             bindPassword: 'secret'
         });
