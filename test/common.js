@@ -46,7 +46,6 @@ module.exports = {
             log: logger
         });
 
-        client.basicAuth(USER, PASSWD);
         client.testUser = user;
 
         var ufds = new UFDS({
