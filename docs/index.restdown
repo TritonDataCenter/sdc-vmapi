@@ -1,6 +1,6 @@
 ---
 title: Zones API (ZAPI)
-apisections: Machines, Machine Tags
+apisections: Machines, Machine Metadata, Jobs
 markdown2extras: wiki-tables, code-friendly
 ---
 
@@ -473,4 +473,3 @@ Returns a job with the specified UUID.
         }
       ]
     }
-
