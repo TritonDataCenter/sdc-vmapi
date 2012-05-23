@@ -56,7 +56,7 @@ try {
     zapi.init();
 
 } catch (e) {
-    console.error('Invalid UFDS config: ' + e.message);
+    console.error(e.stack);
     process.exit(1);
 }
 
