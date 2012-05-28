@@ -131,17 +131,25 @@ All inputs are optional.
 ||alias||String||Machine Alias||
 ||state||String||running, stopped, active or destroyed||
 ||ram||Number||Amount of memory of the machine||
+||tag.key||String||Machine tags, see below||
+
+## Tags
+
+Machines can also be searched by tags. Tags are key/value pairs that let us identify a machine by client-specific criteria. If a machine is tagged as 'role=master', then the search filter to be added to the request params should be 'tag.role=master'. When a tag value is '*', the search is performed for machines that are tagged with any value of the specified key. Any number of tags can be specified. See the examples section for sample searches of machines by tags.
 
 ### Responses
 
 ||**Code**||**Description**||**Response**||
 ||200||||Array of machine objects||
 
-### Example
+### Examples
 
     GET /machines
     GET /machines?alias=my-machine
     GET /machines?state=running
+    GET /machines?tag.role=sdc
+    GET /machines?tag.role=sdc&tag.type=database
+    GET /machines?tag.role=*
 
 
 ## GetMachine (GET /machines/:uuid)
@@ -491,6 +499,10 @@ Returns a job with the specified UUID.
 
 
 # Changelog
+
+## 2012-05-28
+
+  * Search machines by tags
 
 ## 2012-05-23
 

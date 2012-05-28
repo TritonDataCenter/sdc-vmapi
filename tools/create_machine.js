@@ -75,7 +75,7 @@ function createMachine(ufds, owner, callback) {
     machine.state = STATUS[randNumber(STATUS.length)];
 
     machine.create_timestamp = date;
-    machine.tags = JSON.stringify({});
+    machine.tags = [];
 
     machine.internal_metadata = JSON.stringify({
         uuid: muuid
