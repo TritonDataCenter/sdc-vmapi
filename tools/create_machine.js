@@ -14,7 +14,7 @@ var USER_FMT = 'uuid=%s, ' + USERS;
 var MACHINE_FMT = 'machine=%s, ' + USER_FMT;
 
 var STATUS = ['running', 'off'];
-var BRANDS = ['joyent', 'kvm'];
+var BRANDS = ['joyent-minimal', 'joyent', 'kvm'];
 var RAM = [128, 256, 512, 1024];
 var DISK = [5120, 10240, 20480, 51200];
 var LWPS = 2000;
