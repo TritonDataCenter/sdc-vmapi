@@ -18,7 +18,8 @@
 # Tools
 #
 NPM		:= npm
-TAP		:= ./node_modules/.bin/tap
+NODEUNIT  := ./node_modules/.bin/nodeunit
+NODEUNIT_ARGS   :=
 
 #
 # Files
@@ -84,8 +85,8 @@ publish: release
 
 
 .PHONY: test
-test: $(TAP)
-	TAP=1 $(TAP) test/*.test.js
+test: $(NODEUNIT)
+	$(NODEUNIT) $(NODEUNIT_ARGS) test/machines.test.js
 
 
 include ./tools/mk/Makefile.deps

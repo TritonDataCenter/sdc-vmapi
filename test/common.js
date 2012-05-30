@@ -21,10 +21,8 @@ var PASSWD = 'z3cr3t';
 
 module.exports = {
 
-    setup: function (callback) {
+    setUp: function (callback) {
         assert.ok(callback);
-
-        var user = 'a' + uuid().substr(0, 7) + '@joyent.com';
 
         var logger = new Logger({
             level: process.env.LOG_LEVEL || 'info',
@@ -46,41 +44,7 @@ module.exports = {
             log: logger
         });
 
-        client.testUser = user;
-
-        var ufds = new UFDS({
-            url: 'ldaps://10.99.99.14',
-            bindDN: 'cn=root',
-            bindPassword: 'secret'
-        });
-        ufds.on('error', function (err) {
-            return callback(err);
-        });
-        ufds.on('ready', function () {
-            var entry = {
-                login: client.testUser,
-                email: client.testUser,
-                userpassword: PASSWD
-            };
-            return ufds.addUser(entry, function (err, newUser) {
-                if (err)
-                    return callback(err);
-
-                client.testUser = newUser;
-                client.ufds = ufds;
-                client.teardown = function teardown(cb) {
-                    client.ufds.deleteUser(client.testUser, function (anErr) {
-                        if (err) // blindly ignore
-                            return cb(anErr);
-
-                        ufds.close(function () {});
-                        return cb(null);
-                    });
-                };
-
-                return callback(null, client);
-            });
-        });
+        return callback(null, client);
     },
 
     checkHeaders: function (t, headers) {

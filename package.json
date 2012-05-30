@@ -13,7 +13,8 @@
     "expiring-lru-cache": "2.0.0",
     "sprintf": "0.1.1",
     "sdc-clients": "git+ssh://git@git.joyent.com:node-sdc-clients.git",
-    "amqp": "git://github.com/postwait/node-amqp.git"
+    "amqp": "git://github.com/postwait/node-amqp.git",
+    "nodeunit": "0.7.4"
   },
   "devDependencies": {
     "tap": "0.2"
