@@ -5,7 +5,7 @@
   "author": "Andres Rodriguez (joyent.com)",
   "private": true,
   "dependencies": {
-    "restify": "git://github.com/mcavage/node-restify.git",
+    "restify": "1.4.2",
     "node-uuid": "1.2.0",
     "filed": "0.0.5",
     "bunyan": "0.6.8",
