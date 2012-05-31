@@ -19,7 +19,6 @@
 #
 NPM		:= npm
 NODEUNIT  := ./node_modules/.bin/nodeunit
-NODEUNIT_ARGS   :=
 
 #
 # Files
@@ -46,13 +45,13 @@ TMPDIR          := /tmp/$(STAMP)
 # Repo-specific targets
 #
 .PHONY: all
-all: $(SMF_MANIFESTS) | $(TAP) $(REPO_DEPS)
+all: $(SMF_MANIFESTS) | $(NODEUNIT) $(REPO_DEPS)
 	$(NPM) rebuild
 
-$(TAP): | $(NPM_EXEC)
+$(NODEUNIT): | $(NPM_EXEC)
 	$(NPM) install
 
-CLEAN_FILES += $(TAP) ./node_modules/tap
+CLEAN_FILES += $(NODEUNIT) ./node_modules/nodeunit
 
 
 .PHONY: release
@@ -86,7 +85,7 @@ publish: release
 
 .PHONY: test
 test: $(NODEUNIT)
-	$(NODEUNIT) $(NODEUNIT_ARGS) test/machines.test.js
+	$(NODEUNIT) test/machines.test.js
 
 
 include ./tools/mk/Makefile.deps
