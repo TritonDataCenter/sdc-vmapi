@@ -1,6 +1,6 @@
 ---
 title: Zones API (ZAPI)
-apisections: Machines, Machine Metadata, Jobs, Changelog
+apisections: VMs, VM Metadata, Jobs, Changelog
 markdown2extras: wiki-tables, code-friendly
 ---
 
@@ -16,14 +16,14 @@ markdown2extras: wiki-tables, code-friendly
 
 ## What is ZAPI?
 
-Zones API allows clients to get information about machines on a datacenter by using an HTTP API. ZAPI offers the following features:
+Zones API allows clients to get information about VMs on a datacenter by using an HTTP API. ZAPI offers the following features:
 
- * Search machines by specific criteria such as ram, owner, tags, server, dataset, etc.
- * Get information about a single machine
- * Create new machines
- * Perform actions on an existing machine such as start, stop, reboot and resize
- * Update machines
- * Destroy machines
+ * Search VMs by specific criteria such as ram, owner, tags, server, dataset, etc.
+ * Get information about a single VM
+ * Create new VMs
+ * Perform actions on an existing VM such as start, stop, reboot and resize
+ * Update VMs
+ * Destroy VMs
 
 ## Design & Requirements
 
@@ -32,7 +32,7 @@ Zones API allows clients to get information about machines on a datacenter by us
 * A heartbeater AMQP client listens for zone heartbeats so ZAPI can return state information for zones
 * ZAPI is only concerned for exposing zones information to users the same way CNAPI does for compute nodes
 * There is one ZAPI instance per datacenter
-* ZAPI is stateless: when any machine action is called (create, destroy, reboot, etc) the message is passed through a workflow API instance that takes care of it
+* ZAPI is stateless: when any VM action is called (create, destroy, reboot, etc) the message is passed through a workflow API instance that takes care of it
 * ZAPI should be as dumb as possible. Contrary to MAPI, ZAPI does not have complicated logic that prevents users to call actions on zones (and even creating zones). Much of the required logic for this is moved to the corresponding workflow and other participant APIs
 
 
@@ -53,9 +53,9 @@ You can set your own local install of ZAPI assuming you are also running a local
     # node server.js
 
 
-# Machine Response Object
+# VM Response Object
 
-All machine endpoints but destroy will return a machine response object when the response status code is 200 OK or 201 Created. When the CreateMachine endpoint is called, the machine response object might have many fields in blank, since the machine has not been physically created yet and some default attributes get set by machine creation backend. Every POST endpoint will respond with a Job-Location header when the response status code is 200 OK or 201 Created.
+All VM endpoints but destroy will return a VM response object when the response status code is 200 OK or 201 Created. When the CreateVm endpoint is called, the VM response object might have many fields in blank, since the VM has not been physically created yet and some default attributes get set by VM creation backend. Every POST endpoint will respond with a Job-Location header when the response status code is 200 OK or 201 Created.
 
 
     {
@@ -114,180 +114,180 @@ Error responses will be returned when the response status code is one of 40X err
     }
 
 
-# Machines
+# VMs
 
-The Machines endpoint let us get information about machines living on a SDC install, there is only one ZAPI instance per datacenter. ZAPI acts as an HTTP interface to machine data stored UFDS. ZAPI is used when need to obtain information about particular machines or when we need perform actions on them such as start, reboot, resize, etc.
+The Vms endpoint let us get information about VMs living on a SDC install, there is only one ZAPI instance per datacenter. ZAPI acts as an HTTP interface to VM data stored UFDS. ZAPI is used when need to obtain information about particular VMs or when we need perform actions on them such as start, reboot, resize, etc.
 
-## ListMachines (GET /machines)
+## ListVms (GET /vms)
 
-Returns a list of machines according the specified search filter.
+Returns a list of VMs according the specified search filter.
 
 ### Inputs
 
 All inputs are optional.
 
-||owner_uuid||UUID||Machine Owner||
+||owner_uuid||UUID||VM Owner||
 ||type||String||'vm' or 'zone'||
-||alias||String||Machine Alias||
+||alias||String||VM Alias||
 ||state||String||running, stopped, active or destroyed||
-||ram||Number||Amount of memory of the machine||
-||tag.key||String||Machine tags, see below||
+||ram||Number||Amount of memory of the VM||
+||tag.key||String||VM tags, see below||
 
 ## Tags
 
-Machines can also be searched by tags. Tags are key/value pairs that let us identify a machine by client-specific criteria. If a machine is tagged as 'role=master', then the search filter to be added to the request params should be 'tag.role=master'. When a tag value is '*', the search is performed for machines that are tagged with any value of the specified key. Any number of tags can be specified. See the examples section for sample searches of machines by tags.
+VMs can also be searched by tags. Tags are key/value pairs that let us identify a vm by client-specific criteria. If a VM is tagged as 'role=master', then the search filter to be added to the request params should be 'tag.role=master'. When a tag value is '*', the search is performed for VMs that are tagged with any value of the specified key. Any number of tags can be specified. See the examples section for sample searches of VMs by tags.
 
 ### Responses
 
 ||**Code**||**Description**||**Response**||
-||200||||Array of machine objects||
+||200||||Array of VM objects||
 
 ### Examples
 
-    GET /machines
-    GET /machines?alias=my-machine
-    GET /machines?state=running
-    GET /machines?tag.role=sdc
-    GET /machines?tag.role=sdc&tag.type=database
-    GET /machines?tag.role=*
+    GET /vms
+    GET /vms?alias=my-vm
+    GET /vms?state=running
+    GET /vms?tag.role=sdc
+    GET /vms?tag.role=sdc&tag.type=database
+    GET /vms?tag.role=*
 
 
-## GetMachine (GET /machines/:uuid)
+## GetVm (GET /vms/:uuid)
 
-Returns a machine with the specified UUID. When sync=true is passed, ZAPI will directly load machine details with a synchronous call to CNAPI. This will also refresh the machines cache so that if a machine was already destroyed and it doesn't appear to be, it will be marked as such in the process. Using the sync version of this action can be seen as 'force ZAPI' to load the machine information directly from CNAPI.
+Returns a VM with the specified UUID. When sync=true is passed, ZAPI will directly load VM details with a synchronous call to CNAPI. This will also refresh the VMs cache so that if a VM was already destroyed and it doesn't appear to be, it will be marked as such in the process. Using the sync version of this action can be seen as 'force ZAPI' to load the VM information directly from CNAPI.
 
 ### Inputs
 
 ||**Param**||**Type**||**Description**||**Required?**||
-||uuid||UUID||Machine UUID||Yes||
-||owner_uuid||UUID||Machine Owner||No||
-||sync||Boolean||Load machine info from CNAPI||No||
+||uuid||UUID||VM UUID||Yes||
+||owner_uuid||UUID||VM Owner||No||
+||sync||Boolean||Load VM info from CNAPI||No||
 
 ### Responses
 
 ||**Code**||**Description**||**Response**||
-||200||||Machine object||
-||404||Machine not found||Error object||
+||200||||VM object||
+||404||VM not found||Error object||
 
 ### Example
 
-    GET /machines/00956725-4689-4e2c-9d25-f2172f496f9c
+    GET /vms/00956725-4689-4e2c-9d25-f2172f496f9c
 
 
-## CreateMachine (POST /machines)
+## CreateVm (POST /vms)
 
-Queues a machine provision. This will validate all parameters and create a new job on workflow API when the request is considered to be valid. The response is
-the same as a GET to /machines/:uuid, however some machine attributes might not be present since it has not been provisioned yet. The response also contains a Job-Location header which can be used to get more information about the provisioning job that is being executed by workflow API.
+Queues a VM provision. This will validate all parameters and create a new job on workflow API when the request is considered to be valid. The response is
+the same as a GET to /vms/:uuid, however some VM attributes might not be present since it has not been provisioned yet. The response also contains a Job-Location header which can be used to get more information about the provisioning job that is being executed by workflow API.
 
 ### Required Inputs
 
-||owner_uuid||UUID||Machine Owner||
+||owner_uuid||UUID||VM Owner||
 ||dataset_uuid||UUID||Dataset UUID||
 ||brand||String||'joyent' or 'kvm'||
-||ram||Number||Machine RAM||
+||ram||Number||VM RAM||
 
 ### Optional Inputs
 
-||alias||String||Machine alias||
+||alias||String||VM alias||
 ||networks||String/Array||Comma separated network UUIDs or array of UUIDs if application/json||
 ||max_physical_memory||Number||Same as RAM||
 ||max_swap||Number||Defaults to 2 x RAM if not specified||
 ||zfs_io_priority||Number||ZFS IO Priority||
 ||cpu_cap||Number||CPU Cap||
 ||max_lwps||Number||Max. Lightweight Processes||
-||quota||Number||Machine quota||
-||tags||Object||Machine tags||
-||customer_metadata||Object||Machine metadata||
-||internal_metadata||Object||Machine metadata||
+||quota||Number||VM quota||
+||tags||Object||VM tags||
+||customer_metadata||Object||VM metadata||
+||internal_metadata||Object||VM metadata||
 
 ### Response Codes
 
 ||**Code**||**Description**||**Response**||
-||201||New job created||Machine object||
+||201||New job created||VM object||
 ||409||Missing parameter||Error object||
 ||409||Invalid parameter||Error object||
 
 ### Example
 
-    POST /machines
+    POST /vms
       -d owner_uuid=930896af-bf8c-48d4-885c-6573a94b1853 \
       -d dataset_uuid=28445220-6eac-11e1-9ce8-5f14ed22e782 \
       -d brand=joyent \
       -d ram=128
 
 
-## UpdateMachine (POST /machines/:uuid)
+## UpdateVm (POST /vms/:uuid)
 
-Queues an update operation on a machine. Only four operations are supported at this moment: **start, stop, reboot and update**. Update is the only action that takes additional arguments.
+Queues an update operation on a VM. Only four operations are supported at this moment: **start, stop, reboot and update**. Update is the only action that takes additional arguments.
 
 ### Inputs
 
 ||**Param**||**Type**||**Description**||**Required?**||
-||uuid||UUID||Machine UUID||Yes||
-||owner_uuid||UUID||Machine Owner||No||
+||uuid||UUID||VM UUID||Yes||
+||owner_uuid||UUID||VM Owner||No||
 ||action||String||start, stop, reboot or update||Yes||
 
-### Machine Update Inputs
+### VM Update Inputs
 
 At least one of the following parameters must be provided when action=update.
 
-||alias||String||Machine alias||
-||owner_uuid||UUID||Machine Owner||
-||ram||Number||Machine RAM||
+||alias||String||VM alias||
+||owner_uuid||UUID||VM Owner||
+||ram||Number||VM RAM||
 ||max_physical_memory||Number||Same as RAM||
 ||max_swap||Number||Defaults to 2 x RAM if not specified||
 ||zfs_io_priority||Number||ZFS IO Priority||
 ||cpu_cap||Number||CPU Cap||
 ||max_lwps||Number||Max. Lightweight Processes||
-||quota||Number||Machine quota (disk)||
-||tags||Object||Machine tags||
-||customer_metadata||Object||Machine metadata||
-||internal_metadata||Object||Machine metadata||
+||quota||Number||VM quota (disk)||
+||tags||Object||VM tags||
+||customer_metadata||Object||VM metadata||
+||internal_metadata||Object||VM metadata||
 
 ### Response Codes
 
 ||**Code**||**Description**||**Response**||
-||200||||Machine object||
-||404||Machine not found||Error object||
+||200||||VM object||
+||404||VM not found||Error object||
 ||409||Missing parameter||Error object||
 ||409||Invalid parameter||Error object||
 
 ### Example
 
-    POST /machines/e9bd0ed1-7de3-4c66-a649-d675dbce6e83 \
+    POST /vms/e9bd0ed1-7de3-4c66-a649-d675dbce6e83 \
       -d action=stop
 
-    POST /machines/e9bd0ed1-7de3-4c66-a649-d675dbce6e83 \
+    POST /vms/e9bd0ed1-7de3-4c66-a649-d675dbce6e83 \
       -d action=update \
       -d alias=new-alias \
       -d quota=20
 
 
-## DeleteMachine (DELETE /machines/:uuid)
+## DeleteVm (DELETE /vms/:uuid)
 
-Deletes a machine. The machine will be physically destroyed and it will be marked as destroyed on UFDS when the operation is completed. When sync=true is passed, ZAPI will wait on the workflow API's job to complete before returning and the zone will be marked as destroyed in the process. This is an experimental feature for clients that need to wait until the DELETE has actually destroyed the machine physically before continuing.
+Deletes a VM. The VM will be physically destroyed and it will be marked as destroyed on UFDS when the operation is completed. When sync=true is passed, ZAPI will wait on the workflow API's job to complete before returning and the zone will be marked as destroyed in the process. This is an experimental feature for clients that need to wait until the DELETE has actually destroyed the VM physically before continuing.
 
 ### Inputs
 
 ||**Param**||**Type**||**Description**||**Required?**||
-||uuid||UUID||Machine UUID||Yes||
-||owner_uuid||UUID||Machine Owner||No||
+||uuid||UUID||VM UUID||Yes||
+||owner_uuid||UUID||VM Owner||No||
 ||sync||Boolean||Sync delete||No||
 
 ### Responses
 
 ||**Code**||**Description**||**Response**||
-||200||||Machine object||
-||404||Machine not found||Error object||
+||200||||VM object||
+||404||VM not found||Error object||
 
 ### Example
 
-    POST /machines/e9bd0ed1-7de3-4c66-a649-d675dbce6e83 -X DELETE
+    POST /vms/e9bd0ed1-7de3-4c66-a649-d675dbce6e83 -X DELETE
 
 
-# Machine Metadata
+# VM Metadata
 
-There are three kinds of metadata a machine can store: customer_metadata, internal_metadata and tags. A metadata object is any valid set of key/value pairs that can be properly encoded to JSON. Values must be strings, numbers or booleans. Examples:
+There are three kinds of metadata a VM can store: customer_metadata, internal_metadata and tags. A metadata object is any valid set of key/value pairs that can be properly encoded to JSON. Values must be strings, numbers or booleans. Examples:
 
     {
       "ip": "10.99.99.9",
@@ -296,32 +296,32 @@ There are three kinds of metadata a machine can store: customer_metadata, intern
       "number": 42
     }
 
-Machine Tags allow machines to be grouped by any criteria. Tags are key/value pairs that can be assigned to any machine. For example, machines can be grouped by tagging them as a database role with a tag such as '{ role: "database" }'.
+VM Tags allow VMs to be grouped by any criteria. Tags are key/value pairs that can be assigned to any VM. For example, VMs can be grouped by tagging them as a database role with a tag such as '{ role: "database" }'.
 
-Customer and internal metadata are used to store relevant information to the machine, such as IP addresses of dependent machines or initialization scripts that run when the machine is being setup.
+Customer and internal metadata are used to store relevant information to the VM, such as IP addresses of dependent VMs or initialization scripts that run when the VM is being setup.
 
 The following API endpoints are equivalent for tags, customer_metadata and internal_metadata since all three metadata types share the same representation.
 
 
-## ListMetadata (GET /machines/:uuid/(tags|customer_metadata|internal_metadata))
+## ListMetadata (GET /vms/:uuid/(tags|customer_metadata|internal_metadata))
 
-Returns metadata assigned to a machine.
+Returns metadata assigned to a VM.
 
 ### Inputs
 
 ||**Param**||**Type**||**Description**||**Required?**||
-||uuid||UUID||Machine UUID||Yes||
-||owner_uuid||UUID||Machine Owner||No||
+||uuid||UUID||VM UUID||Yes||
+||owner_uuid||UUID||VM Owner||No||
 
 ### Responses
 
 ||**Code**||**Description**||**Response**||
 ||200||||Metadata object||
-||404||Machine not found||Error object||
+||404||VM not found||Error object||
 
 ### Example
 
-    GET /machines/da0dfac1-341e-4e51-b357-99f7355f1008/tags
+    GET /vms/da0dfac1-341e-4e51-b357-99f7355f1008/tags
 
     {
       "role": "dns",
@@ -329,50 +329,50 @@ Returns metadata assigned to a machine.
     }
 
 
-## GetMetadata (GET /machines/:uuid/(tags|customer_metadata|internal_metadata)/:key)
+## GetMetadata (GET /vms/:uuid/(tags|customer_metadata|internal_metadata)/:key)
 
 Returns the value of a metadata key.
 
 ### Inputs
 
 ||**Param**||**Type**||**Description**||**Required?**||
-||uuid||UUID||Machine UUID||Yes||
-||owner_uuid||UUID||Machine Owner||No||
+||uuid||UUID||VM UUID||Yes||
+||owner_uuid||UUID||VM Owner||No||
 ||key||String||Metadata Key||Yes||
 
 ### Responses
 
 ||**Code**||**Description**||**Response**||
 ||200||||String value of the metadata key||
-||404||Machine not found||Error object||
+||404||VM not found||Error object||
 
 ### Example
 
-    GET /machines/da0dfac1-341e-4e51-b357-99f7355f1008/tags/role
+    GET /vms/da0dfac1-341e-4e51-b357-99f7355f1008/tags/role
 
     dns
 
 
-## AddMetadata (POST /machines/:uuid/(tags|customer_metadata|internal_metadata))
+## AddMetadata (POST /vms/:uuid/(tags|customer_metadata|internal_metadata))
 
-Adds a new metadata to a machine. Keep in mind that metadata gets appended, not overwritten.
+Adds a new metadata to a VM. Keep in mind that metadata gets appended, not overwritten.
 
 ### Inputs
 
 ||**Param**||**Type**||**Description**||**Required?**||
-||uuid||UUID||Machine UUID||Yes||
-||owner_uuid||UUID||Machine Owner||No||
+||uuid||UUID||VM UUID||Yes||
+||owner_uuid||UUID||VM Owner||No||
 ||metadata||key-value/object||Metadata||Yes||
 
 ### Responses
 
 ||**Code**||**Description**||**Response**||
 ||200||||Metadata object||
-||404||Machine not found||Error object||
+||404||VM not found||Error object||
 
 ### Example
 
-    POST /machines/da0dfac1-341e-4e51-b357-99f7355f1008/tags
+    POST /vms/da0dfac1-341e-4e51-b357-99f7355f1008/tags
       -d customer=tracy
 
     {
@@ -380,52 +380,52 @@ Adds a new metadata to a machine. Keep in mind that metadata gets appended, not 
     }
 
 
-## DeleteMetadata (DELETE /machines/:uuid/(tags|customer_metadata|internal_metadata)/:key)
+## DeleteMetadata (DELETE /vms/:uuid/(tags|customer_metadata|internal_metadata)/:key)
 
-Deletes a metadata key from a machine.
+Deletes a metadata key from a VM.
 
 ### Inputs
 
 ||**Param**||**Type**||**Description**||**Required?**||
-||uuid||UUID||Machine UUID||Yes||
-||owner_uuid||UUID||Machine Owner||No||
+||uuid||UUID||VM UUID||Yes||
+||owner_uuid||UUID||VM Owner||No||
 ||key||String||Metadata Key||Yes||
 
 ### Responses
 
 ||**Code**||**Description**||**Response**||
 ||204||Request accepted||||
-||404||Machine not found||Error object||
+||404||VM not found||Error object||
 
 ### Example
 
-    DELETE /machines/da0dfac1-341e-4e51-b357-99f7355f1008/tags/role
+    DELETE /vms/da0dfac1-341e-4e51-b357-99f7355f1008/tags/role
 
 
-## DeleteAllMetadata (DELETE /machines/:uuid/(tags|customer_metadata|internal_metadata))
+## DeleteAllMetadata (DELETE /vms/:uuid/(tags|customer_metadata|internal_metadata))
 
-Deletes all metadata keys from a machine.
+Deletes all metadata keys from a VM.
 
 ### Inputs
 
 ||**Param**||**Type**||**Description**||**Required?**||
-||uuid||UUID||Machine UUID||Yes||
-||owner_uuid||UUID||Machine Owner||No||
+||uuid||UUID||VM UUID||Yes||
+||owner_uuid||UUID||VM Owner||No||
 
 ### Responses
 
 ||**Code**||**Description**||**Response**||
 ||204||Request accepted||||
-||404||Machine not found||Error object||
+||404||VM not found||Error object||
 
 ### Example
 
-    DELETE /machines/da0dfac1-341e-4e51-b357-99f7355f1008/tags
+    DELETE /vms/da0dfac1-341e-4e51-b357-99f7355f1008/tags
 
 
 # Jobs
 
-Jobs are created when an operation needs to be performed on a machine. Examples of jobs that can be created are machine lifecycle tasks such as start and reboot. Provision jobs are created from calling "POST /machines". Currently a "Job-Location" header is added to the response of actions end up calling the workflow API, however this behavior might change. Due to limitations in the workflow API, it is not possible to perform a search on jobs based on parameters such as machine UUID or owner UUID.
+Jobs are created when an operation needs to be performed on a VM. Examples of jobs that can be created are VM lifecycle tasks such as start and reboot. Provision jobs are created from calling "POST /vms". Currently a "Job-Location" header is added to the response of actions end up calling the workflow API, however this behavior might change. Due to limitations in the workflow API, it is not possible to perform a search on jobs based on parameters such as VM UUID or owner UUID.
 
 ## GetJob (GET /jobs/:uuid)
 
@@ -502,13 +502,13 @@ Returns a job with the specified UUID.
 
 ## 2012-05-28
 
-  * Search machines by tags
+  * Search VMs by tags
 
 ## 2012-05-23
 
-  * 'networks' is a required parameter for POST /machines
-  * Add sync=true parameter to GET /machines/uuid
+  * 'networks' is a required parameter for POST /vms
+  * Add sync=true parameter to GET /vms/uuid
 
 ## 2012-05-22
 
-  * Add sync=true parameter to DELETE /machines/uuid
+  * Add sync=true parameter to DELETE /vms/uuid

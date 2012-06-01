@@ -85,7 +85,7 @@ publish: release
 
 .PHONY: test
 test: $(NODEUNIT)
-	$(NODEUNIT) test/machines.test.js
+	$(NODEUNIT) test/vms.test.js
 
 
 include ./tools/mk/Makefile.deps

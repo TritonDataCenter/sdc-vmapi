@@ -17,7 +17,7 @@ var machineLocation;
 
 var DATASET = '01b2c898-945f-11e1-a523-af1afbe22822';
 var CUSTOMER = '930896af-bf8c-48d4-885c-6573a94b1853';
-var NETWORKS = 'c80ddb38-697c-40fe-b102-e2f021ef7a21';
+var NETWORKS = '54b51c03-41c7-4cbf-980b-8faee4270a4d';
 
 
 // --- Helpers
