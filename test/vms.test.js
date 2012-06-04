@@ -17,7 +17,7 @@ var machineLocation;
 
 var DATASET = '01b2c898-945f-11e1-a523-af1afbe22822';
 var CUSTOMER = '930896af-bf8c-48d4-885c-6573a94b1853';
-var NETWORKS = '54b51c03-41c7-4cbf-980b-8faee4270a4d';
+var NETWORKS = 'adbf3257-e566-40a9-8df0-c0db469b78bd';
 
 
 // --- Helpers
@@ -180,7 +180,7 @@ exports.create_machine = function(t) {
         owner_uuid: CUSTOMER,
         dataset_uuid: DATASET,
         networks: NETWORKS,
-        brand: 'joyent',
+        brand: 'joyent-minimal',
         ram: 64
     };
 
@@ -191,10 +191,8 @@ exports.create_machine = function(t) {
           t.equal(res.statusCode, 201, '201 Created');
           common.checkHeaders(t, res.headers);
           t.ok(body, 'machine ok');
-          t.ok(res.headers['job-location'], 'job location');
-
-          jobLocation = res.headers['job-location'];
-          newUuid = body.uuid;
+          jobLocation = '/jobs/' + body.job_uuid;
+          newUuid = body.vm_uuid;
           t.done();
     });
 };
@@ -228,9 +226,7 @@ exports.stop_machine = function(t) {
           t.ifError(err);
           t.equal(res.statusCode, 200, 'Stop 200 OK');
           common.checkHeaders(t, res.headers);
-          t.ok(res.headers['job-location'], 'job location');
-
-          jobLocation = res.headers['job-location'];
+          t.ok(JSON.parse(data));
           t.done();
     });
 };
@@ -250,9 +246,7 @@ exports.start_machine = function(t) {
           t.ifError(err);
           t.equal(res.statusCode, 200, 'Start 200 OK');
           common.checkHeaders(t, res.headers);
-          t.ok(res.headers['job-location'], 'job location');
-
-          jobLocation = res.headers['job-location'];
+          t.ok(JSON.parse(data));
           t.done();
     });
 };
@@ -272,9 +266,7 @@ exports.reboot_machine = function(t) {
           t.ifError(err);
           t.equal(res.statusCode, 200, 'Reboot 200 OK');
           common.checkHeaders(t, res.headers);
-          t.ok(res.headers['job-location'], 'job location');
-
-          jobLocation = res.headers['job-location'];
+          t.ok(JSON.parse(data));
           t.done();
     });
 };
@@ -313,7 +305,7 @@ exports.add_tags = function(t) {
         t.ifError(err);
         t.equal(res.statusCode, 200);
         common.checkHeaders(t, res.headers);
-        t.ok(res.headers['job-location'], 'job location');
+        t.ok(JSON.parse(data));
         t.done();
     });
 };
@@ -349,11 +341,11 @@ exports.get_tag = function(t) {
 exports.delete_tag = function(t) {
     var path = '/machines/' + newUuid + '/tags/role?owner_uuid=' + CUSTOMER;
 
-    client.del(path, function (err, req, res) {
+    client.del(path, function (err, req, res, data) {
         t.ifError(err);
-        t.equal(res.statusCode, 204);
+        t.equal(res.statusCode, 200);
         common.checkHeaders(t, res.headers);
-        t.ok(res.headers['job-location'], 'job location');
+        t.ok(JSON.parse(data));
         t.done();
     });
 };
@@ -374,11 +366,11 @@ exports.wait_delete_tag = function(t) {
 exports.delete_tags = function(t) {
     var path = '/machines/' + newUuid + '/tags?owner_uuid=' + CUSTOMER;
 
-    client.del(path, function (err, req, res) {
+    client.del(path, function (err, req, res, data) {
         t.ifError(err);
-        t.equal(res.statusCode, 204);
+        t.equal(res.statusCode, 200);
         common.checkHeaders(t, res.headers);
-        t.ok(res.headers['job-location'], 'job location');
+        t.ok(JSON.parse(data));
         t.done();
     });
 };
@@ -397,9 +389,7 @@ exports.destroy_machine = function(t) {
           t.ifError(err);
           t.equal(res.statusCode, 200, 'Destroy 200 OK');
           common.checkHeaders(t, res.headers);
-          t.ok(res.headers['job-location'], 'job location');
-
-          jobLocation = res.headers['job-location'];
+          t.ok(JSON.parse(data));
           t.done();
     });
 };

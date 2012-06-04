@@ -55,8 +55,7 @@ You can set your own local install of ZAPI assuming you are also running a local
 
 # VM Response Object
 
-All VM endpoints but destroy will return a VM response object when the response status code is 200 OK or 201 Created. When the CreateVm endpoint is called, the VM response object might have many fields in blank, since the VM has not been physically created yet and some default attributes get set by VM creation backend. Every POST endpoint will respond with a Job-Location header when the response status code is 200 OK or 201 Created.
-
+The VM response object is going a single representation for the two available VM GET actions. GET /vms will return a collection of VM objects and GET /vms/<uuid> will return a single VM object. This object will conform to the attributes shown below as they reflect the same VM attributes found when issuing a `vmadm get <uuid>` command from the command line interface on a SDC compute node. Note that vmadm returns more attributes that might not be relevant at the HTTP API layer.
 
     {
       "uuid": "ef375f03-57ca-44a9-bc8d-63aec09fbc37",
@@ -101,6 +100,16 @@ All VM endpoints but destroy will return a VM response object when the response 
         "smartdc_role": "assets",
         "smartdc_type": "core"
       }
+    }
+
+
+# VM Job Response Object
+
+Any action called on the VMs or Metadata endpoints will result on a new Job being created on the backend. Performing an action on VM doens't imply that changes are going to be reflected immediately, so a Job response object will provide the user with the necessary info to get more details about progress of the task that has been queued. The user can poll the GET /jobs/<uuid> endpoint for more details and also GET /vms/<uuid> to see if the VM properties have changed after the job completes.
+
+    {
+      "vm_uuid": "ef375f03-57ca-44a9-bc8d-63aec09fbc37",
+      "job_uuid": "6ad3a288-31cf-44e0-8d18-9b3f2a031067"
     }
 
 
