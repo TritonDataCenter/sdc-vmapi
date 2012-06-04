@@ -434,7 +434,7 @@ Deletes all metadata keys from a VM.
 
 # Jobs
 
-Jobs are created when an operation needs to be performed on a VM. Examples of jobs that can be created are VM lifecycle tasks such as start and reboot. Provision jobs are created from calling "POST /vms". Currently a "Job-Location" header is added to the response of actions end up calling the workflow API, however this behavior might change. Due to limitations in the workflow API, it is not possible to perform a search on jobs based on parameters such as VM UUID or owner UUID.
+Jobs are created when an operation needs to be performed on a VM. Examples of jobs that can be created are VM lifecycle tasks such as start and reboot. Provision jobs are created from calling "POST /vms".
 
 ## GetJob (GET /jobs/:uuid)
 
@@ -508,6 +508,15 @@ Returns a job with the specified UUID.
 
 
 # Changelog
+
+## 2012-06-04
+
+  * VM actions now return a Job Response Object
+
+## 2012-06-01
+
+  * VM API endpoints are now named /vms instead of /machines
+  * /machines is still aliased but deprecated
 
 ## 2012-05-28
 
