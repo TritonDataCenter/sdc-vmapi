@@ -191,12 +191,14 @@ the same as a GET to /vms/:uuid, however some VM attributes might not be present
 ### Required Inputs
 
 ||owner_uuid||UUID||VM Owner||
-||dataset_uuid||UUID||Dataset UUID||
+||dataset_uuid||UUID||Dataset UUID. Required if dataset_url is not present||
+||dataset_url||URL||Dataset URL. Required if dataset_uuid is not present||
 ||brand||String||'joyent' or 'kvm'||
 ||ram||Number||VM RAM||
 
 ### Optional Inputs
 
+||server_uuid||UUID||Manually specify a server for the provision||
 ||alias||String||VM alias||
 ||networks||String/Array||Comma separated network UUIDs or array of UUIDs if application/json||
 ||max_physical_memory||Number||Same as RAM||
@@ -508,6 +510,11 @@ Returns a job with the specified UUID.
 
 
 # Changelog
+
+## 2012-06-05
+
+  * When creating a new VM you can now pass dataset_url
+  * When creating a new VM you can now pass server_uuid
 
 ## 2012-06-04
 
