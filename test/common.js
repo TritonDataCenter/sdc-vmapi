@@ -26,7 +26,7 @@ module.exports = {
 
         var logger = new Logger({
             level: process.env.LOG_LEVEL || 'info',
-            name: 'zapi_unit_test',
+            name: 'vmapi_unit_test',
             stream: process.stderr,
             serializers: {
                 err: Logger.stdSerializers.err,
@@ -56,7 +56,7 @@ module.exports = {
         t.ok(headers.date, 'date header');
         t.ok(headers['x-request-id'], 'request id header');
         t.ok(headers['x-response-time'] >= 0, 'response time header');
-        t.equal(headers.server, 'Zones API', 'server header');
+        t.equal(headers.server, 'VMs API', 'server header');
         t.equal(headers.connection, 'Keep-Alive', 'connection header');
         // t.equal(headers['x-api-version'], '7.0.0');
     }

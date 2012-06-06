@@ -1,6 +1,6 @@
 {
-  "name": "zapi",
-  "description": "Zones API",
+  "name": "vmapi",
+  "description": "VMs API",
   "version": "7.0.0",
   "author": "Andres Rodriguez (joyent.com)",
   "private": true,

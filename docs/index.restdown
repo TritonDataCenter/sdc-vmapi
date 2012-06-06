@@ -1,22 +1,22 @@
 ---
-title: Zones API (ZAPI)
+title: VMs API (VMAPI)
 apisections: VMs, VM Metadata, Jobs, Changelog
 markdown2extras: wiki-tables, code-friendly
 ---
 
-# ZAPI
+# VMAPI
 
-* Repository: git clone git@git.joyent.com:zapi.git
-* Browsing: <https://mo.joyent.com/zapi>
-* Docs: <https://mo.joyent.com/docs/zapi>
+* Repository: git clone git@git.joyent.com:vmapi.git
+* Browsing: <https://mo.joyent.com/vmapi>
+* Docs: <https://mo.joyent.com/docs/vmapi>
 * Who: Andres Rodriguez
-* Tickets/bugs: <https://devhub.joyent.com/jira/browse/ZAPI>
+* Tickets/bugs: <https://devhub.joyent.com/jira/browse/VMAPI>
 
-# Introduction to Zones API
+# Introduction to VMs API
 
-## What is ZAPI?
+## What is VMAPI?
 
-Zones API allows clients to get information about VMs on a datacenter by using an HTTP API. ZAPI offers the following features:
+VMs API allows clients to get information about VMs on a datacenter by using an HTTP API. VMAPI offers the following features:
 
  * Search VMs by specific criteria such as ram, owner, tags, server, dataset, etc.
  * Get information about a single VM
@@ -28,21 +28,21 @@ Zones API allows clients to get information about VMs on a datacenter by using a
 ## Design & Requirements
 
 * Node.js restify HTTP server
-* UFDS is the remote datastore for ZAPI. ZAPI does not have persistency and all zones data living on UFDS should be considered a cache
-* A heartbeater AMQP client listens for zone heartbeats so ZAPI can return state information for zones
-* ZAPI is only concerned for exposing zones information to users the same way CNAPI does for compute nodes
-* There is one ZAPI instance per datacenter
-* ZAPI is stateless: when any VM action is called (create, destroy, reboot, etc) the message is passed through a workflow API instance that takes care of it
-* ZAPI should be as dumb as possible. Contrary to MAPI, ZAPI does not have complicated logic that prevents users to call actions on zones (and even creating zones). Much of the required logic for this is moved to the corresponding workflow and other participant APIs
+* UFDS is the remote datastore for VMAPI. VMAPI does not have persistency and all zones data living on UFDS should be considered a cache
+* A heartbeater AMQP client listens for zone heartbeats so VMAPI can return state information for zones
+* VMAPI is only concerned for exposing zones information to users the same way CNAPI does for compute nodes
+* There is one VMAPI instance per datacenter
+* VMAPI is stateless: when any VM action is called (create, destroy, reboot, etc) the message is passed through a workflow API instance that takes care of it
+* VMAPI should be as dumb as possible. Contrary to MAPI, VMAPI does not have complicated logic that prevents users to call actions on zones (and even creating zones). Much of the required logic for this is moved to the corresponding workflow and other participant APIs
 
 
 # Getting Started
 
-You can set your own local install of ZAPI assuming you are also running a local (or remote if accessible) COAL instance with the master branch of UFDS:
+You can set your own local install of VMAPI assuming you are also running a local (or remote if accessible) COAL instance with the master branch of UFDS:
 
     # Get the source and build.
-    git clone git@git.joyent.com:zapi.git
-    cd zapi/
+    git clone git@git.joyent.com:vmapi.git
+    cd vmapi/
     make all
 
     # Setup config.
@@ -125,7 +125,7 @@ Error responses will be returned when the response status code is one of 40X err
 
 # VMs
 
-The Vms endpoint let us get information about VMs living on a SDC install, there is only one ZAPI instance per datacenter. ZAPI acts as an HTTP interface to VM data stored UFDS. ZAPI is used when need to obtain information about particular VMs or when we need perform actions on them such as start, reboot, resize, etc.
+The Vms endpoint let us get information about VMs living on a SDC install, there is only one VMAPI instance per datacenter. VMAPI acts as an HTTP interface to VM data stored UFDS. VMAPI is used when need to obtain information about particular VMs or when we need perform actions on them such as start, reboot, resize, etc.
 
 ## ListVms (GET /vms)
 
@@ -163,7 +163,7 @@ VMs can also be searched by tags. Tags are key/value pairs that let us identify 
 
 ## GetVm (GET /vms/:uuid)
 
-Returns a VM with the specified UUID. When sync=true is passed, ZAPI will directly load VM details with a synchronous call to CNAPI. This will also refresh the VMs cache so that if a VM was already destroyed and it doesn't appear to be, it will be marked as such in the process. Using the sync version of this action can be seen as 'force ZAPI' to load the VM information directly from CNAPI.
+Returns a VM with the specified UUID. When sync=true is passed, VMAPI will directly load VM details with a synchronous call to CNAPI. This will also refresh the VMs cache so that if a VM was already destroyed and it doesn't appear to be, it will be marked as such in the process. Using the sync version of this action can be seen as 'force VMAPI' to load the VM information directly from CNAPI.
 
 ### Inputs
 
@@ -276,7 +276,7 @@ At least one of the following parameters must be provided when action=update.
 
 ## DeleteVm (DELETE /vms/:uuid)
 
-Deletes a VM. The VM will be physically destroyed and it will be marked as destroyed on UFDS when the operation is completed. When sync=true is passed, ZAPI will wait on the workflow API's job to complete before returning and the zone will be marked as destroyed in the process. This is an experimental feature for clients that need to wait until the DELETE has actually destroyed the VM physically before continuing.
+Deletes a VM. The VM will be physically destroyed and it will be marked as destroyed on UFDS when the operation is completed. When sync=true is passed, VMAPI will wait on the workflow API's job to complete before returning and the zone will be marked as destroyed in the process. This is an experimental feature for clients that need to wait until the DELETE has actually destroyed the VM physically before continuing.
 
 ### Inputs
 

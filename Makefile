@@ -29,7 +29,7 @@ JSL_CONF_NODE	 = tools/jsl.node.conf
 JSL_FILES_NODE   = server.js $(JS_FILES)
 JSSTYLE_FILES	 = server.js $(JS_FILES)
 JSSTYLE_FLAGS    = -o indent=4,doxygen,unparenthesized-return=0
-SMF_MANIFESTS_IN	 = smf/manifests/zapi.xml.in
+SMF_MANIFESTS_IN	 = smf/manifests/vmapi.xml.in
 
 include ./tools/mk/Makefile.defs
 include ./tools/mk/Makefile.node.defs
@@ -37,7 +37,7 @@ include ./tools/mk/Makefile.node_deps.defs
 include ./tools/mk/Makefile.smf.defs
 
 ROOT            := $(shell pwd)
-RELEASE_TARBALL := zapi-pkg-$(STAMP).tar.bz2
+RELEASE_TARBALL := vmapi-pkg-$(STAMP).tar.bz2
 TMPDIR          := /tmp/$(STAMP)
 
 
@@ -57,7 +57,7 @@ CLEAN_FILES += $(NODEUNIT) ./node_modules/nodeunit
 .PHONY: release
 release: all deps docs $(SMF_MANIFESTS)
 	@echo "Building $(RELEASE_TARBALL)"
-	@mkdir -p $(TMPDIR)/root/opt/smartdc/zapi
+	@mkdir -p $(TMPDIR)/root/opt/smartdc/vmapi
 	@mkdir -p $(TMPDIR)/site
 	@touch $(TMPDIR)/site/.do-not-delete-me
 	cp -r   $(ROOT)/build \
@@ -68,7 +68,7 @@ release: all deps docs $(SMF_MANIFESTS)
     $(ROOT)/package.json \
     $(ROOT)/smf \
     $(ROOT)/tools \
-    $(TMPDIR)/root/opt/smartdc/zapi/
+    $(TMPDIR)/root/opt/smartdc/vmapi/
 	(cd $(TMPDIR) && $(TAR) -jcf $(ROOT)/$(RELEASE_TARBALL) root site)
 	@rm -rf $(TMPDIR)
 
@@ -79,8 +79,8 @@ publish: release
     echo "error: 'BITS_DIR' must be set for 'publish' target"; \
     exit 1; \
   fi
-	mkdir -p $(BITS_DIR)/zapi
-	cp $(ROOT)/$(RELEASE_TARBALL) $(BITS_DIR)/zapi/$(RELEASE_TARBALL)
+	mkdir -p $(BITS_DIR)/vmapi
+	cp $(ROOT)/$(RELEASE_TARBALL) $(BITS_DIR)/vmapi/$(RELEASE_TARBALL)
 
 
 .PHONY: test

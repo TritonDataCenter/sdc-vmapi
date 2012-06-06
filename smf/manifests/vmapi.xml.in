@@ -6,8 +6,8 @@
 	This is a sample SMF manifest. If you want to actually use it, you'll
 	need to replace @@PREFIX@@ below with the path to this workspace.
  -->
-<service_bundle type="manifest" name="zapi">
-  <service name="smartdc/site/zapi" type="service" version="7.0.0">
+<service_bundle type="manifest" name="vmapi">
+  <service name="smartdc/site/vmapi" type="service" version="7.0.0">
 
     <create_default_instance enabled="true"/>
     <single_instance/>
@@ -25,7 +25,7 @@
       name="start"
       exec="@@NODE@@ @@PREFIX@@/server.js &amp;"
       timeout_seconds="30">
-      <method_context working_directory="/opt/smartdc/zapi">
+      <method_context working_directory="/opt/smartdc/vmapi">
         <method_credential user="nobody" group="nobody" privileges="basic,net_privaddr"/>
         <method_environment>
           <envvar name="PATH" value="/opt/nodejs/bin:/usr/local/bin:/opt/local/bin:/usr/bin:/usr/sbin:/bin"/>
@@ -35,11 +35,11 @@
     </exec_method>
 
     <exec_method type="method" name="restart" exec=":kill" timeout_seconds="60">
-      <method_context working_directory="/opt/smartdc/zapi" />
+      <method_context working_directory="/opt/smartdc/vmapi" />
     </exec_method>
 
     <exec_method type="method" name="stop" exec=":kill" timeout_seconds="60">
-      <method_context working_directory="/opt/smartdc/zapi" />
+      <method_context working_directory="/opt/smartdc/vmapi" />
     </exec_method>
 
     <property_group name="startd" type="framework">
@@ -54,7 +54,7 @@
 
     <template>
       <common_name>
-        <loctext xml:lang="C">ZAPI daemon</loctext>
+        <loctext xml:lang="C">VMAPI daemon</loctext>
       </common_name>
     </template>
 

@@ -1,13 +1,13 @@
 /*
  * Copyright (c) 2012, Joyent, Inc. All rights reserved.
  *
- * Main entry-point for the Zones API.
+ * Main entry-point for the VMs API.
  */
 
 var path = require('path');
 var fs = require('fs');
 
-var ZAPI = require('./lib/zapi');
+var VMAPI = require('./lib/vmapi');
 
 var VERSION = false;
 
@@ -48,12 +48,12 @@ var config = loadConfig();
 config.version = version() || '7.0.0';
 
 
-var zapi;
+var vmapi;
 
 try {
 
-    zapi = new ZAPI(config);
-    zapi.init();
+    vmapi = new VMAPI(config);
+    vmapi.init();
 
 } catch (e) {
     console.error(e.stack);
@@ -61,12 +61,12 @@ try {
 }
 
 
-zapi.on('ready', function () {
-    zapi.listen();
+vmapi.on('ready', function () {
+    vmapi.listen();
 });
 
 
-zapi.on('error', function (err) {
-    zapi.log.error(err, 'error connecting to UFDS. Aborting.');
+vmapi.on('error', function (err) {
+    vmapi.log.error(err, 'error connecting to UFDS. Aborting.');
     process.exit(1);
 });
