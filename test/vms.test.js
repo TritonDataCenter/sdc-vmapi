@@ -17,7 +17,7 @@ var vmLocation;
 
 var DATASET = '01b2c898-945f-11e1-a523-af1afbe22822';
 var CUSTOMER = '930896af-bf8c-48d4-885c-6573a94b1853';
-var NETWORKS = '5a063422-1243-442e-8612-099371609cb6';
+var NETWORKS = '48a36b2e-b1da-4014-9a7a-6b6b6d80d661';
 
 
 // --- Helpers
@@ -188,7 +188,7 @@ exports.create_vm = function(t) {
       function (err, req, res, data) {
           var body = JSON.parse(data);
           t.ifError(err);
-          t.equal(res.statusCode, 201, '201 Created');
+          t.equal(res.statusCode, 202);
           common.checkHeaders(t, res.headers);
           t.ok(body, 'vm ok');
           jobLocation = '/jobs/' + body.job_uuid;
@@ -224,7 +224,7 @@ exports.stop_vm = function(t) {
     client.post(vmLocation, { action: 'stop' },
       function (err, req, res, data) {
           t.ifError(err);
-          t.equal(res.statusCode, 200, 'Stop 200 OK');
+          t.equal(res.statusCode, 202);
           common.checkHeaders(t, res.headers);
           t.ok(JSON.parse(data));
           t.done();
@@ -244,7 +244,7 @@ exports.start_vm = function(t) {
     client.post(vmLocation, { action: 'start' },
       function (err, req, res, data) {
           t.ifError(err);
-          t.equal(res.statusCode, 200, 'Start 200 OK');
+          t.equal(res.statusCode, 202);
           common.checkHeaders(t, res.headers);
           t.ok(JSON.parse(data));
           t.done();
@@ -264,7 +264,7 @@ exports.reboot_vm = function(t) {
     client.post(vmLocation, { action: 'reboot' },
       function (err, req, res, data) {
           t.ifError(err);
-          t.equal(res.statusCode, 200, 'Reboot 200 OK');
+          t.equal(res.statusCode, 202);
           common.checkHeaders(t, res.headers);
           t.ok(JSON.parse(data));
           t.done();
@@ -303,7 +303,7 @@ exports.add_tags = function(t) {
 
     client.post(path, query, function (err, req, res, data) {
         t.ifError(err);
-        t.equal(res.statusCode, 200);
+        t.equal(res.statusCode, 202);
         common.checkHeaders(t, res.headers);
         t.ok(JSON.parse(data));
         t.done();
@@ -343,7 +343,7 @@ exports.delete_tag = function(t) {
 
     client.del(path, function (err, req, res, data) {
         t.ifError(err);
-        t.equal(res.statusCode, 200);
+        t.equal(res.statusCode, 202);
         common.checkHeaders(t, res.headers);
         t.ok(JSON.parse(data));
         t.done();
@@ -368,7 +368,7 @@ exports.delete_tags = function(t) {
 
     client.del(path, function (err, req, res, data) {
         t.ifError(err);
-        t.equal(res.statusCode, 200);
+        t.equal(res.statusCode, 202);
         common.checkHeaders(t, res.headers);
         t.ok(JSON.parse(data));
         t.done();
@@ -387,7 +387,7 @@ exports.wait_delete_tags = function(t) {
 exports.destroy_vm = function(t) {
     client.del(vmLocation, function (err, req, res, data) {
           t.ifError(err);
-          t.equal(res.statusCode, 200, 'Destroy 200 OK');
+          t.equal(res.statusCode, 202);
           common.checkHeaders(t, res.headers);
           t.ok(JSON.parse(data));
           t.done();

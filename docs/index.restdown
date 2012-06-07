@@ -214,7 +214,7 @@ the same as a GET to /vms/:uuid, however some VM attributes might not be present
 ### Response Codes
 
 ||**Code**||**Description**||**Response**||
-||201||New job created||VM object||
+||202||New job created||VM response object||
 ||409||Missing parameter||Error object||
 ||409||Invalid parameter||Error object||
 
@@ -258,7 +258,7 @@ At least one of the following parameters must be provided when action=update.
 ### Response Codes
 
 ||**Code**||**Description**||**Response**||
-||200||||VM object||
+||202||New job created||VM response object||
 ||404||VM not found||Error object||
 ||409||Missing parameter||Error object||
 ||409||Invalid parameter||Error object||
@@ -288,7 +288,7 @@ Deletes a VM. The VM will be physically destroyed and it will be marked as destr
 ### Responses
 
 ||**Code**||**Description**||**Response**||
-||200||||VM object||
+||202||New job created||VM response object||
 ||404||VM not found||Error object||
 
 ### Example
@@ -378,17 +378,13 @@ Adds a new metadata to a VM. Keep in mind that metadata gets appended, not overw
 ### Responses
 
 ||**Code**||**Description**||**Response**||
-||200||||Metadata object||
+||202||New job created||VM response object||
 ||404||VM not found||Error object||
 
 ### Example
 
     POST /vms/da0dfac1-341e-4e51-b357-99f7355f1008/tags
       -d customer=tracy
-
-    {
-      "customer": "tracy"
-    }
 
 
 ## DeleteMetadata (DELETE /vms/:uuid/(tags|customer_metadata|internal_metadata)/:key)
@@ -405,7 +401,7 @@ Deletes a metadata key from a VM.
 ### Responses
 
 ||**Code**||**Description**||**Response**||
-||204||Request accepted||||
+||202||New job created||VM response object||
 ||404||VM not found||Error object||
 
 ### Example
@@ -426,7 +422,7 @@ Deletes all metadata keys from a VM.
 ### Responses
 
 ||**Code**||**Description**||**Response**||
-||204||Request accepted||||
+||202||New job created||VM response object||
 ||404||VM not found||Error object||
 
 ### Example
