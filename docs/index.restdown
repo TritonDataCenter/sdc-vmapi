@@ -193,7 +193,7 @@ the same as a GET to /vms/:uuid, however some VM attributes might not be present
 ||owner_uuid||UUID||VM Owner||
 ||dataset_uuid||UUID||Dataset UUID. Required if dataset_url is not present||
 ||dataset_url||URL||Dataset URL. Required if dataset_uuid is not present||
-||brand||String||'joyent' or 'kvm'||
+||brand||String||'joyent', 'joyent-minimal' or 'kvm'||
 ||ram||Number||VM RAM||
 
 ### Optional Inputs
