@@ -192,15 +192,15 @@ the same as a GET to /vms/:uuid, however some VM attributes might not be present
 
 ||owner_uuid||UUID||VM Owner||
 ||dataset_uuid||UUID||Dataset UUID. Required if dataset_url is not present||
-||dataset_url||URL||Dataset URL. Required if dataset_uuid is not present||
+||networks||String/Array||Comma separated network UUIDs or array of UUIDs if application/json||
 ||brand||String||'joyent', 'joyent-minimal' or 'kvm'||
 ||ram||Number||VM RAM||
 
 ### Optional Inputs
 
 ||server_uuid||UUID||Manually specify a server for the provision||
+||nics||Object||If present, overrides networks. NIC object compatible with vmadm||
 ||alias||String||VM alias||
-||networks||String/Array||Comma separated network UUIDs or array of UUIDs if application/json||
 ||max_physical_memory||Number||Same as RAM||
 ||max_swap||Number||Defaults to 2 x RAM if not specified||
 ||zfs_io_priority||Number||ZFS IO Priority||
