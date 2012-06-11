@@ -17,7 +17,7 @@ var vmLocation;
 
 var DATASET = '01b2c898-945f-11e1-a523-af1afbe22822';
 var CUSTOMER = '930896af-bf8c-48d4-885c-6573a94b1853';
-var NETWORKS = '48a36b2e-b1da-4014-9a7a-6b6b6d80d661';
+var NETWORKS = '189a3638-d1d4-4d12-8b0c-c27af5e84552';
 
 
 // --- Helpers
@@ -378,6 +378,33 @@ exports.delete_tags = function(t) {
 
 exports.wait_delete_tags = function(t) {
     waitForValue(vmLocation, 'tags', {}, function (err) {
+        t.ifError(err);
+        t.done();
+    });
+};
+
+
+exports.set_tags = function(t) {
+    var path = '/vms/' + newUuid + '/tags?owner_uuid=' + CUSTOMER;
+    var query = 'role=database&group=deployment';
+
+    client.put(path, query, function (err, req, res, data) {
+        t.ifError(err);
+        t.equal(res.statusCode, 202);
+        common.checkHeaders(t, res.headers);
+        t.ok(JSON.parse(data));
+        t.done();
+    });
+};
+
+
+exports.wait_set_tags = function(t) {
+    var tags = {
+        role: 'database',
+        group: 'deployment'
+    };
+
+    waitForValue(vmLocation, 'tags', tags, function (err) {
         t.ifError(err);
         t.done();
     });

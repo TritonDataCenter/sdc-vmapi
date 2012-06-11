@@ -385,6 +385,34 @@ Adds a new metadata to a VM. Keep in mind that metadata gets appended, not overw
 
     POST /vms/da0dfac1-341e-4e51-b357-99f7355f1008/tags
       -d customer=tracy
+    POST /vms/da0dfac1-341e-4e51-b357-99f7355f1008/tags
+      --data-binary '{ "customer": "tracy" }'
+
+
+## SetMetadata (PUT /vms/:uuid/(tags|customer_metadata|internal_metadata))
+
+Sets new metadata to a VM. The provided metadata object replaces the current
+one present in the VM.
+
+### Inputs
+
+||**Param**||**Type**||**Description**||**Required?**||
+||uuid||UUID||VM UUID||Yes||
+||owner_uuid||UUID||VM Owner||No||
+||metadata||key-value/object||Metadata||Yes||
+
+### Responses
+
+||**Code**||**Description**||**Response**||
+||202||New job created||VM response object||
+||404||VM not found||Error object||
+
+### Example
+
+    POST /vms/da0dfac1-341e-4e51-b357-99f7355f1008/tags
+      -d customer=tracy
+    POST /vms/da0dfac1-341e-4e51-b357-99f7355f1008/tags
+      --data-binary '{ "customer": "tracy" }'
 
 
 ## DeleteMetadata (DELETE /vms/:uuid/(tags|customer_metadata|internal_metadata)/:key)
@@ -506,6 +534,19 @@ Returns a job with the specified UUID.
 
 
 # Changelog
+
+## 2012-06-11
+
+  * Added SetMetadata (PUT /vms/:uuid/:metadata)
+
+## 2012-06-07
+
+  * Reverted dataset_url as a allowed parameter
+  * Can now pass nics as a parameter. Will override networks
+
+## 2012-06-06
+
+  * Brand 'joyent-minimal' is now supported
 
 ## 2012-06-05
 
