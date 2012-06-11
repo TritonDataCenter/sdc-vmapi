@@ -18,7 +18,7 @@ markdown2extras: wiki-tables, code-friendly
 
 VMs API allows clients to get information about VMs on a datacenter by using an HTTP API. VMAPI offers the following features:
 
- * Search VMs by specific criteria such as ram, owner, tags, server, dataset, etc.
+ * Search VMs by specific criteria such as ram, owner, tags, server, image, etc.
  * Get information about a single VM
  * Create new VMs
  * Perform actions on an existing VM such as start, stop, reboot and resize
@@ -61,6 +61,7 @@ The VM response object is going a single representation for the two available VM
       "uuid": "ef375f03-57ca-44a9-bc8d-63aec09fbc37",
       "brand": "joyent",
       "dataset_uuid": "01b2c898-945f-11e1-a523-af1afbe22822",
+      "image_uuid": "01b2c898-945f-11e1-a523-af1afbe22822",
       "server_uuid": "564d6836-ed2e-18f8-bdf2-e900490a57a1",
       "alias": "assets1",
       "ram": 64,
@@ -191,7 +192,7 @@ the same as a GET to /vms/:uuid, however some VM attributes might not be present
 ### Required Inputs
 
 ||owner_uuid||UUID||VM Owner||
-||dataset_uuid||UUID||Dataset UUID. Required if dataset_url is not present||
+||image_uuid||UUID||Image UUID||
 ||networks||String/Array||Comma separated network UUIDs or array of UUIDs if application/json||
 ||brand||String||'joyent', 'joyent-minimal' or 'kvm'||
 ||ram||Number||VM RAM||
@@ -222,7 +223,7 @@ the same as a GET to /vms/:uuid, however some VM attributes might not be present
 
     POST /vms
       -d owner_uuid=930896af-bf8c-48d4-885c-6573a94b1853 \
-      -d dataset_uuid=28445220-6eac-11e1-9ce8-5f14ed22e782 \
+      -d image_uuid=28445220-6eac-11e1-9ce8-5f14ed22e782 \
       -d brand=joyent \
       -d ram=128
 
@@ -481,7 +482,7 @@ Returns a job with the specified UUID.
       "execution": "succeeded",
       "params": {
         "owner_uuid": "930896af-bf8c-48d4-885c-6573a94b1853",
-        "dataset_uuid": "28445220-6eac-11e1-9ce8-5f14ed22e782",
+        "image_uuid": "28445220-6eac-11e1-9ce8-5f14ed22e782",
         "brand": "joyent",
         "ram": "128",
         "zonename": "e9bd0ed1-7de3-4c66-a649-d675dbce6e83",
@@ -537,6 +538,7 @@ Returns a job with the specified UUID.
 
 ## 2012-06-11
 
+  * dataset_uuid is deprecated. image_uuid should now be used
   * Added SetMetadata (PUT /vms/:uuid/:metadata)
 
 ## 2012-06-07
