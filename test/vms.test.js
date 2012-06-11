@@ -17,7 +17,7 @@ var vmLocation;
 
 var DATASET = '01b2c898-945f-11e1-a523-af1afbe22822';
 var CUSTOMER = '930896af-bf8c-48d4-885c-6573a94b1853';
-var NETWORKS = '189a3638-d1d4-4d12-8b0c-c27af5e84552';
+var NETWORKS = null;
 
 
 // --- Helpers
@@ -98,6 +98,18 @@ exports.setUp = function(callback) {
         assert.ok(_client, 'restify client');
         client = _client;
         callback();
+    });
+};
+
+
+exports.napi_networks_ok = function(t) {
+    client.napi.get('/networks', function (err, req, res, networks) {
+        t.ifError(err);
+        t.equal(res.statusCode, 200);
+        t.ok(networks);
+        t.ok(Array.isArray(networks));
+        NETWORKS = networks[0].uuid;
+        t.done();
     });
 };
 

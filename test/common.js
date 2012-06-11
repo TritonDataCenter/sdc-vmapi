@@ -15,6 +15,9 @@ var UFDS = require('sdc-clients').UFDS;
 var USER = 'admin';
 var PASSWD = 'z3cr3t';
 
+var VMAPI_URL = 'http://' + (process.env.VMAPI_IP || 'localhost:8080');
+var NAPI_URL = 'http://' + (process.env.NAPI_IP || '10.99.99.10');
+
 
 
 // --- Library
@@ -36,13 +39,24 @@ module.exports = {
         });
 
         var client = restify.createStringClient({
-            url: 'http://localhost:8080',
+            url: VMAPI_URL,
             version: '*',
             retryOptions: {
                 retry: 0
             },
             log: logger
         });
+
+        var napi = restify.createJsonClient({
+            url: NAPI_URL,
+            version: '*',
+            retryOptions: {
+                retry: 0
+            },
+            log: logger
+        });
+
+        client.napi = napi;
 
         return callback(null, client);
     },
