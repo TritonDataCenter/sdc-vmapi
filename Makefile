@@ -14,6 +14,8 @@
 # included Makefiles (in eng.git) so that other teams can use them too.
 #
 
+NODE_PREBUILT_VERSION=v0.6.19
+
 #
 # Tools
 #
@@ -32,7 +34,8 @@ JSSTYLE_FLAGS    = -o indent=4,doxygen,unparenthesized-return=0
 SMF_MANIFESTS_IN	 = smf/manifests/vmapi.xml.in
 
 include ./tools/mk/Makefile.defs
-include ./tools/mk/Makefile.node.defs
+include tools/mk/Makefile.node_prebuilt.defs
+# include tools/mk/Makefile.node.defs
 include ./tools/mk/Makefile.node_deps.defs
 include ./tools/mk/Makefile.smf.defs
 
@@ -89,7 +92,8 @@ test: $(NODEUNIT)
 
 
 include ./tools/mk/Makefile.deps
-include ./tools/mk/Makefile.node.targ
+include tools/mk/Makefile.node_prebuilt.targ
+# include ./tools/mk/Makefile.node.targ
 include ./tools/mk/Makefile.node_deps.targ
 include ./tools/mk/Makefile.smf.targ
 include ./tools/mk/Makefile.targ
