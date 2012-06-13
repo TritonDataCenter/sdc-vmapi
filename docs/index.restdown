@@ -463,6 +463,62 @@ Deletes all metadata keys from a VM.
 
 Jobs are created when an operation needs to be performed on a VM. Examples of jobs that can be created are VM lifecycle tasks such as start and reboot. Provision jobs are created from calling "POST /vms".
 
+
+## ListJobs (GET /jobs)
+
+Returns all jobs matching the specified search filters.
+
+### Inputs
+
+|| **Param** || **Type** || **Description** || **Required?** ||
+|| vm_uuid || UUID || Return all jobs for this VM UUID || No ||
+|| execution || String || Job state. See below || No ||
+|| task || String || Type of job. See below || No ||
+
+### Job 'execution' State Inputs
+
+|| **Execution** ||
+|| running ||
+|| succeeded ||
+|| failed ||
+
+### Job 'task' Type Inputs
+
+**NOTE** Any metadata endpoint that returns a Job response object is an 'update'
+job for the backend system.
+
+|| **Task** ||
+|| provision ||
+|| start ||
+|| stop ||
+|| reboot ||
+|| update ||
+
+### Example
+
+    GET /jobs?execution=failed
+    GET /jobs?task=provision
+
+
+## ListVmJobs (GET /vms/:uuid/jobs)
+
+Returns all VM jobs matching the specified search filters. This is the same
+implementation as the previous endpoint, but with a more convenient path when
+the VM UUID is known.
+
+### Inputs
+
+|| **Param** || **Type** || **Description** || **Required?** ||
+|| uuid || UUID || Return all jobs for this VM UUID || No ||
+|| execution || String || Job state. See above || No ||
+|| task || String || Type of job. See above || No ||
+
+### Example
+
+    GET /vms/da0dfac1-341e-4e51-b357-99f7355f1008/jobs?execution=failed
+    GET /vms/da0dfac1-341e-4e51-b357-99f7355f1008/jobs?task=provision
+
+
 ## GetJob (GET /jobs/:uuid)
 
 Returns a job with the specified UUID.
@@ -501,7 +557,6 @@ Returns a job with the specified UUID.
           "status": "complete"
         }
       },
-      "info": null,
       "exec_after": "2012-04-13T18:17:15.194Z",
       "created_at": "2012-04-13T18:17:15.198Z",
       "timeout": 180,
@@ -535,6 +590,10 @@ Returns a job with the specified UUID.
 
 
 # Changelog
+
+## 2012-06-12
+
+  * Added /jobs and /vms/:uuid/jobs
 
 ## 2012-06-11
 

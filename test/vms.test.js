@@ -440,3 +440,35 @@ exports.wait_destroyed = function(t) {
         t.done();
     });
 };
+
+
+exports.filter_jobs_ok = function(t) {
+    var path = '/jobs?task=provision&vm_uuid=' + newUuid;
+
+    client.get(path, function (err, req, res, data) {
+        var body = JSON.parse(data);
+        t.ifError(err);
+        t.equal(res.statusCode, 200);
+        common.checkHeaders(t, res.headers);
+        t.ok(body);
+        t.ok(Array.isArray(body));
+        t.equal(body.length, 1);
+        t.done();
+    });
+};
+
+
+exports.filter_vm_jobs_ok = function(t) {
+    var path = '/vms/' + newUuid + '/jobs?task=reboot';
+
+    client.get(path, function (err, req, res, data) {
+        var body = JSON.parse(data);
+        t.ifError(err);
+        t.equal(res.statusCode, 200);
+        common.checkHeaders(t, res.headers);
+        t.ok(body);
+        t.ok(Array.isArray(body));
+        t.equal(body.length, 1);
+        t.done();
+    });
+};
