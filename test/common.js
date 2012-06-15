@@ -15,7 +15,7 @@ var UFDS = require('sdc-clients').UFDS;
 var USER = 'admin';
 var PASSWD = 'z3cr3t';
 
-var VMAPI_URL = 'http://' + (process.env.VMAPI_IP || 'localhost:8080');
+var VMAPI_URL = 'http://' + (process.env.VMAPI_IP || 'localhost');
 var NAPI_URL = 'http://' + (process.env.NAPI_IP || '10.99.99.10');
 
 
