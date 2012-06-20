@@ -61,7 +61,7 @@ CLEAN_FILES += $(NODEUNIT) ./node_modules/nodeunit
 .PHONY: release
 release: all deps docs $(SMF_MANIFESTS)
 	@echo "Building $(RELEASE_TARBALL)"
-	@mkdir -p $(TMPDIR)/root/opt/smartdc/vmapi
+	@mkdir -p $(TMPDIR)/root/opt/smartdc/vmapi/build
 	@mkdir -p $(TMPDIR)/site
 	@touch $(TMPDIR)/site/.do-not-delete-me
 	cp -PR $(NODE_INSTALL) $(TMPDIR)/root/opt/smartdc/vmapi/build/node
