@@ -19,6 +19,9 @@ var DATASET = '01b2c898-945f-11e1-a523-af1afbe22822';
 var CUSTOMER = '930896af-bf8c-48d4-885c-6573a94b1853';
 var NETWORKS = null;
 
+// In seconds
+var TIMEOUT = 90;
+
 
 // --- Helpers
 
@@ -72,19 +75,27 @@ function checkValue(url, key, value, callback) {
 }
 
 
+var times = 0;
+
 function waitForValue(url, key, value, callback) {
     return checkValue(url, key, value, function (err, ready) {
         if (err)
             return callback(err);
 
-        if (!ready)
-            return setTimeout(function () {
-                waitForValue(url, key, value, callback);
-            }, 3000);
+        if (!ready) {
+            times++;
 
-        return setTimeout(function () {
+            if (times == TIMEOUT) {
+                throw new Error('Timeout waiting on ' + url);
+            } else {
+                return setTimeout(function () {
+                    waitForValue(url, key, value, callback);
+                }, 1000);
+            }
+        } else {
+            times = 0;
             callback(null);
-        }, 20000);
+        }
     });
 }
 
@@ -223,11 +234,24 @@ exports.get_job = function (t) {
 };
 
 
+exports.wait_provisioned_job = function(t) {
+    waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
+        t.ifError(err);
+        t.done();
+    });
+};
+
+
 exports.wait_provisioned = function(t) {
     vmLocation = '/vms/' + newUuid;
     waitForValue(vmLocation, 'state', 'running', function (err) {
         t.ifError(err);
-        t.done();
+
+        // Zoneinit mainly causing the zone to not be completely ready
+        // to receive a stop/reboot
+        return setTimeout(function () {
+            t.done();
+        }, 10000);
     });
 };
 
@@ -235,11 +259,21 @@ exports.wait_provisioned = function(t) {
 exports.stop_vm = function(t) {
     client.post(vmLocation, { action: 'stop' },
       function (err, req, res, data) {
-          t.ifError(err);
-          t.equal(res.statusCode, 202);
-          common.checkHeaders(t, res.headers);
-          t.ok(JSON.parse(data));
-          t.done();
+        var body = JSON.parse(data);
+        t.ifError(err);
+        t.equal(res.statusCode, 202);
+        common.checkHeaders(t, res.headers);
+        t.ok(body);
+        jobLocation = '/jobs/' + body.job_uuid;
+        t.done();
+    });
+};
+
+
+exports.wait_stopped_job = function(t) {
+    waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
+        t.ifError(err);
+        t.done();
     });
 };
 
@@ -247,7 +281,10 @@ exports.stop_vm = function(t) {
 exports.wait_stopped = function(t) {
     waitForValue(vmLocation, 'state', 'stopped', function (err) {
         t.ifError(err);
-        t.done();
+
+        return setTimeout(function () {
+            t.done();
+        }, 10000);
     });
 };
 
@@ -255,11 +292,21 @@ exports.wait_stopped = function(t) {
 exports.start_vm = function(t) {
     client.post(vmLocation, { action: 'start' },
       function (err, req, res, data) {
-          t.ifError(err);
-          t.equal(res.statusCode, 202);
-          common.checkHeaders(t, res.headers);
-          t.ok(JSON.parse(data));
-          t.done();
+        var body = JSON.parse(data);
+        t.ifError(err);
+        t.equal(res.statusCode, 202);
+        common.checkHeaders(t, res.headers);
+        t.ok(body);
+        jobLocation = '/jobs/' + body.job_uuid;
+        t.done();
+    });
+};
+
+
+exports.wait_started_job = function(t) {
+    waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
+        t.ifError(err);
+        t.done();
     });
 };
 
@@ -275,22 +322,30 @@ exports.wait_started = function(t) {
 exports.reboot_vm = function(t) {
     client.post(vmLocation, { action: 'reboot' },
       function (err, req, res, data) {
-          t.ifError(err);
-          t.equal(res.statusCode, 202);
-          common.checkHeaders(t, res.headers);
-          t.ok(JSON.parse(data));
-          t.done();
+        var body = JSON.parse(data);
+        t.ifError(err);
+        t.equal(res.statusCode, 202);
+        common.checkHeaders(t, res.headers);
+        t.ok(body);
+        jobLocation = '/jobs/' + body.job_uuid;
+        t.done();
+    });
+};
+
+
+exports.wait_rebooted_job = function(t) {
+    waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
+        t.ifError(err);
+        t.done();
     });
 };
 
 
 exports.wait_rebooted = function(t) {
-    setTimeout(function (){
-        waitForValue(vmLocation, 'state', 'running', function (err) {
-            t.ifError(err);
-            t.done();
-        });
-    }, 10000);
+    waitForValue(vmLocation, 'state', 'running', function (err) {
+        t.ifError(err);
+        t.done();
+    });
 };
 
 
@@ -314,10 +369,20 @@ exports.add_tags = function(t) {
     var query = 'role=database&group=deployment';
 
     client.post(path, query, function (err, req, res, data) {
+        var body = JSON.parse(data);
         t.ifError(err);
         t.equal(res.statusCode, 202);
         common.checkHeaders(t, res.headers);
-        t.ok(JSON.parse(data));
+        t.ok(body);
+        jobLocation = '/jobs/' + body.job_uuid;
+        t.done();
+    });
+};
+
+
+exports.wait_new_tag_job = function(t) {
+    waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
+        t.ifError(err);
         t.done();
     });
 };
@@ -354,10 +419,20 @@ exports.delete_tag = function(t) {
     var path = '/vms/' + newUuid + '/tags/role?owner_uuid=' + CUSTOMER;
 
     client.del(path, function (err, req, res, data) {
+        var body = JSON.parse(data);
         t.ifError(err);
         t.equal(res.statusCode, 202);
         common.checkHeaders(t, res.headers);
-        t.ok(JSON.parse(data));
+        t.ok(body);
+        jobLocation = '/jobs/' + body.job_uuid;
+        t.done();
+    });
+};
+
+
+exports.wait_delete_tag_job = function(t) {
+    waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
+        t.ifError(err);
         t.done();
     });
 };
@@ -379,10 +454,20 @@ exports.delete_tags = function(t) {
     var path = '/vms/' + newUuid + '/tags?owner_uuid=' + CUSTOMER;
 
     client.del(path, function (err, req, res, data) {
+        var body = JSON.parse(data);
         t.ifError(err);
         t.equal(res.statusCode, 202);
         common.checkHeaders(t, res.headers);
-        t.ok(JSON.parse(data));
+        t.ok(body);
+        jobLocation = '/jobs/' + body.job_uuid;
+        t.done();
+    });
+};
+
+
+exports.wait_delete_tags_job = function(t) {
+    waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
+        t.ifError(err);
         t.done();
     });
 };
@@ -401,10 +486,20 @@ exports.set_tags = function(t) {
     var query = 'role=database&group=deployment';
 
     client.put(path, query, function (err, req, res, data) {
+        var body = JSON.parse(data);
         t.ifError(err);
         t.equal(res.statusCode, 202);
         common.checkHeaders(t, res.headers);
-        t.ok(JSON.parse(data));
+        t.ok(body);
+        jobLocation = '/jobs/' + body.job_uuid;
+        t.done();
+    });
+};
+
+
+exports.wait_set_tags_job = function(t) {
+    waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
+        t.ifError(err);
         t.done();
     });
 };
@@ -425,11 +520,21 @@ exports.wait_set_tags = function(t) {
 
 exports.destroy_vm = function(t) {
     client.del(vmLocation, function (err, req, res, data) {
-          t.ifError(err);
-          t.equal(res.statusCode, 202);
-          common.checkHeaders(t, res.headers);
-          t.ok(JSON.parse(data));
-          t.done();
+        var body = JSON.parse(data);
+        t.ifError(err);
+        t.equal(res.statusCode, 202);
+        common.checkHeaders(t, res.headers);
+        t.ok(body);
+        jobLocation = '/jobs/' + body.job_uuid;
+        t.done();
+    });
+};
+
+
+exports.wait_destroyed_job = function(t) {
+    waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
+        t.ifError(err);
+        t.done();
     });
 };
 
