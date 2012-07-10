@@ -9,7 +9,6 @@
     "node-uuid": "1.2.0",
     "filed": "0.0.5",
     "bunyan": "0.6.8",
-    "ldapjs": "0.4.8",
     "expiring-lru-cache": "2.0.0",
     "sprintf": "0.1.1",
     "sdc-clients": "git+ssh://git@git.joyent.com:node-sdc-clients.git",
