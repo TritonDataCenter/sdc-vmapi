@@ -22,18 +22,20 @@ VMs API allows clients to get information about VMs on a datacenter by using an 
  * Get information about a single VM
  * Create new VMs
  * Perform actions on an existing VM such as start, stop, reboot and resize
+ * List jobs that have been created for VMs
  * Update VMs
  * Destroy VMs
+ * Manage VM metadata
 
 ## Design & Requirements
 
 * Node.js restify HTTP server
-* UFDS is the remote datastore for VMAPI. VMAPI does not have persistency and all zones data living on UFDS should be considered a cache
-* A heartbeater AMQP client listens for zone heartbeats so VMAPI can return state information for zones
-* VMAPI is only concerned for exposing zones information to users the same way CNAPI does for compute nodes
+* UFDS is the remote datastore for VMAPI. VMAPI does not have persistency and VM data living on UFDS should be considered a cache
+* A heartbeater AMQP client listens for VM heartbeats so VMAPI can return state information for zones
+* VMAPI is only concerned for exposing VMs information to users the same way CNAPI does for compute nodes
 * There is one VMAPI instance per datacenter
 * VMAPI is stateless: when any VM action is called (create, destroy, reboot, etc) the message is passed through a workflow API instance that takes care of it
-* VMAPI should be as dumb as possible. Contrary to MAPI, VMAPI does not have complicated logic that prevents users to call actions on zones (and even creating zones). Much of the required logic for this is moved to the corresponding workflow and other participant APIs
+* VMAPI should be as dumb as possible. Contrary to MAPI, VMAPI does not have complicated logic that prevents users to call actions on VMs (and even creating VMs). Much of the required logic for this is moved to the corresponding workflow and other participant APIs
 
 
 # Getting Started
@@ -102,6 +104,26 @@ The VM response object is going a single representation for the two available VM
         "smartdc_type": "core"
       }
     }
+
+## VM States
+
+The VM response object contains a state attribute that should be used as the high level representation of the machine state. There are three values for a VM state, and a special additional 'active' state that is only available as a search filter when used in the ListVms API endpoint:
+
+|| **VM State** || **Description** ||
+|| running || Self-explanatory ||
+|| stopped || Self-explanatory ||
+|| destroyed || Self-explanatory||
+|| active || When used in ListVms, denotes machines that are not destroyed ||
+
+In addition, there is a 'zone_state' property that represents the Solaris Zones state, since every VM is really a zone internally. The state property should be used in favor of zone_state at all times, but zone_state is provided in case it's needed for debugging purposes. The following is a table that shows the mapping between zone_state and state values:
+
+|| **Zone State** || **VM State** ||
+|| configured || stopped ||
+|| incomplete || stopped ||
+|| installed || stopped||
+|| ready || running ||
+|| running || running ||
+|| shutting down || running ||
 
 
 # VM Job Response Object
@@ -294,7 +316,7 @@ Deletes a VM. The VM will be physically destroyed and it will be marked as destr
 
 ### Example
 
-    POST /vms/e9bd0ed1-7de3-4c66-a649-d675dbce6e83 -X DELETE
+    DELETE /vms/e9bd0ed1-7de3-4c66-a649-d675dbce6e83
 
 
 # VM Metadata
@@ -542,13 +564,6 @@ Returns a job with the specified UUID.
         "brand": "joyent",
         "ram": "128",
         "zonename": "e9bd0ed1-7de3-4c66-a649-d675dbce6e83",
-        "ufdsUrl": "ldaps://10.88.88.50:636",
-        "ufdsDn": "cn=root",
-        "ufdsPassword": "secret",
-        "dapiUrl": "http://10.99.99.24",
-        "dapiUsername": "admin",
-        "dapiPassword": "z3cr3t",
-        "cnapiUrl": "http://10.99.99.23",
         "uuid": "e9bd0ed1-7de3-4c66-a649-d675dbce6e83",
         "server_uuid": "564da914-5047-48f0-ba5e-26761097330a",
         "task": {
