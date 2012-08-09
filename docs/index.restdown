@@ -604,7 +604,40 @@ Returns a job with the specified UUID.
     }
 
 
+# Running Status for VMs
+
+When querying one of the VM endpoints such as the single and collection VM URLs, the 'state' attribute of the VM object let us know what is the running status of the machine. In addition to this, a '/statuses' endpoint is provided to give information about specific VM UUIDs instead of returning VM objects for machines that satisfy a search criteria.
+
+## ListStatuses (GET /statuses)
+
+Returns the running status for all of the VM UUIDs specified in the request parameters.
+
+### Inputs
+
+|| **Param** || **Type** || **Description** || **Required?** ||
+|| uuids || Array of UUIDs || Comma separated list of UUIDs || Yes ||
+
+### Note
+
+When one of the UUIDs in the request parameters corresponds to a machine that does not exist, it is ignored in the response object instead of returning null.
+
+### Example
+
+    GET /statuses?uuids=54e21a72-5921-4c5a-92db-fb662c8a812a,4f11fbab-dcc0-483f-bb14-e1434465032a
+
+    {
+      "54e21a72-5921-4c5a-92db-fb662c8a812a": "running",
+      "4f11fbab-dcc0-483f-bb14-e1434465032a": "stopped"
+    }
+
+
+
+
 # Changelog
+
+## 2012-08-08
+
+  * Added /statuses
 
 ## 2012-06-12
 
