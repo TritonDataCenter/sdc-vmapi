@@ -215,14 +215,32 @@ the same as a GET to /vms/:uuid, however some VM attributes might not be present
 
 ||owner_uuid||UUID||VM Owner||
 ||image_uuid||UUID||Image UUID||
-||networks||String/Array||Comma separated network UUIDs or array of UUIDs if application/json||
+||networks*||Array*||List of networks||
 ||brand||String||'joyent', 'joyent-minimal' or 'kvm'||
 ||ram||Number||VM RAM||
+
+### Deprecation Note
+
+The CreateVm endpoint accepts a list of network UUIDs in its legacy interface. A list of such UUID strings can be an object like the following:
+
+    [
+      '72a9cd7d-2a0d-4f45-8fa5-f092a3654ce2',
+      '01b2c898-945f-11e1-a523-af1afbe22822
+    ]
+
+The 'networks' parameter format has been updated to support the case when a specific IP wanted on the given network is provided. The following is the new format for the networks parameter:
+
+    [
+      { uuid: '72a9cd7d-2a0d-4f45-8fa5-f092a3654ce2', ip: '10.99.99.11' },
+      { uuid: '01b2c898-945f-11e1-a523-af1afbe22822 }
+    ]
+
+As we can see, the first element in the array is specifying an IP address that needs to be allocated whereas the second element it's just the regular case when IP allocation is left to NAPI.
+
 
 ### Optional Inputs
 
 ||server_uuid||UUID||Manually specify a server for the provision||
-||nics||Object||If present, overrides networks. NIC object compatible with vmadm||
 ||alias||String||VM alias||
 ||max_physical_memory||Number||Same as RAM||
 ||max_swap||Number||Defaults to 2 x RAM if not specified||
@@ -634,6 +652,10 @@ When one of the UUIDs in the request parameters corresponds to a machine that do
 
 
 # Changelog
+
+## 2012-08-10
+
+  * Added new format for networks parameter in CreateVm. See deprecation note
 
 ## 2012-08-08
 

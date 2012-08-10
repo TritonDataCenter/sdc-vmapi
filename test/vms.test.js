@@ -65,11 +65,10 @@ function checkEqual(value, expected) {
 
 
 function checkValue(url, key, value, callback) {
-    return client.get(url, function (err, req, res, data) {
+    return client.get(url, function (err, req, res, body) {
         if (err)
             return callback(err);
 
-        var body = JSON.parse(data);
         return callback(null, checkEqual(body[key], value));
     });
 }
@@ -119,7 +118,7 @@ exports.napi_networks_ok = function(t) {
         t.equal(res.statusCode, 200);
         t.ok(networks);
         t.ok(Array.isArray(networks));
-        NETWORKS = networks[0].uuid;
+        NETWORKS = [{ uuid: networks[0].uuid, ip: '10.99.99.94' }];
         t.done();
     });
 };
@@ -128,8 +127,7 @@ exports.napi_networks_ok = function(t) {
 exports.filter_vms_empty = function(t) {
     var path = '/vms?ram=32&owner_uuid=' + CUSTOMER;
 
-    client.get(path, function (err, req, res, data) {
-        var body = JSON.parse(data);
+    client.get(path, function (err, req, res, body) {
         t.ifError(err);
         t.equal(res.statusCode, 200);
         common.checkHeaders(t, res.headers);
@@ -144,8 +142,7 @@ exports.filter_vms_empty = function(t) {
 exports.filter_vms_ok = function(t) {
     var path = '/vms?ram=' + 64 + '&owner_uuid=' + CUSTOMER;
 
-    client.get(path, function (err, req, res, data) {
-        var body = JSON.parse(data);
+    client.get(path, function (err, req, res, body) {
         t.ifError(err);
         t.equal(res.statusCode, 200);
         common.checkHeaders(t, res.headers);
@@ -176,8 +173,7 @@ exports.get_vm_not_found = function(t) {
 exports.get_vm_ok = function(t) {
     var path = '/vms/' + muuid + '?owner_uuid=' + CUSTOMER;
 
-    client.get(path, function (err, req, res, data) {
-        var body = JSON.parse(data);
+    client.get(path, function (err, req, res, body) {
         t.ifError(err);
         t.equal(res.statusCode, 200, '200 OK');
         common.checkHeaders(t, res.headers);
@@ -208,8 +204,7 @@ exports.create_vm = function(t) {
     };
 
     client.post('/vms', vm,
-      function (err, req, res, data) {
-          var body = JSON.parse(data);
+      function (err, req, res, body) {
           t.ifError(err);
           t.equal(res.statusCode, 202);
           common.checkHeaders(t, res.headers);
@@ -222,8 +217,7 @@ exports.create_vm = function(t) {
 
 
 exports.get_job = function (t) {
-    client.get(jobLocation, function (err, req, res, data) {
-        var body = JSON.parse(data);
+    client.get(jobLocation, function (err, req, res, body) {
         t.ifError(err);
         t.equal(res.statusCode, 200, 'GetJob 200 OK');
         common.checkHeaders(t, res.headers);
@@ -258,8 +252,7 @@ exports.wait_provisioned = function(t) {
 
 exports.stop_vm = function(t) {
     client.post(vmLocation, { action: 'stop' },
-      function (err, req, res, data) {
-        var body = JSON.parse(data);
+      function (err, req, res, body) {
         t.ifError(err);
         t.equal(res.statusCode, 202);
         common.checkHeaders(t, res.headers);
@@ -291,8 +284,7 @@ exports.wait_stopped = function(t) {
 
 exports.start_vm = function(t) {
     client.post(vmLocation, { action: 'start' },
-      function (err, req, res, data) {
-        var body = JSON.parse(data);
+      function (err, req, res, body) {
         t.ifError(err);
         t.equal(res.statusCode, 202);
         common.checkHeaders(t, res.headers);
@@ -321,8 +313,7 @@ exports.wait_started = function(t) {
 
 exports.reboot_vm = function(t) {
     client.post(vmLocation, { action: 'reboot' },
-      function (err, req, res, data) {
-        var body = JSON.parse(data);
+      function (err, req, res, body) {
         t.ifError(err);
         t.equal(res.statusCode, 202);
         common.checkHeaders(t, res.headers);
@@ -352,8 +343,7 @@ exports.wait_rebooted = function(t) {
 exports.list_tags = function(t) {
     var path = '/vms/' + newUuid + '/tags?owner_uuid=' + CUSTOMER;
 
-    client.get(path, function (err, req, res, data) {
-        var body = JSON.parse(data);
+    client.get(path, function (err, req, res, body) {
         t.ifError(err);
         t.equal(res.statusCode, 200, '200 OK');
         common.checkHeaders(t, res.headers);
@@ -366,10 +356,12 @@ exports.list_tags = function(t) {
 
 exports.add_tags = function(t) {
     var path = '/vms/' + newUuid + '/tags?owner_uuid=' + CUSTOMER;
-    var query = 'role=database&group=deployment';
+    var query = {
+        role: 'database',
+        group: 'deployment'
+    };
 
-    client.post(path, query, function (err, req, res, data) {
-        var body = JSON.parse(data);
+    client.post(path, query, function (err, req, res, body) {
         t.ifError(err);
         t.equal(res.statusCode, 202);
         common.checkHeaders(t, res.headers);
@@ -418,8 +410,7 @@ exports.get_tag = function(t) {
 exports.delete_tag = function(t) {
     var path = '/vms/' + newUuid + '/tags/role?owner_uuid=' + CUSTOMER;
 
-    client.del(path, function (err, req, res, data) {
-        var body = JSON.parse(data);
+    client.del(path, function (err, req, res, body) {
         t.ifError(err);
         t.equal(res.statusCode, 202);
         common.checkHeaders(t, res.headers);
@@ -453,8 +444,7 @@ exports.wait_delete_tag = function(t) {
 exports.delete_tags = function(t) {
     var path = '/vms/' + newUuid + '/tags?owner_uuid=' + CUSTOMER;
 
-    client.del(path, function (err, req, res, data) {
-        var body = JSON.parse(data);
+    client.del(path, function (err, req, res, body) {
         t.ifError(err);
         t.equal(res.statusCode, 202);
         common.checkHeaders(t, res.headers);
@@ -483,10 +473,12 @@ exports.wait_delete_tags = function(t) {
 
 exports.set_tags = function(t) {
     var path = '/vms/' + newUuid + '/tags?owner_uuid=' + CUSTOMER;
-    var query = 'role=database&group=deployment';
+    var query = {
+        role: 'database',
+        group: 'deployment'
+    };
 
-    client.put(path, query, function (err, req, res, data) {
-        var body = JSON.parse(data);
+    client.put(path, query, function (err, req, res, body) {
         t.ifError(err);
         t.equal(res.statusCode, 202);
         common.checkHeaders(t, res.headers);
@@ -519,8 +511,7 @@ exports.wait_set_tags = function(t) {
 
 
 exports.destroy_vm = function(t) {
-    client.del(vmLocation, function (err, req, res, data) {
-        var body = JSON.parse(data);
+    client.del(vmLocation, function (err, req, res, body) {
         t.ifError(err);
         t.equal(res.statusCode, 202);
         common.checkHeaders(t, res.headers);
@@ -550,8 +541,7 @@ exports.wait_destroyed = function(t) {
 exports.filter_jobs_ok = function(t) {
     var path = '/jobs?task=provision&vm_uuid=' + newUuid;
 
-    client.get(path, function (err, req, res, data) {
-        var body = JSON.parse(data);
+    client.get(path, function (err, req, res, body) {
         t.ifError(err);
         t.equal(res.statusCode, 200);
         common.checkHeaders(t, res.headers);
@@ -566,8 +556,7 @@ exports.filter_jobs_ok = function(t) {
 exports.filter_vm_jobs_ok = function(t) {
     var path = '/vms/' + newUuid + '/jobs?task=reboot';
 
-    client.get(path, function (err, req, res, data) {
-        var body = JSON.parse(data);
+    client.get(path, function (err, req, res, body) {
         t.ifError(err);
         t.equal(res.statusCode, 200);
         common.checkHeaders(t, res.headers);

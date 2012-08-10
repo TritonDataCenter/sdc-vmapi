@@ -38,21 +38,15 @@ module.exports = {
             }
         });
 
-        var client = restify.createStringClient({
+        var client = restify.createJsonClient({
             url: VMAPI_URL,
             version: '*',
-            retryOptions: {
-                retry: 0
-            },
             log: logger
         });
 
         var napi = restify.createJsonClient({
             url: NAPI_URL,
             version: '*',
-            retryOptions: {
-                retry: 0
-            },
             log: logger
         });
 
