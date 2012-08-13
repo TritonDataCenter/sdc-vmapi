@@ -118,7 +118,7 @@ exports.napi_networks_ok = function(t) {
         t.equal(res.statusCode, 200);
         t.ok(networks);
         t.ok(Array.isArray(networks));
-        NETWORKS = [{ uuid: networks[0].uuid, ip: '10.99.99.94' }];
+        NETWORKS = [{ uuid: networks[0].uuid }];
         t.done();
     });
 };
