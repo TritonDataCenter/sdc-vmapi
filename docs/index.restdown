@@ -332,6 +332,8 @@ Deletes a VM. The VM will be physically destroyed and it will be marked as destr
 ||**Code**||**Description**||**Response**||
 ||202||New job created||VM response object||
 ||404||VM not found||Error object||
+||409||VM not allocated to a server yet||Error object||
+
 
 ### Example
 
@@ -653,6 +655,10 @@ When one of the UUIDs in the request parameters corresponds to a machine that do
 
 
 # Changelog
+
+## 2012-08-29
+
+  * Adds an error response when trying to delete unallocated VMs
 
 ## 2012-08-10
 
