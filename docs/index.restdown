@@ -158,6 +158,7 @@ Returns a list of VMs according the specified search filter.
 
 All inputs are optional.
 
+||**Param**||**Type**||**Description**||
 ||owner_uuid||UUID||VM Owner||
 ||type||String||'vm' or 'zone'||
 ||alias||String||VM Alias||
