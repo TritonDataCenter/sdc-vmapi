@@ -70,6 +70,7 @@ release: all deps docs $(SMF_MANIFESTS)
     $(ROOT)/Makefile \
     $(ROOT)/node_modules \
     $(ROOT)/package.json \
+    $(ROOT)/config.json.in \
     $(ROOT)/smf \
     $(ROOT)/tools \
     $(TMPDIR)/root/opt/smartdc/vmapi/
