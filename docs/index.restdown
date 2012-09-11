@@ -656,6 +656,10 @@ When one of the UUIDs in the request parameters corresponds to a machine that do
 
 # Changelog
 
+## 2012-09-11
+
+  * Updating VM metadata with an updateVm operation replaces existing metadata. It is no longer an append
+
 ## 2012-08-29
 
   * Adds an error response when trying to delete unallocated VMs
