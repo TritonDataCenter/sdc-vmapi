@@ -14,7 +14,7 @@
 # included Makefiles (in eng.git) so that other teams can use them too.
 #
 
-NODE_PREBUILT_VERSION=v0.6.19
+NODE_PREBUILT_VERSION=v0.8.8
 NODE_PREBUILT_TAG=zone
 
 #
