@@ -67,6 +67,6 @@ vmapi.on('ready', function () {
 
 
 vmapi.on('error', function (err) {
-    vmapi.log.error(err, 'error connecting to UFDS. Aborting.');
+    vmapi.log.error(err, 'Unexpected error ocurred');
     process.exit(1);
 });
