@@ -66,8 +66,9 @@ function checkEqual(value, expected) {
 
 function checkValue(url, key, value, callback) {
     return client.get(url, function (err, req, res, body) {
-        if (err)
+        if (err) {
             return callback(err);
+        }
 
         return callback(null, checkEqual(body[key], value));
     });
@@ -77,9 +78,11 @@ function checkValue(url, key, value, callback) {
 var times = 0;
 
 function waitForValue(url, key, value, callback) {
-    return checkValue(url, key, value, function (err, ready) {
-        if (err)
+
+    function onReady(err, ready) {
+        if (err) {
             return callback(err);
+        }
 
         if (!ready) {
             times++;
@@ -95,7 +98,9 @@ function waitForValue(url, key, value, callback) {
             times = 0;
             callback(null);
         }
-    });
+    }
+
+    return checkValue(url, key, value, onReady);
 }
 
 
