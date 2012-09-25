@@ -1,6 +1,6 @@
 // Copyright 2011 Joyent, Inc.  All rights reserved.
 
-//var test = require('tap').test;
+// var test = require('tap').test;
 var assert = require('assert');
 var uuid = require('node-uuid');
 
@@ -49,7 +49,7 @@ function checkJob(t, job) {
 
 
 function checkEqual(value, expected) {
-    if ((typeof(value) === 'object') && (typeof(expected) === 'object')) {
+    if ((typeof (value) === 'object') && (typeof (expected) === 'object')) {
         var exkeys = Object.keys(expected);
         for (var i = 0; i < exkeys.length; i++) {
             var key = exkeys[i];
@@ -81,7 +81,8 @@ function waitForValue(url, key, value, callback) {
 
     function onReady(err, ready) {
         if (err) {
-            return callback(err);
+            callback(err);
+            return;
         }
 
         if (!ready) {
@@ -90,7 +91,7 @@ function waitForValue(url, key, value, callback) {
             if (times == TIMEOUT) {
                 throw new Error('Timeout waiting on ' + url);
             } else {
-                return setTimeout(function () {
+                setTimeout(function () {
                     waitForValue(url, key, value, callback);
                 }, 1000);
             }
@@ -107,7 +108,7 @@ function waitForValue(url, key, value, callback) {
 
 // --- Tests
 
-exports.setUp = function(callback) {
+exports.setUp = function (callback) {
     common.setUp(function (err, _client) {
         assert.ifError(err);
         assert.ok(_client, 'restify client');
@@ -117,19 +118,19 @@ exports.setUp = function(callback) {
 };
 
 
-exports.napi_networks_ok = function(t) {
+exports.napi_networks_ok = function (t) {
     client.napi.get('/networks', function (err, req, res, networks) {
         t.ifError(err);
         t.equal(res.statusCode, 200);
         t.ok(networks);
         t.ok(Array.isArray(networks));
-        NETWORKS = [{ uuid: networks[0].uuid }];
+        NETWORKS = [ { uuid: networks[0].uuid } ];
         t.done();
     });
 };
 
 
-exports.filter_vms_empty = function(t) {
+exports.filter_vms_empty = function (t) {
     var path = '/vms?ram=32&owner_uuid=' + CUSTOMER;
 
     client.get(path, function (err, req, res, body) {
@@ -144,7 +145,7 @@ exports.filter_vms_empty = function(t) {
 };
 
 
-exports.filter_vms_ok = function(t) {
+exports.filter_vms_ok = function (t) {
     var path = '/vms?ram=' + 64 + '&owner_uuid=' + CUSTOMER;
 
     client.get(path, function (err, req, res, body) {
@@ -163,7 +164,7 @@ exports.filter_vms_ok = function(t) {
 };
 
 
-exports.get_vm_not_found = function(t) {
+exports.get_vm_not_found = function (t) {
     var nouuid = uuid();
     var path = '/vms/' + nouuid + '?owner_uuid=' + CUSTOMER;
 
@@ -175,7 +176,7 @@ exports.get_vm_not_found = function(t) {
 };
 
 
-exports.get_vm_ok = function(t) {
+exports.get_vm_ok = function (t) {
     var path = '/vms/' + muuid + '?owner_uuid=' + CUSTOMER;
 
     client.get(path, function (err, req, res, body) {
@@ -189,7 +190,7 @@ exports.get_vm_ok = function(t) {
 };
 
 
-exports.create_vm_not_ok = function(t) {
+exports.create_vm_not_ok = function (t) {
     client.post('/vms', { owner_uuid: CUSTOMER },
       function (err, req, res, data) {
         t.equal(res.statusCode, 409);
@@ -199,7 +200,7 @@ exports.create_vm_not_ok = function(t) {
 };
 
 
-exports.create_vm = function(t) {
+exports.create_vm = function (t) {
     var vm = {
         owner_uuid: CUSTOMER,
         dataset_uuid: DATASET,
@@ -233,7 +234,7 @@ exports.get_job = function (t) {
 };
 
 
-exports.wait_provisioned_job = function(t) {
+exports.wait_provisioned_job = function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
         t.ifError(err);
         t.done();
@@ -241,7 +242,7 @@ exports.wait_provisioned_job = function(t) {
 };
 
 
-exports.wait_provisioned = function(t) {
+exports.wait_provisioned = function (t) {
     vmLocation = '/vms/' + newUuid;
     waitForValue(vmLocation, 'state', 'running', function (err) {
         t.ifError(err);
@@ -255,7 +256,7 @@ exports.wait_provisioned = function(t) {
 };
 
 
-exports.stop_vm = function(t) {
+exports.stop_vm = function (t) {
     client.post(vmLocation, { action: 'stop' },
       function (err, req, res, body) {
         t.ifError(err);
@@ -268,7 +269,7 @@ exports.stop_vm = function(t) {
 };
 
 
-exports.wait_stopped_job = function(t) {
+exports.wait_stopped_job = function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
         t.ifError(err);
         t.done();
@@ -276,7 +277,7 @@ exports.wait_stopped_job = function(t) {
 };
 
 
-exports.wait_stopped = function(t) {
+exports.wait_stopped = function (t) {
     waitForValue(vmLocation, 'state', 'stopped', function (err) {
         t.ifError(err);
 
@@ -287,7 +288,7 @@ exports.wait_stopped = function(t) {
 };
 
 
-exports.start_vm = function(t) {
+exports.start_vm = function (t) {
     client.post(vmLocation, { action: 'start' },
       function (err, req, res, body) {
         t.ifError(err);
@@ -300,7 +301,7 @@ exports.start_vm = function(t) {
 };
 
 
-exports.wait_started_job = function(t) {
+exports.wait_started_job = function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
         t.ifError(err);
         t.done();
@@ -308,7 +309,7 @@ exports.wait_started_job = function(t) {
 };
 
 
-exports.wait_started = function(t) {
+exports.wait_started = function (t) {
     waitForValue(vmLocation, 'state', 'running', function (err) {
        t.ifError(err);
         t.done();
@@ -316,7 +317,7 @@ exports.wait_started = function(t) {
 };
 
 
-exports.reboot_vm = function(t) {
+exports.reboot_vm = function (t) {
     client.post(vmLocation, { action: 'reboot' },
       function (err, req, res, body) {
         t.ifError(err);
@@ -329,7 +330,7 @@ exports.reboot_vm = function(t) {
 };
 
 
-exports.wait_rebooted_job = function(t) {
+exports.wait_rebooted_job = function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
         t.ifError(err);
         t.done();
@@ -337,7 +338,7 @@ exports.wait_rebooted_job = function(t) {
 };
 
 
-exports.wait_rebooted = function(t) {
+exports.wait_rebooted = function (t) {
     waitForValue(vmLocation, 'state', 'running', function (err) {
         t.ifError(err);
         t.done();
@@ -345,7 +346,7 @@ exports.wait_rebooted = function(t) {
 };
 
 
-exports.list_tags = function(t) {
+exports.list_tags = function (t) {
     var path = '/vms/' + newUuid + '/tags?owner_uuid=' + CUSTOMER;
 
     client.get(path, function (err, req, res, body) {
@@ -359,7 +360,7 @@ exports.list_tags = function(t) {
 };
 
 
-exports.add_tags = function(t) {
+exports.add_tags = function (t) {
     var path = '/vms/' + newUuid + '/tags?owner_uuid=' + CUSTOMER;
     var query = {
         role: 'database',
@@ -377,7 +378,7 @@ exports.add_tags = function(t) {
 };
 
 
-exports.wait_new_tag_job = function(t) {
+exports.wait_new_tag_job = function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
         t.ifError(err);
         t.done();
@@ -385,7 +386,7 @@ exports.wait_new_tag_job = function(t) {
 };
 
 
-exports.wait_new_tag = function(t) {
+exports.wait_new_tag = function (t) {
     var tags = {
         role: 'database',
         group: 'deployment'
@@ -398,7 +399,7 @@ exports.wait_new_tag = function(t) {
 };
 
 
-exports.get_tag = function(t) {
+exports.get_tag = function (t) {
     var path = '/vms/' + newUuid + '/tags/role?owner_uuid=' + CUSTOMER;
 
     client.get(path, function (err, req, res, data) {
@@ -412,7 +413,7 @@ exports.get_tag = function(t) {
 };
 
 
-exports.delete_tag = function(t) {
+exports.delete_tag = function (t) {
     var path = '/vms/' + newUuid + '/tags/role?owner_uuid=' + CUSTOMER;
 
     client.del(path, function (err, req, res, body) {
@@ -426,7 +427,7 @@ exports.delete_tag = function(t) {
 };
 
 
-exports.wait_delete_tag_job = function(t) {
+exports.wait_delete_tag_job = function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
         t.ifError(err);
         t.done();
@@ -434,7 +435,7 @@ exports.wait_delete_tag_job = function(t) {
 };
 
 
-exports.wait_delete_tag = function(t) {
+exports.wait_delete_tag = function (t) {
     var tags = {
         group: 'deployment'
     };
@@ -446,7 +447,7 @@ exports.wait_delete_tag = function(t) {
 };
 
 
-exports.delete_tags = function(t) {
+exports.delete_tags = function (t) {
     var path = '/vms/' + newUuid + '/tags?owner_uuid=' + CUSTOMER;
 
     client.del(path, function (err, req, res, body) {
@@ -460,7 +461,7 @@ exports.delete_tags = function(t) {
 };
 
 
-exports.wait_delete_tags_job = function(t) {
+exports.wait_delete_tags_job = function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
         t.ifError(err);
         t.done();
@@ -468,7 +469,7 @@ exports.wait_delete_tags_job = function(t) {
 };
 
 
-exports.wait_delete_tags = function(t) {
+exports.wait_delete_tags = function (t) {
     waitForValue(vmLocation, 'tags', {}, function (err) {
         t.ifError(err);
         t.done();
@@ -476,7 +477,7 @@ exports.wait_delete_tags = function(t) {
 };
 
 
-exports.set_tags = function(t) {
+exports.set_tags = function (t) {
     var path = '/vms/' + newUuid + '/tags?owner_uuid=' + CUSTOMER;
     var query = {
         role: 'database',
@@ -494,7 +495,7 @@ exports.set_tags = function(t) {
 };
 
 
-exports.wait_set_tags_job = function(t) {
+exports.wait_set_tags_job = function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
         t.ifError(err);
         t.done();
@@ -502,7 +503,7 @@ exports.wait_set_tags_job = function(t) {
 };
 
 
-exports.wait_set_tags = function(t) {
+exports.wait_set_tags = function (t) {
     var tags = {
         role: 'database',
         group: 'deployment'
@@ -515,7 +516,7 @@ exports.wait_set_tags = function(t) {
 };
 
 
-exports.destroy_vm = function(t) {
+exports.destroy_vm = function (t) {
     client.del(vmLocation, function (err, req, res, body) {
         t.ifError(err);
         t.equal(res.statusCode, 202);
@@ -527,7 +528,7 @@ exports.destroy_vm = function(t) {
 };
 
 
-exports.wait_destroyed_job = function(t) {
+exports.wait_destroyed_job = function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
         t.ifError(err);
         t.done();
@@ -535,7 +536,7 @@ exports.wait_destroyed_job = function(t) {
 };
 
 
-exports.wait_destroyed = function(t) {
+exports.wait_destroyed = function (t) {
     waitForValue(vmLocation, 'state', 'destroyed', function (err) {
         t.ifError(err);
         t.done();
@@ -543,7 +544,7 @@ exports.wait_destroyed = function(t) {
 };
 
 
-exports.filter_jobs_ok = function(t) {
+exports.filter_jobs_ok = function (t) {
     var path = '/jobs?task=provision&vm_uuid=' + newUuid;
 
     client.get(path, function (err, req, res, body) {
@@ -558,7 +559,7 @@ exports.filter_jobs_ok = function(t) {
 };
 
 
-exports.filter_vm_jobs_ok = function(t) {
+exports.filter_vm_jobs_ok = function (t) {
     var path = '/vms/' + newUuid + '/jobs?task=reboot';
 
     client.get(path, function (err, req, res, body) {
