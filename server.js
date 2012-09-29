@@ -61,7 +61,7 @@ try {
 }
 
 
-vmapi.on('ready', function () {
+vmapi.once('ready', function () {
     vmapi.listen();
 });
 
