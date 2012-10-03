@@ -1,0 +1,294 @@
+{
+  "name": "vmapi",
+  "version": "7.0.0",
+  "dependencies": {
+    "restify": {
+      "version": "1.4.3",
+      "dependencies": {
+        "async": {
+          "version": "0.1.22"
+        },
+        "bunyan": {
+          "version": "0.8.0"
+        },
+        "byline": {
+          "version": "2.0.2"
+        },
+        "formidable": {
+          "version": "1.0.11"
+        },
+        "dtrace-provider": {
+          "version": "0.0.6"
+        },
+        "http-signature": {
+          "version": "0.9.9",
+          "dependencies": {
+            "asn1": {
+              "version": "0.1.11"
+            },
+            "ctype": {
+              "version": "0.5.0"
+            }
+          }
+        },
+        "lru-cache": {
+          "version": "1.1.0"
+        },
+        "mime": {
+          "version": "1.2.5"
+        },
+        "qs": {
+          "version": "0.5.0"
+        },
+        "retry": {
+          "version": "0.6.0"
+        },
+        "semver": {
+          "version": "1.0.14"
+        }
+      }
+    },
+    "node-uuid": {
+      "version": "1.3.3"
+    },
+    "filed": {
+      "version": "0.0.5"
+    },
+    "bunyan": {
+      "version": "0.14.0"
+    },
+    "sprintf": {
+      "version": "0.1.1"
+    },
+    "sdc-clients": {
+      "version": "8.0.0",
+      "from": "git+ssh://git@git.joyent.com:node-sdc-clients.git#e4b5a967",
+      "dependencies": {
+        "http-signature": {
+          "version": "0.9.9",
+          "dependencies": {
+            "asn1": {
+              "version": "0.1.11"
+            },
+            "ctype": {
+              "version": "0.5.0"
+            }
+          }
+        },
+        "ldapjs": {
+          "version": "0.5.4",
+          "from": "git://github.com/mcavage/node-ldapjs.git#1531d89e",
+          "dependencies": {
+            "asn1": {
+              "version": "0.1.11"
+            },
+            "buffertools": {
+              "version": "1.1.0"
+            },
+            "dtrace-provider": {
+              "version": "0.2.0"
+            },
+            "nopt": {
+              "version": "1.0.10",
+              "dependencies": {
+                "abbrev": {
+                  "version": "1.0.3"
+                }
+              }
+            },
+            "pooling": {
+              "version": "0.2.2",
+              "dependencies": {
+                "bunyan": {
+                  "version": "0.7.0"
+                },
+                "vasync": {
+                  "version": "1.1.1",
+                  "dependencies": {
+                    "verror": {
+                      "version": "1.1.0",
+                      "dependencies": {
+                        "extsprintf": {
+                          "version": "1.0.0"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "lru-cache": {
+          "version": "1.1.0"
+        },
+        "clone": {
+          "version": "0.1.0"
+        },
+        "bunyan": {
+          "version": "0.13.5"
+        },
+        "verror": {
+          "version": "1.3.3",
+          "dependencies": {
+            "extsprintf": {
+              "version": "1.0.0"
+            }
+          }
+        }
+      }
+    },
+    "wf-client": {
+      "version": "0.1.1",
+      "from": "git+ssh://git@git.joyent.com:wf-client.git",
+      "dependencies": {
+        "restify": {
+          "version": "1.4.2",
+          "dependencies": {
+            "async": {
+              "version": "0.1.18"
+            },
+            "bunyan": {
+              "version": "0.6.8"
+            },
+            "byline": {
+              "version": "2.0.2"
+            },
+            "formidable": {
+              "version": "1.0.9"
+            },
+            "dtrace-provider": {
+              "version": "0.0.6"
+            },
+            "http-signature": {
+              "version": "0.9.9",
+              "dependencies": {
+                "asn1": {
+                  "version": "0.1.11"
+                },
+                "ctype": {
+                  "version": "0.5.0"
+                }
+              }
+            },
+            "lru-cache": {
+              "version": "1.0.5"
+            },
+            "mime": {
+              "version": "1.2.5"
+            },
+            "qs": {
+              "version": "0.4.2"
+            },
+            "retry": {
+              "version": "0.6.0"
+            },
+            "semver": {
+              "version": "1.0.13"
+            }
+          }
+        },
+        "bunyan": {
+          "version": "0.8.0"
+        }
+      }
+    },
+    "amqp": {
+      "version": "0.1.3",
+      "from": "git://github.com/postwait/node-amqp.git"
+    },
+    "nodeunit": {
+      "version": "0.7.4"
+    },
+    "redis": {
+      "version": "0.7.2",
+      "dependencies": {
+        "hiredis": {
+          "version": "0.1.14"
+        }
+      }
+    },
+    "assert-plus": {
+      "version": "0.1.0"
+    },
+    "vasync": {
+      "version": "1.3.1",
+      "dependencies": {
+        "verror": {
+          "version": "1.1.0",
+          "dependencies": {
+            "extsprintf": {
+              "version": "1.0.0"
+            }
+          }
+        }
+      }
+    },
+    "sigyan": {
+      "version": "0.2.0"
+    },
+    "tap": {
+      "version": "0.2.6",
+      "dependencies": {
+        "inherits": {
+          "version": "1.0.0"
+        },
+        "yamlish": {
+          "version": "0.0.5"
+        },
+        "slide": {
+          "version": "1.1.3"
+        },
+        "runforcover": {
+          "version": "0.0.2",
+          "dependencies": {
+            "bunker": {
+              "version": "0.1.2",
+              "dependencies": {
+                "burrito": {
+                  "version": "0.2.12",
+                  "dependencies": {
+                    "traverse": {
+                      "version": "0.5.2"
+                    },
+                    "uglify-js": {
+                      "version": "1.1.1"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "nopt": {
+          "version": "2.0.0",
+          "dependencies": {
+            "abbrev": {
+              "version": "1.0.3"
+            }
+          }
+        },
+        "mkdirp": {
+          "version": "0.3.4"
+        },
+        "difflet": {
+          "version": "0.2.3",
+          "dependencies": {
+            "traverse": {
+              "version": "0.6.3"
+            },
+            "charm": {
+              "version": "0.0.8"
+            }
+          }
+        },
+        "deep-equal": {
+          "version": "0.0.0"
+        },
+        "buffer-equal": {
+          "version": "0.0.0"
+        }
+      }
+    }
+  }
+}
