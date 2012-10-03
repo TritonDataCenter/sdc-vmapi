@@ -70,3 +70,7 @@ vmapi.on('error', function (err) {
     vmapi.log.error(err, 'Unexpected error ocurred');
     process.exit(1);
 });
+
+// Increase/decrease loggers levels using SIGUSR2/SIGUSR1:
+var sigyan = require('sigyan');
+sigyan.add([vmapi.log]);
