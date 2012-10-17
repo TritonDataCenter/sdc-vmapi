@@ -206,6 +206,9 @@ exports.create_vm = function (t) {
         dataset_uuid: DATASET,
         networks: NETWORKS,
         brand: 'joyent-minimal',
+        billing_id: '00000000-0000-0000-0000-000000000000',
+        package_name: 'smartos',
+        package_version: '1.6.5',
         ram: 64
     };
 
