@@ -146,7 +146,7 @@ exports.filter_vms_empty = function (t) {
 
 
 exports.filter_vms_ok = function (t) {
-    var path = '/vms?ram=' + 64 + '&owner_uuid=' + CUSTOMER;
+    var path = '/vms?ram=' + 128 + '&owner_uuid=' + CUSTOMER;
 
     client.get(path, function (err, req, res, body) {
         t.ifError(err);
