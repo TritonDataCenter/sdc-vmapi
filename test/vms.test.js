@@ -16,7 +16,7 @@ var jobLocation;
 var vmLocation;
 
 var DATASET = '01b2c898-945f-11e1-a523-af1afbe22822';
-var CUSTOMER = '930896af-bf8c-48d4-885c-6573a94b1853';
+var CUSTOMER = '00000000-0000-0000-0000-000000000000';
 var NETWORKS = null;
 
 // In seconds
@@ -220,6 +220,7 @@ exports.create_vm = function (t) {
           t.ok(body, 'vm ok');
           jobLocation = '/jobs/' + body.job_uuid;
           newUuid = body.vm_uuid;
+          vmLocation = '/vms/' + newUuid;
           t.done();
     });
 };
@@ -245,20 +246,6 @@ exports.wait_provisioned_job = function (t) {
 };
 
 
-exports.wait_provisioned = function (t) {
-    vmLocation = '/vms/' + newUuid;
-    waitForValue(vmLocation, 'state', 'running', function (err) {
-        t.ifError(err);
-
-        // Zoneinit mainly causing the zone to not be completely ready
-        // to receive a stop/reboot
-        return setTimeout(function () {
-            t.done();
-        }, 10000);
-    });
-};
-
-
 exports.stop_vm = function (t) {
     client.post(vmLocation, { action: 'stop' },
       function (err, req, res, body) {
@@ -276,17 +263,6 @@ exports.wait_stopped_job = function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
         t.ifError(err);
         t.done();
-    });
-};
-
-
-exports.wait_stopped = function (t) {
-    waitForValue(vmLocation, 'state', 'stopped', function (err) {
-        t.ifError(err);
-
-        return setTimeout(function () {
-            t.done();
-        }, 10000);
     });
 };
 
@@ -312,14 +288,6 @@ exports.wait_started_job = function (t) {
 };
 
 
-exports.wait_started = function (t) {
-    waitForValue(vmLocation, 'state', 'running', function (err) {
-       t.ifError(err);
-        t.done();
-    });
-};
-
-
 exports.reboot_vm = function (t) {
     client.post(vmLocation, { action: 'reboot' },
       function (err, req, res, body) {
@@ -335,14 +303,6 @@ exports.reboot_vm = function (t) {
 
 exports.wait_rebooted_job = function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
-        t.ifError(err);
-        t.done();
-    });
-};
-
-
-exports.wait_rebooted = function (t) {
-    waitForValue(vmLocation, 'state', 'running', function (err) {
         t.ifError(err);
         t.done();
     });
@@ -519,6 +479,48 @@ exports.wait_set_tags = function (t) {
 };
 
 
+exports.snapshot_vm = function (t) {
+    client.post(vmLocation + '/snapshot', { name: 'backup' },
+      function (err, req, res, body) {
+        t.ifError(err);
+        t.equal(res.statusCode, 202);
+        common.checkHeaders(t, res.headers);
+        t.ok(body);
+        jobLocation = '/jobs/' + body.job_uuid;
+        t.done();
+    });
+};
+
+
+exports.wait_snapshot_job = function (t) {
+    waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
+        t.ifError(err);
+        t.done();
+    });
+};
+
+
+exports.rollback_vm = function (t) {
+    client.post(vmLocation + '/rollback', { name: 'backup' },
+      function (err, req, res, body) {
+        t.ifError(err);
+        t.equal(res.statusCode, 202);
+        common.checkHeaders(t, res.headers);
+        t.ok(body);
+        jobLocation = '/jobs/' + body.job_uuid;
+        t.done();
+    });
+};
+
+
+exports.wait_rollback_job = function (t) {
+    waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
+        t.ifError(err);
+        t.done();
+    });
+};
+
+
 exports.destroy_vm = function (t) {
     client.del(vmLocation, function (err, req, res, body) {
         t.ifError(err);
@@ -533,14 +535,6 @@ exports.destroy_vm = function (t) {
 
 exports.wait_destroyed_job = function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
-        t.ifError(err);
-        t.done();
-    });
-};
-
-
-exports.wait_destroyed = function (t) {
-    waitForValue(vmLocation, 'state', 'destroyed', function (err) {
         t.ifError(err);
         t.done();
     });

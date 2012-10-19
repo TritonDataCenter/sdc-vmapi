@@ -1,6 +1,6 @@
 ---
 title: VMs API (VMAPI)
-apisections: VMs, VM Metadata, Jobs, Changelog
+apisections: VMs, VM Snapshots, VM Metadata, Jobs, Changelog
 markdown2extras: wiki-tables, code-friendly
 ---
 
@@ -340,6 +340,73 @@ Deletes a VM. The VM will be physically destroyed and it will be marked as destr
     DELETE /vms/e9bd0ed1-7de3-4c66-a649-d675dbce6e83
 
 
+
+# VM Snapshots
+
+VMs can be snapshotted at any given running state. It's important to keep in mind
+that if a VM is reverted to a previous state indicated by the snapshot parameter
+provided, there is no way to go 'back' to what is now a future state of the machine.
+Snapshots are very fast thanks to ZFS. Rollbacks are fast too. In order to execute safe
+rollbacks, VMAPI shutdowns a VM if it's running at the moment of executing the job.
+Clients are encouraged to add additional conditions to wether or not
+accept a rollback given specific conditions on a VM.
+
+
+## SnapshotVm (POST /vms/:uuid/snapshot)
+
+Snapshots a VM. If a name for the snapshot is not specified, VMAPI will generate
+a timestamp for its name with the UTC ISO date/time format (without colons or dashes):
+
+    YYYYMMDDTHHMMSSZ
+
+    Example:
+
+    20121018T222506Z
+
+### Inputs
+
+||**Param**||**Type**||**Description**||**Required?**||
+||uuid||UUID||VM UUID||Yes||
+||owner_uuid||UUID||VM Owner||No||
+||name||String||Snapshot name or generated timestamp if not present||No||
+
+### Responses
+
+||**Code**||**Description**||**Response**||
+||202||New job created||VM response object||
+||404||VM not found||Error object||
+||409||Snapshot name is invalid||Error object||
+
+
+## RollbackVm (POST /vms/:uuid/rollback)
+
+Rollbacks a VM. If the VM is running at the moment of the request, it will be
+shutdown before executing the rollback and be booted again after the rollback
+has succeeded.
+
+**NOTE**
+
+Currently, snapshots are not checked to exist before firing a rollback job. This
+means that a if a non existent snapshot is provided to this API call, the job will
+eventually fail but it is not going to be an early failure in the HTTP request as
+we ideally want to.
+
+
+### Inputs
+
+||**Param**||**Type**||**Description**||**Required?**||
+||uuid||UUID||VM UUID||Yes||
+||owner_uuid||UUID||VM Owner||No||
+||name||String||Snapshot name||Yes||
+
+### Responses
+
+||**Code**||**Description**||**Response**||
+||202||New job created||VM response object||
+||404||VM not found||Error object||
+||409||Snapshot name is missing||Error object||
+
+
 # VM Metadata
 
 There are three kinds of metadata a VM can store: customer_metadata, internal_metadata and tags. A metadata object is any valid set of key/value pairs that can be properly encoded to JSON. Values must be strings, numbers or booleans. Examples:
@@ -655,6 +722,10 @@ When one of the UUIDs in the request parameters corresponds to a machine that do
 
 
 # Changelog
+
+## 2012-10-18
+
+  * Added snapshot and rollback support
 
 ## 2012-09-11
 
