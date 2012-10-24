@@ -6,9 +6,6 @@ var Logger = require('bunyan');
 var restify = require('restify');
 var uuid = require('node-uuid');
 
-var UFDS = require('sdc-clients').UFDS;
-
-
 
 // --- Globals
 

@@ -51,7 +51,6 @@ config.version = version() || '7.0.0';
 var vmapi;
 
 try {
-
     vmapi = new VMAPI(config);
     vmapi.init();
 

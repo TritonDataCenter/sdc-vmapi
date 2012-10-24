@@ -25,13 +25,8 @@
     "username": "NAPI_HTTP_ADMIN_USER",
     "password": "NAPI_HTTP_ADMIN_PW"
   },
-  "ufds": {
-    "url": "ldaps://localhost",
-    "bindDN": "VMAPI_LDAP_ROOT_DN",
-    "bindPassword": "VMAPI_LDAP_ROOT_PW",
-    "cache": {
-      "size": 1000,
-      "expiry": 300
-    }
+  "moray": {
+    "host": "MORAY_HOST",
+    "port": 2020
   }
 }
