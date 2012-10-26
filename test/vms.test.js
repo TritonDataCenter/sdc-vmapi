@@ -152,6 +152,7 @@ exports.filter_vms_ok = function (t) {
         t.ifError(err);
         t.equal(res.statusCode, 200);
         common.checkHeaders(t, res.headers);
+        t.ok(res.headers['x-joyent-resource-count']);
         t.ok(body);
         t.ok(Array.isArray(body));
         t.ok(body.length);
@@ -159,6 +160,18 @@ exports.filter_vms_ok = function (t) {
             checkMachine(t, m);
             muuid = m.uuid;
         });
+        t.done();
+    });
+};
+
+
+exports.head_vms_ok = function (t) {
+    var path = '/vms?ram=' + 128 + '&owner_uuid=' + CUSTOMER;
+    client.head(path, function (err, req, res) {
+        t.ifError(err);
+        t.equal(res.statusCode, 200);
+        common.checkHeaders(t, res.headers);
+        t.ok(res.headers['x-joyent-resource-count']);
         t.done();
     });
 };
@@ -185,6 +198,17 @@ exports.get_vm_ok = function (t) {
         common.checkHeaders(t, res.headers);
         t.ok(body, 'vm ok');
         checkMachine(t, body);
+        t.done();
+    });
+};
+
+
+exports.head_vm_ok = function (t) {
+    var path = '/vms/' + muuid + '?owner_uuid=' + CUSTOMER;
+    client.head(path, function (err, req, res) {
+        t.ifError(err);
+        t.equal(res.statusCode, 200, '200 OK');
+        common.checkHeaders(t, res.headers);
         t.done();
     });
 };
