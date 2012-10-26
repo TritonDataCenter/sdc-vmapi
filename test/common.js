@@ -56,7 +56,8 @@ module.exports = {
         assert.ok(t);
         // t.ok(headers, 'good headers');
         // t.ok(headers['access-control-allow-origin'], 'allow origin header');
-        // t.ok(headers['access-control-allow-methods'], 'allow methods header');
+        // t.ok(headers['access-control-allow-methods'],
+        //          'allow methods header');
         // t.ok(headers.date, 'date header');
         // t.ok(headers['x-request-id'], 'request id header');
         // t.ok(headers['x-response-time'] >= 0, 'response time header');
