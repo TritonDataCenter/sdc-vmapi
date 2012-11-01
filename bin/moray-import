@@ -1,0 +1,183 @@
+#!/usr/bin/env node
+// -*- mode: js -*-
+
+/*
+ * Copyright (c) 2012, Joyent, Inc. All rights reserved.
+ *
+ * A brief overview of this source file: what is its purpose.
+ */
+
+var fs = require('fs');
+var path = require('path');
+
+var bunyan = require('bunyan');
+var getopt = require('posix-getopt');
+var uuid = require('node-uuid');
+
+var async = require('async');
+var moray = require('moray');
+
+
+
+///--- Globals
+
+var LOG = bunyan.createLogger({
+	name: path.basename(process.argv[1]),
+	level: (process.env.LOG_LEVEL || 'info'),
+	stream: process.stderr,
+	serializers: bunyan.stdSerializers
+});
+
+var CONFIG = loadConfig();
+var BUCKET = 'vmapi_vms';
+
+
+///--- Functions
+
+/*
+ * Loads and parse the configuration file at config.json
+ */
+function loadConfig() {
+    var configPath = path.join(__dirname, '..', 'config.json');
+
+    if (!fs.existsSync(configPath)) {
+        console.error('Config file not found: ' + configPath +
+          ' does not exist. Aborting.');
+        process.exit(1);
+    }
+
+    var theConfig = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+    return theConfig;
+}
+
+/*
+ * Loads the mapi dump file
+ */
+function loadDump(file) {
+    var filePath = path.join(process.cwd(), file);
+
+    if (!fs.existsSync(filePath)) {
+        console.error('Dump file not found: ' + filePath +
+          ' does not exist. Aborting.');
+        process.exit(1);
+    }
+
+    var contents = fs.readFileSync(filePath, 'utf-8');
+    return contents;
+}
+
+
+function usage(msg) {
+    if (msg) {
+        console.error(msg);
+    }
+
+    var str = 'usage: ' + path.basename(process.argv[1]);
+    str += '[-v] [-d data] [-f file] bucket key';
+    console.error(str);
+    process.exit(1);
+}
+
+
+function parseOptions() {
+    var opts = {};
+    var option;
+    var parser = new getopt.BasicParser('vd:f:', process.argv);
+    var tmp;
+
+    while ((option = parser.getopt()) !== undefined && !option.error) {
+        switch (option.option) {
+            case 'f':
+                opts.file = option.optarg;
+                break;
+
+            case 'd':
+                opts.data = option.optarg;
+                break;
+
+            case 'v':
+                // Allows us to set -vvv -> this little hackery
+                // just ensures that we're never < TRACE
+                LOG.level(Math.max(bunyan.TRACE, (LOG.level() - 10)));
+                if (LOG.level() <= bunyan.DEBUG) {
+                    LOG = LOG.child({ src: true });
+                }
+                break;
+
+            default:
+                process.exit(1);
+                break;
+        }
+    }
+
+    if (!opts.data && !opts.file) {
+        usage('at least one of "data" or "file" must be specified');
+    }
+
+    return (opts);
+}
+
+
+function parseObjects(string) {
+    var i, obj;
+    var array = string.split('\n\n');
+    var vms = [];
+
+    for (i = 0; i < array.length; i++) {
+        if (array[i] !== '') {
+            obj = JSON.parse(array[i]);
+
+            // If VM -> add to array
+            if (obj.uuid && obj.brand) {
+                vms.push(obj);
+            }
+        }
+    }
+
+    return vms;
+}
+
+
+///--- Mainline
+
+var client;
+var options = parseOptions();
+var data;
+
+if (options.file) {
+    data = loadDump(options.file);
+} else {
+    data = options.data;
+}
+
+var vms = parseObjects(data);
+
+client = moray.createClient({
+    host: CONFIG.moray.host,
+    log: LOG,
+    port: CONFIG.moray.port
+});
+
+client.on('connect', putVms);
+
+function putVms() {
+    // Do we want to fail if a single VM could not be added?
+    async.mapSeries(vms, function (vm, next) {
+        client.putObject(BUCKET, vm.uuid, vm, function (err) {
+            if (err) {
+                LOG.error(err.message);
+            } else {
+                LOG.info('VM %s added to moray', vm.uuid);
+            }
+            next();
+        });
+    }, function (err) {
+        if (err) {
+            LOG.error(err);
+            process.exit(1);
+        } else {
+            LOG.info('Finished adding VMs');
+            process.exit(0);
+        }
+    });
+}

@@ -34,7 +34,7 @@ function version() {
 function loadConfig() {
     var configPath = path.join(__dirname, 'config.json');
 
-    if (!path.existsSync(configPath)) {
+    if (!fs.existsSync(configPath)) {
         console.error('Config file not found: ' + configPath +
           ' does not exist. Aborting.');
         process.exit(1);

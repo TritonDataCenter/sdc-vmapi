@@ -9,9 +9,6 @@
         "assert-plus": {
           "version": "0.1.2"
         },
-        "bunyan": {
-          "version": "0.14.5"
-        },
         "clone": {
           "version": "0.1.1"
         },
@@ -337,6 +334,9 @@
           "version": "1.0.0"
         }
       }
+    },
+    "posix-getopt": {
+      "version": "1.0.0"
     },
     "tap": {
       "version": "0.2.6",
