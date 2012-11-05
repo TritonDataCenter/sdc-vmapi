@@ -616,7 +616,7 @@ exports.create_nonautoboot_vm = function (t) {
         package_name: 'smartos',
         package_version: '1.6.5',
         ram: 64,
-		autoboot: false
+        autoboot: false
     };
 
     client.post('/vms', vm,
@@ -656,7 +656,7 @@ exports.wait_nonautoboot_provisioned_job = function (t) {
 exports.change_autoboot = function (t) {
     client.post(vmLocation, { action: 'update', autoboot: true },
       function (err, req, res, body) {
-		t.ifError(err);
+        t.ifError(err);
         t.equal(res.statusCode, 202);
         jobLocation = '/jobs/' + body.job_uuid;
         t.done();
@@ -681,7 +681,7 @@ exports.get_nonautoboot_vm_ok = function (t) {
         common.checkHeaders(t, res.headers);
         t.ok(body, 'vm ok');
         checkMachine(t, body);
-		t.equal(body.state, 'stopped');
+        t.equal(body.state, 'stopped');
         t.done();
     });
 };
