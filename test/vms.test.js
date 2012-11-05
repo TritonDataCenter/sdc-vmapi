@@ -333,6 +333,18 @@ exports.wait_rebooted_job = function (t) {
 };
 
 
+// Adding this test due to JPC-1045 bug, where a change to owner_uuid was
+// requested with an empty owner_uuid value:
+exports.change_owner_without_uuid = function (t) {
+    client.post(vmLocation, { action: 'update', owner_uuid: '' },
+      function (err, req, res, body) {
+          t.equal(res.statusCode, 409);
+          t.done();
+    });
+};
+
+
+
 exports.list_tags = function (t) {
     var path = '/vms/' + newUuid + '/tags?owner_uuid=' + CUSTOMER;
 
