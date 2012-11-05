@@ -605,3 +605,103 @@ exports.filter_vm_jobs_ok = function (t) {
         t.done();
     });
 };
+
+exports.create_nonautoboot_vm = function (t) {
+    var vm = {
+        owner_uuid: CUSTOMER,
+        dataset_uuid: DATASET,
+        networks: NETWORKS,
+        brand: 'joyent-minimal',
+        billing_id: '00000000-0000-0000-0000-000000000000',
+        package_name: 'smartos',
+        package_version: '1.6.5',
+        ram: 64,
+		autoboot: false
+    };
+
+    client.post('/vms', vm,
+      function (err, req, res, body) {
+          t.ifError(err);
+          t.equal(res.statusCode, 202);
+          common.checkHeaders(t, res.headers);
+          t.ok(body, 'vm ok');
+          jobLocation = '/jobs/' + body.job_uuid;
+          newUuid = body.vm_uuid;
+          vmLocation = '/vms/' + newUuid;
+          t.done();
+    });
+};
+
+
+exports.get_nonautoboot_job = function (t) {
+    client.get(jobLocation, function (err, req, res, body) {
+        t.ifError(err);
+        t.equal(res.statusCode, 200, 'GetJob 200 OK');
+        common.checkHeaders(t, res.headers);
+        t.ok(body, 'job ok');
+        checkJob(t, body);
+        t.done();
+    });
+};
+
+
+exports.wait_nonautoboot_provisioned_job = function (t) {
+    waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
+        t.ifError(err);
+        t.done();
+    });
+};
+
+
+exports.change_autoboot = function (t) {
+    client.post(vmLocation, { action: 'update', autoboot: true },
+      function (err, req, res, body) {
+		t.ifError(err);
+        t.equal(res.statusCode, 202);
+        jobLocation = '/jobs/' + body.job_uuid;
+        t.done();
+    });
+};
+
+
+exports.wait_autoboot_update_job = function (t) {
+    waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
+        t.ifError(err);
+        t.done();
+    });
+};
+
+
+exports.get_nonautoboot_vm_ok = function (t) {
+    var path = '/vms/' + newUuid + '?owner_uuid=' + CUSTOMER;
+
+    client.get(path, function (err, req, res, body) {
+        t.ifError(err);
+        t.equal(res.statusCode, 200, '200 OK');
+        common.checkHeaders(t, res.headers);
+        t.ok(body, 'vm ok');
+        checkMachine(t, body);
+		t.equal(body.state, 'stopped');
+        t.done();
+    });
+};
+
+
+exports.destroy_nonautoboot_vm = function (t) {
+    client.del(vmLocation, function (err, req, res, body) {
+        t.ifError(err);
+        t.equal(res.statusCode, 202);
+        common.checkHeaders(t, res.headers);
+        t.ok(body);
+        jobLocation = '/jobs/' + body.job_uuid;
+        t.done();
+    });
+};
+
+
+exports.wait_nonautoboot_destroyed_job = function (t) {
+    waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
+        t.ifError(err);
+        t.done();
+    });
+};
