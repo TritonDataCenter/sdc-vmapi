@@ -27,6 +27,11 @@
   },
   "moray": {
     "host": "MORAY_HOST",
-    "port": 2020
+    "port": 2020,
+    "connectTimeout": 200,
+    "retry": {
+      "retries": 2,
+      "minTimeout": 500
+    }
   }
 }
