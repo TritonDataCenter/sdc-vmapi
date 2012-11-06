@@ -165,6 +165,22 @@ exports.filter_vms_ok = function (t) {
 };
 
 
+exports.limit_vms_ok = function (t) {
+    var path = '/vms?limit=5';
+
+    client.get(path, function (err, req, res, body) {
+        t.ifError(err);
+        t.equal(res.statusCode, 200);
+        common.checkHeaders(t, res.headers);
+        t.ok(res.headers['x-joyent-resource-count']);
+        t.ok(body);
+        t.ok(Array.isArray(body));
+        t.equal(body.length, 5);
+        t.done();
+    });
+};
+
+
 exports.head_vms_ok = function (t) {
     var path = '/vms?ram=' + 128 + '&owner_uuid=' + CUSTOMER;
     client.head(path, function (err, req, res) {
