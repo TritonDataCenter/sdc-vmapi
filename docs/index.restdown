@@ -285,7 +285,7 @@ Queues an update operation on a VM. Only four operations are supported at this m
 At least one of the following parameters must be provided when action=update.
 
 ||alias||String||VM alias||
-||owner_uuid||UUID||VM Owner||
+||new_owner_uuid||UUID||UUID of the new VM Owner||
 ||ram||Number||VM RAM||
 ||max_physical_memory||Number||Same as RAM||
 ||max_swap||Number||Defaults to 2 x RAM if not specified||
@@ -722,6 +722,10 @@ When one of the UUIDs in the request parameters corresponds to a machine that do
 
 
 # Changelog
+
+## 2012-11-08
+
+  * updateVm endpoint now takes new_owner_uuid instead of owner_uuid to indicate the new owner of the VM
 
 ## 2012-10-18
 
