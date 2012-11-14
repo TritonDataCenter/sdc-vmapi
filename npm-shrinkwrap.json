@@ -260,72 +260,7 @@
       "from": "git://github.com/postwait/node-amqp.git"
     },
     "nodeunit": {
-      "version": "0.7.4",
-      "dependencies": {
-        "tap": {
-          "version": "0.3.2",
-          "dependencies": {
-            "inherits": {
-              "version": "1.0.0"
-            },
-            "yamlish": {
-              "version": "0.0.5"
-            },
-            "slide": {
-              "version": "1.1.3"
-            },
-            "runforcover": {
-              "version": "0.0.2",
-              "dependencies": {
-                "bunker": {
-                  "version": "0.1.2",
-                  "dependencies": {
-                    "burrito": {
-                      "version": "0.2.12",
-                      "dependencies": {
-                        "traverse": {
-                          "version": "0.5.2"
-                        },
-                        "uglify-js": {
-                          "version": "1.1.1"
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            },
-            "nopt": {
-              "version": "2.0.0",
-              "dependencies": {
-                "abbrev": {
-                  "version": "1.0.3"
-                }
-              }
-            },
-            "mkdirp": {
-              "version": "0.3.4"
-            },
-            "difflet": {
-              "version": "0.2.3",
-              "dependencies": {
-                "traverse": {
-                  "version": "0.6.3"
-                },
-                "charm": {
-                  "version": "0.0.8"
-                }
-              }
-            },
-            "deep-equal": {
-              "version": "0.0.0"
-            },
-            "buffer-equal": {
-              "version": "0.0.0"
-            }
-          }
-        }
-      }
+      "version": "0.7.4"
     },
     "redis": {
       "version": "0.7.2",
@@ -355,48 +290,42 @@
       "version": "0.1.22"
     },
     "sigyan": {
-      "version": "0.2.0",
-      "dependencies": {
-        "bunyan": {
-          "version": "0.16.5",
-          "dependencies": {
-            "dtrace-provider": {
-              "version": "0.2.4"
-            }
-          }
-        }
-      }
+      "version": "0.2.0"
     },
     "moray": {
       "version": "1.0.0",
-      "from": "git+ssh://git@git.joyent.com:node-moray.git#93f4a47",
+      "from": "git+ssh://git@git.joyent.com:node-moray.git",
       "dependencies": {
         "assert-plus": {
           "version": "0.1.2"
+        },
+        "bunyan": {
+          "version": "0.14.6"
         },
         "clone": {
           "version": "0.1.1"
         },
         "fast": {
           "version": "0.2.0",
-          "from": "git://github.com/mcavage/node-fast.git#f4794c2",
+          "from": "git://github.com/mcavage/node-fast.git#119ce35",
           "dependencies": {
+            "backoff": {
+              "version": "1.2.0"
+            },
             "crc": {
               "version": "0.2.0"
             },
             "microtime": {
-              "version": "0.3.1",
+              "version": "0.3.2",
               "dependencies": {
                 "bindings": {
-                  "version": "0.3.0"
+                  "version": "1.0.0"
                 }
               }
             },
-            "retry": {
-              "version": "0.6.0"
-            },
             "verror": {
               "version": "1.3.4",
+              "from": "git://github.com/davepacheco/node-verror.git#1514e14",
               "dependencies": {
                 "extsprintf": {
                   "version": "1.0.0"
@@ -405,8 +334,8 @@
             }
           }
         },
-        "posix-getopt": {
-          "version": "1.0.0"
+        "node-uuid": {
+          "version": "1.4.0"
         }
       }
     },
