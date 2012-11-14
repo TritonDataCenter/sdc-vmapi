@@ -53,22 +53,22 @@ var vmapi;
 try {
     vmapi = new VMAPI(config);
     vmapi.init();
-
 } catch (e) {
+    console.error('Error produced when initializing VMAPI');
+    console.error(e.message);
     console.error(e.stack);
     process.exit(1);
 }
-
 
 vmapi.once('ready', function () {
     vmapi.listen();
 });
 
-
-vmapi.on('error', function (err) {
-    vmapi.log.error(err, 'Unexpected error ocurred');
-    process.exit(1);
+process.on('uncaughtException', function (err) {
+    vmapi.log.error('Uncaught Exception', err);
+    vmapi.log.error(err.stack);
 });
+
 
 // Increase/decrease loggers levels using SIGUSR2/SIGUSR1:
 var sigyan = require('sigyan');
