@@ -646,6 +646,7 @@ exports.create_nonautoboot_vm = function (t) {
     var vm = {
         owner_uuid: CUSTOMER,
         dataset_uuid: DATASET,
+        server_uuid: SERVER.uuid,
         networks: NETWORKS,
         brand: 'joyent-minimal',
         billing_id: '00000000-0000-0000-0000-000000000000',
