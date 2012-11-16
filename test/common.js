@@ -14,6 +14,7 @@ var PASSWD = 'z3cr3t';
 
 var VMAPI_URL = 'http://' + (process.env.VMAPI_IP || 'localhost');
 var NAPI_URL = 'http://' + (process.env.NAPI_IP || '10.99.99.10');
+var CNAPI_URL = 'http://' + (process.env.CNAPI_IP || '10.99.99.18');
 
 
 
@@ -47,7 +48,14 @@ module.exports = {
             log: logger
         });
 
+        var cnapi = restify.createJsonClient({
+            url: CNAPI_URL,
+            version: '*',
+            log: logger
+        });
+
         client.napi = napi;
+        client.cnapi = cnapi;
 
         return callback(null, client);
     },

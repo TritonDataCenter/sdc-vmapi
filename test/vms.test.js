@@ -18,6 +18,7 @@ var vmLocation;
 var DATASET = '01b2c898-945f-11e1-a523-af1afbe22822';
 var CUSTOMER = '00000000-0000-0000-0000-000000000000';
 var NETWORKS = null;
+var SERVER = null;
 
 // In seconds
 var TIMEOUT = 90;
@@ -114,6 +115,24 @@ exports.setUp = function (callback) {
         assert.ok(_client, 'restify client');
         client = _client;
         callback();
+    });
+};
+
+
+exports.find_headnode = function (t) {
+    client.cnapi.get('/servers', function (err, req, res, servers) {
+        t.ifError(err);
+        t.equal(res.statusCode, 200);
+        t.ok(servers);
+        t.ok(Array.isArray(servers));
+        for (var i = 0; i < servers.length; i++) {
+            if (servers[i].headnode === true) {
+                SERVER = servers[i];
+                break;
+            }
+        }
+        t.ok(SERVER);
+        t.done();
     });
 };
 
@@ -244,6 +263,7 @@ exports.create_vm = function (t) {
     var vm = {
         owner_uuid: CUSTOMER,
         dataset_uuid: DATASET,
+        server_uuid: SERVER.uuid,
         networks: NETWORKS,
         brand: 'joyent-minimal',
         billing_id: '00000000-0000-0000-0000-000000000000',
