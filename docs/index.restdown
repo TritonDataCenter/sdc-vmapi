@@ -102,7 +102,12 @@ The VM response object is going a single representation for the two available VM
       "tags": {
         "smartdc_role": "assets",
         "smartdc_type": "core"
-      }
+      },
+      "snapshots": [
+        {
+          "name": "zones/ef375f03-57ca-44a9-bc8d-63aec09fbc37@backup"
+        }
+      ],
     }
 
 ## VM States
@@ -722,6 +727,10 @@ When one of the UUIDs in the request parameters corresponds to a machine that do
 
 
 # Changelog
+
+## 2012-11-19
+
+  * VM response object now returns the snapshot property for vms
 
 ## 2012-11-08
 
