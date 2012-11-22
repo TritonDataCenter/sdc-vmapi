@@ -54,14 +54,13 @@ try {
     vmapi = new VMAPI(config);
     vmapi.init();
 } catch (e) {
-    console.error('Error produced when initializing VMAPI');
+    console.error('Error produced when initializing VMAPI services');
     console.error(e.message);
     console.error(e.stack);
-    process.exit(1);
 }
 
 vmapi.once('ready', function () {
-    vmapi.listen();
+    vmapi.log.info('All services are up');
 });
 
 process.on('uncaughtException', function (err) {

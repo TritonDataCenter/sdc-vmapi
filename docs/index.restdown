@@ -1,6 +1,6 @@
 ---
 title: VMs API (VMAPI)
-apisections: VMs, VM Snapshots, VM Metadata, Jobs, Changelog
+apisections: Ping, VMs, VM Snapshots, VM Metadata, Jobs, Changelog
 markdown2extras: wiki-tables, code-friendly
 ---
 
@@ -148,6 +148,34 @@ Error responses will be returned when the response status code is one of 40X err
     {
       "code": "ResourceNotFound",
       "message": "Route does not exist"
+    }
+
+
+# Ping VMAPI
+
+Use ping when you want a general status report from VMAPI. VMAPI makes HTTP connections to REST APIs and TCP connections to services like redis and moray. In addition to service status, one might need to know when was the last time that VMAPI saw an incoming heartbeat when debugging VM data propagation errors. The **ping**  endpoint provides a compact response object that lets clients know what is VMAPI's point of view of the backend services it is connected to. The following is the format of the ping response object.
+
+## Ping (GET /ping)
+
+    GET /ping
+
+    {
+      "services": {
+        "redis": "online",
+        "wfapi": "online",
+        "moray": "online",
+        "cnapi": "online",
+        "napi": "online"
+      },
+      "lastHeartbeatReceived": {
+        "timestamp": "2012-11-22T00:27:49.851Z",
+        "server": "564dcf02-3ed9-7459-bdfc-a2884558951f"
+      },
+      "lastHeartbeatProcessed": {
+        "timestamp": "2012-11-22T00:26:59.402Z",
+        "server": "564dcf02-3ed9-7459-bdfc-a2884558951f",
+        "uuid": "32389211-62c7-4e29-a44c-b24ece8b3946"
+      }
     }
 
 
@@ -727,6 +755,10 @@ When one of the UUIDs in the request parameters corresponds to a machine that do
 
 
 # Changelog
+
+## 2012-11-21
+
+  * New /ping endpoint to report on service status
 
 ## 2012-11-19
 
