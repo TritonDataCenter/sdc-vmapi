@@ -3,6 +3,7 @@
 // var test = require('tap').test;
 var assert = require('assert');
 var uuid = require('node-uuid');
+var qs = require('querystring');
 
 var common = require('./common');
 
@@ -179,6 +180,23 @@ exports.filter_vms_ok = function (t) {
             checkMachine(t, m);
             muuid = m.uuid;
         });
+        t.done();
+    });
+};
+
+
+exports.filter_vms_advanced = function (t) {
+    var query = qs.escape('(&(ram>=128)(tags=*-smartdc_type=core-*))');
+    var path = '/vms?query=' + query;
+
+    client.get(path, function (err, req, res, body) {
+        t.ifError(err);
+        t.equal(res.statusCode, 200);
+        common.checkHeaders(t, res.headers);
+        t.ok(res.headers['x-joyent-resource-count']);
+        t.ok(body);
+        t.ok(Array.isArray(body));
+        t.ok(body.length);
         t.done();
     });
 };

@@ -193,10 +193,15 @@ All inputs are optional.
 
 ||**Param**||**Type**||**Description**||
 ||owner_uuid||UUID||VM Owner||
-||type||String||'vm' or 'zone'||
+||server_uuid||UUID||Server where the VM lives||
+||image_uuid||UUID||Image of the VM||
+||billing_uuid||UUID||UUID of the package the VM was created with||
+||brand||String|| Brand of the VM (joyent, joyent-minimal or kvm)||
 ||alias||String||VM Alias||
 ||state||String||running, stopped, active or destroyed||
 ||ram||Number||Amount of memory of the VM||
+||package_name||String||Package name with which the VM was created||
+||package_version||String||Package version with which the VM was created||
 ||tag.key||String||VM tags, see below||
 
 ## Tags
@@ -216,6 +221,33 @@ VMs can also be searched by tags. Tags are key/value pairs that let us identify 
     GET /vms?tag.role=sdc
     GET /vms?tag.role=sdc&tag.type=database
     GET /vms?tag.role=*
+
+
+## ListVms With Search Query (GET /vms)
+
+There is also an advanced feature in the VMs endpoint where you can execute an LDAP compatible search filter if you want a more precise object search. However you need to consider that the same rules regarding searchable attributes apply to this endpoint, so any search on an non-indexed column will
+return an error. All the searchable attributes are listed in the Inputs table above for the ListVms endpoint. Additionally, there is a very special format you need to respect if you want to search VMs by tags. More on this below.
+
+## Executing LDAP Search Queries
+
+In order to execute a search query against the /vms endpoint, you need to pass a string parameter called query. The string must have the form of a valid LDAP search filter or else you will get an error. Here are some usage examples of this feature:
+
+    GET /vms?query=(alias=adminui*)
+    GET /vms?query=(ram>=1024)
+    GET /vms?query=(%26(ram<=256)(alias=adminui*)
+    GET /vms?query=(%26(ram=512)(alias=adminui0))
+
+Note how the '&' character is escaped as '%26' since the query must be URL encoded. The only exception in the searchable attributes are tags. Since tags have a special format in the database, they have a different but straightforward format for the search filter. Below is an example of searching VMs with a specific tag by using a logical OR:
+
+    GET /vms?query=(|(tags=*-smartdc_type=core-*)(ram>=1024))
+
+As we can see, all we need to do is to enclose the key=value format of tag by the '\*-'' and '-\*'' characters. These are some examples of how to convert tags into a search expression for VMAPI:
+
+|| **Tag Key** || **Tag Value** || **Tag String** || **Search Expression** ||
+|| role || dns || role=dns || tags=\*-role=dns-\* ||
+|| priority || high || priority=high || tags=\*-priority=high-\* ||
+|| purpose || db || purpose=db || tags=\*-purpose=db-\* ||
+
 
 
 ## GetVm (GET /vms/:uuid)
@@ -755,6 +787,10 @@ When one of the UUIDs in the request parameters corresponds to a machine that do
 
 
 # Changelog
+
+## 2012-11-30
+
+  * Added support for advanced search on ListVms (LDAP search filters)
 
 ## 2012-11-21
 
