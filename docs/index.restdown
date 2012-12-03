@@ -325,12 +325,23 @@ As we can see, the first element in the array is specifying an IP address that n
 ||409||Missing parameter||Error object||
 ||409||Invalid parameter||Error object||
 
-### Example
+### Example with a JSON payload
+
+    POST /vms -d '{
+      "owner_uuid": "930896af-bf8c-48d4-885c-6573a94b1853",
+      "image_uuid": "28445220-6eac-11e1-9ce8-5f14ed22e782",
+      "brand": "joyent",
+      "networks": "a4457fc9-c415-4ac9-8738-a03b1a8e7aee",
+      "ram": 128
+    }'
+
+### Example with form parameters
 
     POST /vms
       -d owner_uuid=930896af-bf8c-48d4-885c-6573a94b1853 \
       -d image_uuid=28445220-6eac-11e1-9ce8-5f14ed22e782 \
       -d brand=joyent \
+      -d networks=a4457fc9-c415-4ac9-8738-a03b1a8e7aee \
       -d ram=128
 
 
@@ -370,10 +381,19 @@ At least one of the following parameters must be provided when action=update.
 ||409||Missing parameter||Error object||
 ||409||Invalid parameter||Error object||
 
-### Example
+### Examples with a JSON payload
 
-    POST /vms/e9bd0ed1-7de3-4c66-a649-d675dbce6e83 \
-      -d action=stop
+    POST /vms/e9bd0ed1-7de3-4c66-a649-d675dbce6e83 -d '{ "action": "stop" }'
+
+    POST /vms/e9bd0ed1-7de3-4c66-a649-d675dbce6e83 -d '{
+      "action": "update",
+      "alias": "new-alias",
+      "quota": 20
+    }'
+
+### Examples with form parameters
+
+    POST /vms/e9bd0ed1-7de3-4c66-a649-d675dbce6e83 -d action=stop
 
     POST /vms/e9bd0ed1-7de3-4c66-a649-d675dbce6e83 \
       -d action=update \
