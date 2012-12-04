@@ -278,6 +278,11 @@ exports.create_vm_not_ok = function (t) {
 
 
 exports.create_vm = function (t) {
+    var md = {
+        foo: 'bar',
+        credentials: JSON.stringify({ 'user_pw': '12345678' })
+    };
+
     var vm = {
         owner_uuid: CUSTOMER,
         dataset_uuid: DATASET,
@@ -287,7 +292,8 @@ exports.create_vm = function (t) {
         billing_id: '00000000-0000-0000-0000-000000000000',
         package_name: 'smartos',
         package_version: '1.6.5',
-        ram: 64
+        ram: 64,
+        customer_metadata: md
     };
 
     client.post('/vms', vm,
