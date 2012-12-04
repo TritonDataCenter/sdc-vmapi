@@ -22,7 +22,7 @@ var NETWORKS = null;
 var SERVER = null;
 
 // In seconds
-var TIMEOUT = 90;
+var TIMEOUT = 120;
 
 
 // --- Helpers
