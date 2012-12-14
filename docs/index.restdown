@@ -347,14 +347,14 @@ As we can see, the first element in the array is specifying an IP address that n
 
 ## UpdateVm (POST /vms/:uuid)
 
-Queues an update operation on a VM. Only four operations are supported at this moment: **start, stop, reboot and update**. Update is the only action that takes additional arguments.
+Queues an update operation on a VM. Only four operations are supported at this moment: **start, stop, reboot, add_nics, remove_nics and update**.
 
 ### Inputs
 
 ||**Param**||**Type**||**Description**||**Required?**||
 ||uuid||UUID||VM UUID||Yes||
 ||owner_uuid||UUID||VM Owner||No||
-||action||String||start, stop, reboot or update||Yes||
+||action||String||start, stop, reboot, add_nics, remove_nics or update||Yes||
 
 ### VM Update Inputs
 
@@ -372,6 +372,19 @@ At least one of the following parameters must be provided when action=update.
 ||tags||Object||VM tags||
 ||customer_metadata||Object||VM metadata||
 ||internal_metadata||Object||VM metadata||
+
+### VM Add Nics Inputs
+
+For adding NICs to a VM, an additional networks parameter must be specified.
+
+||networks*||Array*||List of networks. Same format as CreateVm||
+
+### VM Remove Nics Inputs
+
+For removing NICs from a VM, an additional macs parameter must be specified. This parameter can be an array of MAC addresses or a comma separated string of MAC addresses.
+
+||macs||Array||List of MAC addresses||
+
 
 ### Response Codes
 
@@ -807,6 +820,10 @@ When one of the UUIDs in the request parameters corresponds to a machine that do
 
 
 # Changelog
+
+## 2012-12-13
+
+  * Added support add_nics and remove_nics on UpdateVm
 
 ## 2012-11-30
 

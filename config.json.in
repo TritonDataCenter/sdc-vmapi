@@ -13,7 +13,18 @@
     "host": "REDIS_ADMIN_IPS"
   },
   "wfapi": {
-    "workflows": ["provision", "start", "stop", "reboot", "destroy", "update", "snapshot", "rollback"],
+    "workflows": [
+      "provision",
+      "start",
+      "stop",
+      "reboot",
+      "update",
+      "destroy",
+      "snapshot",
+      "rollback",
+      "add-nics",
+      "remove-nics"
+    ],
     "url": "WF_URL"
   },
   "cnapi": {

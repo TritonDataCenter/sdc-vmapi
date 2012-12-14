@@ -20,6 +20,7 @@ var DATASET = '01b2c898-945f-11e1-a523-af1afbe22822';
 var CUSTOMER = '00000000-0000-0000-0000-000000000000';
 var NETWORKS = null;
 var SERVER = null;
+var MAC_ADDRESS = null;
 
 // In seconds
 var TIMEOUT = 120;
@@ -144,7 +145,8 @@ exports.napi_networks_ok = function (t) {
         t.equal(res.statusCode, 200);
         t.ok(networks);
         t.ok(Array.isArray(networks));
-        NETWORKS = [ { uuid: networks[0].uuid } ];
+        t.ok(networks.length > 1)
+        NETWORKS = networks;
         t.done();
     });
 };
@@ -287,7 +289,7 @@ exports.create_vm = function (t) {
         owner_uuid: CUSTOMER,
         dataset_uuid: DATASET,
         server_uuid: SERVER.uuid,
-        networks: NETWORKS,
+        networks: [ { uuid: NETWORKS[0].uuid } ],
         brand: 'joyent-minimal',
         billing_id: '00000000-0000-0000-0000-000000000000',
         package_name: 'smartos',
@@ -386,6 +388,66 @@ exports.reboot_vm = function (t) {
 
 
 exports.wait_rebooted_job = function (t) {
+    waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
+        t.ifError(err);
+        t.done();
+    });
+};
+
+
+exports.add_nics = function (t) {
+    var params = {
+        action: 'add_nics',
+        networks: [ { uuid: NETWORKS[1].uuid } ]
+    };
+
+    client.post(vmLocation, params, function (err, req, res, body) {
+        t.ifError(err);
+        t.equal(res.statusCode, 202);
+        common.checkHeaders(t, res.headers);
+        t.ok(body);
+        jobLocation = '/jobs/' + body.job_uuid;
+        t.done();
+    });
+};
+
+
+exports.wait_add_nics = function (t) {
+    waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
+        t.ifError(err);
+        t.done();
+    });
+};
+
+
+exports.remove_nics = function (t) {
+    // Get VM object to get its NICs
+    client.get(vmLocation, function (err, req, res, body) {
+        t.ifError(err);
+        t.equal(res.statusCode, 200, '200 OK');
+        common.checkHeaders(t, res.headers);
+        t.ok(body, 'vm ok');
+        checkMachine(t, body);
+        t.ok(body.nics);
+        t.equal(body.nics.length, 2);
+
+        // 2nd NIC is the one we just added
+        MAC_ADDRESS = body.nics[1].mac;
+        var params = { action: 'remove_nics', macs: [ MAC_ADDRESS ] };
+
+        client.post(vmLocation, params, function (err, req, res, body) {
+            t.ifError(err);
+            t.equal(res.statusCode, 202);
+            common.checkHeaders(t, res.headers);
+            t.ok(body);
+            jobLocation = '/jobs/' + body.job_uuid;
+            t.done();
+        });
+    });
+};
+
+
+exports.wait_remove_nics = function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
         t.ifError(err);
         t.done();
@@ -671,7 +733,7 @@ exports.create_nonautoboot_vm = function (t) {
         owner_uuid: CUSTOMER,
         dataset_uuid: DATASET,
         server_uuid: SERVER.uuid,
-        networks: NETWORKS,
+        networks: [ { uuid: NETWORKS[0].uuid } ],
         brand: 'joyent-minimal',
         billing_id: '00000000-0000-0000-0000-000000000000',
         package_name: 'smartos',
