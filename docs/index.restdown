@@ -347,19 +347,52 @@ As we can see, the first element in the array is specifying an IP address that n
 
 ## UpdateVm (POST /vms/:uuid)
 
-Queues an update operation on a VM. Only four operations are supported at this moment: **start, stop, reboot, add_nics, remove_nics and update**.
+Queues an update operation on a VM. The folowing operations are supported: **start, stop, reboot, update, add_nics, remove_nics, create_snapshot, delete_snapshot and rollback_snapshot**. Each of these operations is documented below.
 
-### Inputs
+### UpdateVM General Inputs
 
 ||**Param**||**Type**||**Description**||**Required?**||
 ||uuid||UUID||VM UUID||Yes||
 ||owner_uuid||UUID||VM Owner||No||
-||action||String||start, stop, reboot, add_nics, remove_nics or update||Yes||
+||action||String||start, stop, reboot, update, add_nics, remove_nics, create_snapshot, delete_snapshot, rollback_snapshot||Yes||
 
-### VM Update Inputs
+### UpdateVm Response Codes
+
+||**Code**||**Description**||**Response**||
+||202||New job created||VM response object||
+||404||VM not found||Error object||
+||409||Missing parameter||Error object||
+||409||Invalid parameter||Error object||
+
+## VM Action: Start Inputs (POST /vms/:uuid?action=start)
+
+No additional inputs are needed for this action.
+
+### Example
+
+    POST /vms/e9bd0ed1-7de3-4c66-a649-d675dbce6e83?action=start
+
+## VM Action: Stop Inputs (POST /vms/:uuid?action=stop)
+
+No additional inputs are needed for this action.
+
+### Example
+
+    POST /vms/e9bd0ed1-7de3-4c66-a649-d675dbce6e83?action=stop
+
+## VM Action: Reboot Inputs (POST /vms/:uuid?action=reboot)
+
+No additional inputs are needed for this action.
+
+### Example
+
+    POST /vms/e9bd0ed1-7de3-4c66-a649-d675dbce6e83?action=reboot
+
+## VM Action: Update Inputs (POST /vms/:uuid?action=update)
 
 At least one of the following parameters must be provided when action=update.
 
+||**Param**||**Type**||**Description**||
 ||alias||String||VM alias||
 ||new_owner_uuid||UUID||UUID of the new VM Owner||
 ||ram||Number||VM RAM||
@@ -373,45 +406,117 @@ At least one of the following parameters must be provided when action=update.
 ||customer_metadata||Object||VM metadata||
 ||internal_metadata||Object||VM metadata||
 
-### VM Add Nics Inputs
+### Example with a JSON payload
 
-For adding NICs to a VM, an additional networks parameter must be specified.
-
-||networks*||Array*||List of networks. Same format as CreateVm||
-
-### VM Remove Nics Inputs
-
-For removing NICs from a VM, an additional macs parameter must be specified. This parameter can be an array of MAC addresses or a comma separated string of MAC addresses.
-
-||macs||Array||List of MAC addresses||
-
-
-### Response Codes
-
-||**Code**||**Description**||**Response**||
-||202||New job created||VM response object||
-||404||VM not found||Error object||
-||409||Missing parameter||Error object||
-||409||Invalid parameter||Error object||
-
-### Examples with a JSON payload
-
-    POST /vms/e9bd0ed1-7de3-4c66-a649-d675dbce6e83 -d '{ "action": "stop" }'
-
-    POST /vms/e9bd0ed1-7de3-4c66-a649-d675dbce6e83 -d '{
-      "action": "update",
+    POST /vms/e9bd0ed1-7de3-4c66-a649-d675dbce6e83?action=update -d '{
       "alias": "new-alias",
       "quota": 20
     }'
 
-### Examples with form parameters
+### Example with form parameters
 
-    POST /vms/e9bd0ed1-7de3-4c66-a649-d675dbce6e83 -d action=stop
-
-    POST /vms/e9bd0ed1-7de3-4c66-a649-d675dbce6e83 \
-      -d action=update \
+    POST /vms/e9bd0ed1-7de3-4c66-a649-d675dbce6e83?action=update \
       -d alias=new-alias \
       -d quota=20
+
+
+## VM Action: Add Nics Inputs (POST /vms/:uuid?action=add_nics)
+
+For adding NICs to a VM, a networks list parameter must be specified.
+
+||**Param**||**Type**||**Description**||
+||networks*||Array*||List of networks. Same format as CreateVm||
+
+### Example with a JSON payload
+
+    POST /vms/e9bd0ed1-7de3-4c66-a649-d675dbce6e83?action=add_nics -d '{
+      "networks": [ { "uuid": "564ded48-c31d-5029-472a-98d5aa9e5a38" } ]
+    }'
+
+### Example with form parameters
+
+    POST /vms/e9bd0ed1-7de3-4c66-a649-d675dbce6e83?action=add_nics \
+      -d networks=564ded48-c31d-5029-472a-98d5aa9e5a38 \
+
+
+## VM Action: Remove Nics Inputs (POST /vms/:uuid?action=remove_nics)
+
+For removing NICs from a VM, a macs list parameter must be specified. This parameter can be an array of MAC addresses or a comma separated string of MAC addresses.
+
+||**Param**||**Type**||**Description**||
+||macs||Array||List of MAC addresses||
+
+### Example with a JSON payload
+
+    POST /vms/e9bd0ed1-7de3-4c66-a649-d675dbce6e83?action=remove_nics -d '{
+      "macs": [ "90:b8:d0:d9:f0:83" ]
+    }'
+
+### Example with form parameters
+
+    POST /vms/e9bd0ed1-7de3-4c66-a649-d675dbce6e83?action=remove_nics \
+      -d macs=90:b8:d0:d9:f0:83 \
+
+
+## VM Action: Create Snapshot Inputs (POST /vms/:uuid?action=create_snapshot)
+
+If a name for the snapshot is not specified, VMAPI will generate a timestamp for its name with the UTC ISO date/time format (without colons or dashes):
+
+    YYYYMMDDTHHMMSSZ
+
+    Example:
+
+    20121018T222506Z
+
+||**Param**||**Type**||**Description**||
+||snapshot_name||String||Snapshot name or generated timestamp if not present||
+
+### Example with a JSON payload
+
+    POST /vms/e9bd0ed1-7de3-4c66-a649-d675dbce6e83?action=create_snapshot -d \
+    '{ "snapshot_name": "foobar" }'
+
+### Example with form parameters
+
+    POST /vms/e9bd0ed1-7de3-4c66-a649-d675dbce6e83?action=create_snapshot \
+      -d snapshot_name=foobar
+
+
+## VM Action: Delete Snapshot Inputs (POST /vms/:uuid?action=delete_snapshot)
+
+||**Param**||**Type**||**Description**||
+||snapshot_name||String||Snapshot name||
+
+### Example with a JSON payload
+
+    POST /vms/e9bd0ed1-7de3-4c66-a649-d675dbce6e83?action=delete_snapshot -d \
+    '{ "snapshot_name": "foobar" }'
+
+### Example with form parameters
+
+    POST /vms/e9bd0ed1-7de3-4c66-a649-d675dbce6e83?action=delete_snapshot \
+      -d snapshot_name=foobar
+
+
+## VM Action: Rollback Snapshot Inputs (POST /vms/:uuid?action=rollback_snapshot)
+
+If the VM is running at the moment of the request, it will be
+shutdown before executing the rollback and be booted again after the rollback
+has succeeded.
+
+||**Param**||**Type**||**Description**||
+||snapshot_name||String||Snapshot name||
+
+### Example with a JSON payload
+
+    POST /vms/e9bd0ed1-7de3-4c66-a649-d675dbce6e83?action=rollback_snapshot -d \
+    '{ "snapshot_name": "foobar" }'
+
+### Example with form parameters
+
+    POST /vms/e9bd0ed1-7de3-4c66-a649-d675dbce6e83?action=rollback_snapshot \
+      -d snapshot_name=foobar
+
 
 
 ## DeleteVm (DELETE /vms/:uuid)
@@ -436,73 +541,6 @@ Deletes a VM. The VM will be physically destroyed and it will be marked as destr
 ### Example
 
     DELETE /vms/e9bd0ed1-7de3-4c66-a649-d675dbce6e83
-
-
-
-# VM Snapshots
-
-VMs can be snapshotted at any given running state. It's important to keep in mind
-that if a VM is reverted to a previous state indicated by the snapshot parameter
-provided, there is no way to go 'back' to what is now a future state of the machine.
-Snapshots are very fast thanks to ZFS. Rollbacks are fast too. In order to execute safe
-rollbacks, VMAPI shutdowns a VM if it's running at the moment of executing the job.
-Clients are encouraged to add additional conditions to wether or not
-accept a rollback given specific conditions on a VM.
-
-
-## SnapshotVm (POST /vms/:uuid/snapshot)
-
-Snapshots a VM. If a name for the snapshot is not specified, VMAPI will generate
-a timestamp for its name with the UTC ISO date/time format (without colons or dashes):
-
-    YYYYMMDDTHHMMSSZ
-
-    Example:
-
-    20121018T222506Z
-
-### Inputs
-
-||**Param**||**Type**||**Description**||**Required?**||
-||uuid||UUID||VM UUID||Yes||
-||owner_uuid||UUID||VM Owner||No||
-||name||String||Snapshot name or generated timestamp if not present||No||
-
-### Responses
-
-||**Code**||**Description**||**Response**||
-||202||New job created||VM response object||
-||404||VM not found||Error object||
-||409||Snapshot name is invalid||Error object||
-
-
-## RollbackVm (POST /vms/:uuid/rollback)
-
-Rollbacks a VM. If the VM is running at the moment of the request, it will be
-shutdown before executing the rollback and be booted again after the rollback
-has succeeded.
-
-**NOTE**
-
-Currently, snapshots are not checked to exist before firing a rollback job. This
-means that a if a non existent snapshot is provided to this API call, the job will
-eventually fail but it is not going to be an early failure in the HTTP request as
-we ideally want to.
-
-
-### Inputs
-
-||**Param**||**Type**||**Description**||**Required?**||
-||uuid||UUID||VM UUID||Yes||
-||owner_uuid||UUID||VM Owner||No||
-||name||String||Snapshot name||Yes||
-
-### Responses
-
-||**Code**||**Description**||**Response**||
-||202||New job created||VM response object||
-||404||VM not found||Error object||
-||409||Snapshot name is missing||Error object||
 
 
 # VM Metadata
@@ -820,6 +858,11 @@ When one of the UUIDs in the request parameters corresponds to a machine that do
 
 
 # Changelog
+
+## 2012-12-18
+
+  * Added support for delete_snapshot
+  * Updated endpoints for create_snapshot and rollback_snapshot. They are now part of UpdateVm
 
 ## 2012-12-13
 

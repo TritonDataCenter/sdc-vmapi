@@ -145,7 +145,7 @@ exports.napi_networks_ok = function (t) {
         t.equal(res.statusCode, 200);
         t.ok(networks);
         t.ok(Array.isArray(networks));
-        t.ok(networks.length > 1)
+        t.ok(networks.length > 1);
         NETWORKS = networks;
         t.done();
     });
@@ -638,8 +638,9 @@ exports.wait_set_tags = function (t) {
 
 
 exports.snapshot_vm = function (t) {
-    client.post(vmLocation + '/snapshot', { name: 'backup' },
-      function (err, req, res, body) {
+    client.post(vmLocation,
+    { action: 'create_snapshot', snapshot_name: 'backup' },
+    function (err, req, res, body) {
         t.ifError(err);
         t.equal(res.statusCode, 202);
         common.checkHeaders(t, res.headers);
@@ -659,8 +660,9 @@ exports.wait_snapshot_job = function (t) {
 
 
 exports.rollback_vm = function (t) {
-    client.post(vmLocation + '/rollback', { name: 'backup' },
-      function (err, req, res, body) {
+    client.post(vmLocation,
+    { action: 'rollback_snapshot', snapshot_name: 'backup' },
+    function (err, req, res, body) {
         t.ifError(err);
         t.equal(res.statusCode, 202);
         common.checkHeaders(t, res.headers);
@@ -672,6 +674,28 @@ exports.rollback_vm = function (t) {
 
 
 exports.wait_rollback_job = function (t) {
+    waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
+        t.ifError(err);
+        t.done();
+    });
+};
+
+
+exports.delete_snapshot = function (t) {
+    client.post(vmLocation,
+    { action: 'delete_snapshot', snapshot_name: 'backup' },
+    function (err, req, res, body) {
+        t.ifError(err);
+        t.equal(res.statusCode, 202);
+        common.checkHeaders(t, res.headers);
+        t.ok(body);
+        jobLocation = '/jobs/' + body.job_uuid;
+        t.done();
+    });
+};
+
+
+exports.wait_delete_snapshot_job = function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
         t.ifError(err);
         t.done();
