@@ -16,7 +16,7 @@ var newUuid;
 var jobLocation;
 var vmLocation;
 
-var DATASET = '01b2c898-945f-11e1-a523-af1afbe22822';
+var IMAGE = '01b2c898-945f-11e1-a523-af1afbe22822';
 var CUSTOMER = '00000000-0000-0000-0000-000000000000';
 var NETWORKS = null;
 var SERVER = null;
@@ -287,7 +287,7 @@ exports.create_vm = function (t) {
 
     var vm = {
         owner_uuid: CUSTOMER,
-        dataset_uuid: DATASET,
+        image_uuid: IMAGE,
         server_uuid: SERVER.uuid,
         networks: [ { uuid: NETWORKS[0].uuid } ],
         brand: 'joyent-minimal',
@@ -755,7 +755,7 @@ exports.filter_vm_jobs_ok = function (t) {
 exports.create_nonautoboot_vm = function (t) {
     var vm = {
         owner_uuid: CUSTOMER,
-        dataset_uuid: DATASET,
+        image_uuid: IMAGE,
         server_uuid: SERVER.uuid,
         networks: [ { uuid: NETWORKS[0].uuid } ],
         brand: 'joyent-minimal',

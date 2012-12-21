@@ -110,25 +110,101 @@ The VM response object is going a single representation for the two available VM
       ],
     }
 
+There is only one situation when the API can return an 'augmented' VM object and this is when we are requesting a KVM VM (brand == kvm) object. In this case the response JSON in question will have three additional attributes: cpu_type, vcpus and disks. The following example illustrates a sample KVM VM response object:
+
+    {
+      "uuid": "03750e6a-fcf6-4755-85b5-22b8ddf0f1fb",
+      "brand": "kvm",
+      "image_uuid": "56108678-1183-11e1-83c3-ff3185a5b47f",
+      "server_uuid": "564d47c4-b845-113b-664f-2a1d85d0020c",
+      "billing_id": "00000000-0000-0000-0000-000000000000",
+      "package_name": null,
+      "package_version": null,
+      "alias": null,
+      "ram": 256,
+      "max_physical_memory": 512,
+      "max_swap": 512,
+      "quota": null,
+      "cpu_cap": null,
+      "cpu_shares": 2,
+      "max_lwps": 2000,
+      "create_timestamp": "2012-12-21T06:55:27.654Z",
+      "destroyed": null,
+      "last_modified": "2012-12-21T06:55:32.000Z",
+      "zone_state": "running",
+      "state": "running",
+      "zpool": null,
+      "zfs_io_priority": 100,
+      "owner_uuid": "00000000-0000-0000-0000-000000000000",
+      "nics": [
+        {
+          "interface": "net0",
+          "mac": "90:b8:d0:88:45:a8",
+          "vlan_id": 0,
+          "nic_tag": "admin",
+          "gateway": "10.99.99.7",
+          "primary": true,
+          "ip": "10.99.99.32",
+          "netmask": "255.255.255.0",
+          "model": "virtio"
+        }
+      ],
+      "snapshots": [],
+      "customer_metadata": {},
+      "internal_metadata": {},
+      "tags": {},
+      "vcpus": 1,
+      "cpu_type": "host",
+      "disks": [
+        {
+          "path": "/dev/zvol/rdsk/zones/03750e6a-fcf6-4755-85b5-22b8ddf0f1fb-disk0",
+          "boot": false,
+          "model": "virtio",
+          "media": "disk",
+          "image_size": 10240,
+          "image_uuid": "56108678-1183-11e1-83c3-ff3185a5b47f",
+          "image_name": "ubuntu10.04",
+          "zfs_filesystem": "zones/03750e6a-fcf6-4755-85b5-22b8ddf0f1fb-disk0",
+          "zpool": "zones",
+          "size": 5120,
+          "compression": "off",
+          "block_size": 8192
+        },
+        {
+          "path": "/dev/zvol/rdsk/zones/03750e6a-fcf6-4755-85b5-22b8ddf0f1fb-disk1",
+          "boot": false,
+          "model": "virtio",
+          "media": "disk",
+          "size": 10240,
+          "zfs_filesystem": "zones/03750e6a-fcf6-4755-85b5-22b8ddf0f1fb-disk1",
+          "zpool": "zones",
+          "compression": "off",
+          "block_size": 8192
+        }
+      ]
+    }
+
 ## VM States
 
-The VM response object contains a state attribute that should be used as the high level representation of the machine state. There are three values for a VM state, and a special additional 'active' state that is only available as a search filter when used in the ListVms API endpoint:
+The VM response object contains a state attribute that should be used as the high level representation of the machine state. There are three 'running state' values for a VM, two 'provisioning state' values and an additional 'active' state that is only available as a search filter when used in the ListVms API endpoint:
 
 || **VM State** || **Description** ||
 || running || Self-explanatory ||
 || stopped || Self-explanatory ||
 || destroyed || Self-explanatory||
+|| provisioning || VM is currently being provisioned in the system ||
+|| failed || VM provisioning has failed ||
 || active || When used in ListVms, denotes machines that are not destroyed ||
 
-In addition, there is a 'zone_state' property that represents the Solaris Zones state, since every VM is really a zone internally. The state property should be used in favor of zone_state at all times, but zone_state is provided in case it's needed for debugging purposes. The following is a table that shows the mapping between zone_state and state values:
+In addition, there is a 'zone_state' property that represents the Solaris Zones state, since every VM is really a zone internally. The state property should be used in favor of zone_state at all times, but zone_state is provided in case it's needed for debugging purposes. The following is a table that shows all the possible zone_state values:
 
-|| **Zone State** || **VM State** ||
-|| configured || stopped ||
-|| incomplete || stopped ||
-|| installed || stopped||
-|| ready || running ||
-|| running || running ||
-|| shutting down || running ||
+|| **Zone State** ||
+|| configured ||
+|| incomplete ||
+|| installed ||
+|| ready ||
+|| running ||
+|| shutting down ||
 
 
 # VM Job Response Object
@@ -153,13 +229,14 @@ Error responses will be returned when the response status code is one of 40X err
 
 # Ping VMAPI
 
-Use ping when you want a general status report from VMAPI. VMAPI makes HTTP connections to REST APIs and TCP connections to services like redis and moray. In addition to service status, one might need to know when was the last time that VMAPI saw an incoming heartbeat when debugging VM data propagation errors. The **ping**  endpoint provides a compact response object that lets clients know what is VMAPI's point of view of the backend services it is connected to. The following is the format of the ping response object.
+Use ping when you want a general status report from VMAPI. VMAPI makes HTTP connections to REST APIs and TCP connections to services like redis and moray. In addition to service status, one might need to know when was the last time that VMAPI saw an incoming heartbeat when debugging VM data propagation errors. The **ping**  endpoint provides a compact response object that lets clients know what is VMAPI's point of view of the backend services it is connected to. The following is the format of the ping response object. The pingErrors attribute is an object where each of its keys is the name of an API (redis, wfapi, moray, cnapi or napi) and the value of each key is the error response that was obtained after pinging the correspondent service.
 
 ## Ping (GET /ping)
 
     GET /ping
 
     {
+      "healthy": true,
       "services": {
         "redis": "online",
         "wfapi": "online",
@@ -167,6 +244,7 @@ Use ping when you want a general status report from VMAPI. VMAPI makes HTTP conn
         "cnapi": "online",
         "napi": "online"
       },
+      "pingErrors": {},
       "lastHeartbeatReceived": {
         "timestamp": "2012-11-22T00:27:49.851Z",
         "server": "564dcf02-3ed9-7459-bdfc-a2884558951f"
@@ -277,13 +355,37 @@ Returns a VM with the specified UUID. When sync=true is passed, VMAPI will direc
 Queues a VM provision. This will validate all parameters and create a new job on workflow API when the request is considered to be valid. The response is
 the same as a GET to /vms/:uuid, however some VM attributes might not be present since it has not been provisioned yet. The response also contains a Job-Location header which can be used to get more information about the provisioning job that is being executed by workflow API.
 
-### Required Inputs
+### General Required Inputs
 
+||**Param**||**Type**||**Description**||
 ||owner_uuid||UUID||VM Owner||
-||image_uuid||UUID||Image UUID||
 ||networks*||Array*||List of networks||
 ||brand||String||'joyent', 'joyent-minimal' or 'kvm'||
 ||ram||Number||VM RAM||
+
+### Required Inputs for OS VMs
+
+||**Param**||**Type**||**Description**||
+||image_uuid||UUID||Image UUID||
+
+### Required Inputs for KVM VMs
+
+||**Param**||**Type**||**Description**||
+||disks||Array||Disks definition for the KVM VM, see below||
+
+KVM VMs need a list of disks as an additional parameter. For more specific information on the full format that a disk object can take please refer to vmadm(1). In the case of VMAPI, there are only two conditions that need to be met for a valid disks list:
+
+* The first disk MUST have a 'image_uuid' property. This is required because the first disk of the VM is the disk where the OS gets installed
+* The second and following disks in the list MUST have a 'size' property. This is mandatory for any disk that is not the image disk of the VM
+
+The following is a simple example of a valid disks list passed to VMAPI for a KVM VM provision:
+
+    "disks": [
+      {"image_uuid": "56108678-1183-11e1-83c3-ff3185a5b47f"},
+      {"size": 10240}
+    ]
+
+Additional information that the first disk of the VM needs before the provision is queued is obtained from the Image specified with image_uuid.
 
 ### Deprecation Note
 
@@ -304,8 +406,9 @@ The 'networks' parameter format has been updated to support the case when a spec
 As we can see, the first element in the array is specifying an IP address that needs to be allocated whereas the second element it's just the regular case when IP allocation is left to NAPI.
 
 
-### Optional Inputs
+### General Optional Inputs
 
+||**Param**||**Type**||**Description**||
 ||server_uuid||UUID||Manually specify a server for the provision||
 ||alias||String||VM alias||
 ||max_physical_memory||Number||Same as RAM||
@@ -318,6 +421,20 @@ As we can see, the first element in the array is specifying an IP address that n
 ||customer_metadata||Object||VM metadata||
 ||internal_metadata||Object||VM metadata||
 
+### Optional Inputs for OS VMs
+
+||**Param**||**Type**||**Description**||
+||filesystems||Array||Additional filesystems for the OS VM||
+
+### Optional Inputs for KVM VMs
+
+||**Param**||**Type**||**Description**||
+||cpu_type||String||One of qemu64, host||
+||vcpus||Number||Number of virtual CPUs for the guest||
+||disk_driver||String||One of virtio, ide, scsi||
+||nic_driver||String||One of virtio, e1000, rtl8139||
+
+
 ### Response Codes
 
 ||**Code**||**Description**||**Response**||
@@ -325,7 +442,7 @@ As we can see, the first element in the array is specifying an IP address that n
 ||409||Missing parameter||Error object||
 ||409||Invalid parameter||Error object||
 
-### Example with a JSON payload
+### Example: creating a OS VM
 
     POST /vms -d '{
       "owner_uuid": "930896af-bf8c-48d4-885c-6573a94b1853",
@@ -335,14 +452,19 @@ As we can see, the first element in the array is specifying an IP address that n
       "ram": 128
     }'
 
-### Example with form parameters
+### Example: creating a KVM VM
 
-    POST /vms
-      -d owner_uuid=930896af-bf8c-48d4-885c-6573a94b1853 \
-      -d image_uuid=28445220-6eac-11e1-9ce8-5f14ed22e782 \
-      -d brand=joyent \
-      -d networks=a4457fc9-c415-4ac9-8738-a03b1a8e7aee \
-      -d ram=128
+Note how image_uuid is specified for the first disk and not at the top level of the payload
+
+    POST /vms -d '{
+      "owner_uuid": "930896af-bf8c-48d4-885c-6573a94b1853",
+      "brand": "kvm",
+      "ram": 256,
+      "disks": [
+        {"image_uuid": "56108678-1183-11e1-83c3-ff3185a5b47f"},
+        {"size": 10240}
+      ]
+    }'
 
 
 ## UpdateVm (POST /vms/:uuid)
