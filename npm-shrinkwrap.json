@@ -312,30 +312,28 @@
     },
     "moray": {
       "version": "1.0.0",
-      "from": "git+ssh://git@git.joyent.com:node-moray.git#e5db01d",
+      "from": "git+ssh://git@git.joyent.com:node-moray.git#4ad5e4a",
       "dependencies": {
         "assert-plus": {
           "version": "0.1.2"
         },
-        "bunyan": {
-          "version": "0.16.7",
-          "dependencies": {
-            "dtrace-provider": {
-              "version": "0.2.4"
-            }
-          }
+        "backoff": {
+          "version": "1.2.0"
         },
         "clone": {
-          "version": "0.1.1"
+          "version": "0.1.5"
         },
         "fast": {
-          "version": "0.2.2",
+          "version": "0.2.3",
           "dependencies": {
-            "backoff": {
-              "version": "1.2.0"
+            "clone": {
+              "version": "0.1.1"
             },
             "crc": {
               "version": "0.2.0"
+            },
+            "dtrace-provider": {
+              "version": "0.2.4"
             },
             "microtime": {
               "version": "0.3.3",
@@ -351,6 +349,25 @@
               "dependencies": {
                 "extsprintf": {
                   "version": "1.0.0"
+                }
+              }
+            }
+          }
+        },
+        "native-dns": {
+          "version": "0.4.0",
+          "dependencies": {
+            "buffercursor": {
+              "version": "0.0.5"
+            },
+            "binaryheap": {
+              "version": "0.0.2"
+            },
+            "ipaddr.js": {
+              "version": "0.1.1",
+              "dependencies": {
+                "coffee-script": {
+                  "version": "1.4.0"
                 }
               }
             }
@@ -401,7 +418,7 @@
           }
         },
         "nopt": {
-          "version": "2.0.0",
+          "version": "2.1.1",
           "dependencies": {
             "abbrev": {
               "version": "1.0.4"
