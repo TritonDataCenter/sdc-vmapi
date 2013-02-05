@@ -236,6 +236,7 @@ Use ping when you want a general status report from VMAPI. VMAPI makes HTTP conn
     GET /ping
 
     {
+      "pid": 12456,
       "healthy": true,
       "services": {
         "redis": "online",
@@ -980,6 +981,10 @@ When one of the UUIDs in the request parameters corresponds to a machine that do
 
 
 # Changelog
+
+## 2013-02-04
+
+  * Added process *pid* to /ping response
 
 ## 2012-12-18
 

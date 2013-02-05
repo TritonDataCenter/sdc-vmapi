@@ -1,0 +1,224 @@
+#!/bin/bash
+#
+# Copyright (c) 2012, Joyent, Inc. All rights reserved.
+#
+# Run the VMAPI tests. This is expected to be run from an VMAPI zone
+# in a full SDC setup.
+#
+# This creates .tap files in the OUTPUT_DIR (/var/tmp/vmapitest) that
+# can be processed by a TAP reader. Testing config and log files are
+# also placed in this dir.
+#
+# Run `./runtests -h` for usage info.
+#
+
+if [ "$TRACE" != "" ]; then
+    export PS4='${BASH_SOURCE}:${LINENO}: ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+    set -o xtrace
+fi
+set -o errexit
+set -o pipefail
+
+
+
+#---- support functions
+
+function fatal () {
+    echo "$(basename $0): fatal error: $*"
+    exit 1
+}
+
+function cleanup () {
+    local status=$?
+    if [[ -n "$opt_local" ]]; then
+        vmapi_stop $VMAPI_URL
+    fi
+    if [[ $status -ne 0 ]]; then
+        echo "error $status (run 'TRACE=1 $0' for more info)"
+    fi
+}
+
+function usage () {
+    echo "Usage:"
+    echo "  runtests [OPTIONS...]"
+    echo ""
+    echo "Options:"
+    echo "  -l          Start a local VMAPI using './config.json'"
+    echo "              and test against that."
+}
+
+function vmapi_is_running () {
+    local vmapi_url=$1
+    local response=$(curl -iSs -H accept:application/json \
+        $vmapi_url/ping)
+    if [[ $(echo "$response" | json -qH healthy) == "true" ]]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+function vmapi_stop () {
+    local vmapi_url=$1
+    local pid=$(curl $CURL_VMAPI_AUTH -iSs -H accept:application/json \
+        $vmapi_url/ping | json -H pid)
+    kill $pid
+}
+
+
+
+#---- mainline
+
+trap 'cleanup' EXIT
+
+start_time=$(date +%s)
+
+TOP=$(cd $(dirname $0)/../; pwd)
+NODE_INSTALL=$TOP/build/node
+NODEUNIT=./node_modules/.bin/nodeunit
+
+
+# Options.
+opt_reporter=tap
+opt_mode=dc
+opt_local=
+opt_offline=
+while getopts "hcqf:r:lpo" opt
+do
+    case "$opt" in
+        h)
+            usage
+            exit 0
+            ;;
+        r)
+            opt_reporter=$OPTARG
+            ;;
+        l)
+            opt_local=yes
+            ;;
+        *)
+            usage
+            exit 1
+            ;;
+    esac
+done
+script_opts=""
+if [[ -n "$opt_local" ]]; then
+    script_opts+=" -l"
+fi
+
+# Guard from running 'dc' tests in production.
+if [[ -z "$opt_local" ]]; then
+if [[ ! -f "/lib/sdc/.sdc-test-no-production-data" ]]; then
+    cat <<EOF
+To run this test you must create the file:
+
+    /lib/sdc/.sdc-test-no-production-data
+
+after ensuring you have no production data on this SDC.
+EOF
+    exit 2
+fi
+fi
+
+
+# Setup a clean output dir.
+OUTPUT_DIR=/var/tmp/vmapitest
+echo "# Setup a clean output dir ($OUTPUT_DIR)."
+rm -rf $OUTPUT_DIR
+mkdir -p $OUTPUT_DIR
+
+CFG_FILE=$TOP/config.json
+
+# Setup VMAPI tests to run on either local or SDC mode
+if [[ -n "$opt_local" ]]; then
+    export VMAPI_URL=http://localhost:$(json api.port <$CFG_FILE)
+else
+    CFG_FILE=$TOP/config.json
+    [[ ! -f "$CFG_FILE" ]] && fatal "'$CFG_FILE' does not exist"
+    if [[ $(zonename) == "global" ]]; then
+        export VMAPI_URL=http://$(/opt/smartdc/bin/sdc-vmapi /vms \
+            | json -H -c 'tags.smartdc_role=="vmapi"' -c 'state=="running"' 0.nics.0.ip)
+    else
+        export VMAPI_URL=http://$(/usr/sbin/ifconfig net0 | grep inet | awk '{print $2}')
+    fi
+    export VMAPI_PORT=$(json port <$CFG_FILE)
+    if [[ -n "$VMAPI_PORT" && "$VMAPI_PORT" != "80" ]]; then
+        export VMAPI_URL=$VMAPI_URL:$VMAPI_PORT
+    fi
+fi
+
+
+echo ""
+echo "# Test config:"
+echo "# VMAPI_URL is $VMAPI_URL"
+
+# Simplify: just run everything from $TOP.
+cd $TOP
+
+# Start the vmapi service, if necessary (only for local testing).
+if [[ -n "$opt_local" ]]; then
+    echo '# Start local vmapi (`tail -f tmp/local.log | bunyan`).'
+    mkdir -p tmp
+    node server.js >tmp/local.log 2>&1 &
+    sleep 3
+    for i in 1 2 3 4 5 6 7 8 9; do
+        sleep 0.5
+        echo "# Check if local vmapi is up yet ($VMAPI_URL)."
+        if vmapi_is_running $VMAPI_URL; then
+            break
+        fi
+    done
+    vmapi_is_running $VMAPI_URL || fatal 'Local vmapi did not start.'
+    echo "# Local vmapi is up."
+fi
+
+
+# Gather tests to run.
+echo ""
+test_files=$(ls -1 test/*.test.js)
+
+# Run the tests.
+retval=0
+if [[ -n "$test_files" ]]; then
+    if [[ $opt_reporter == "tap" ]]; then
+        PATH=$NODE_INSTALL/bin:$PATH $NODEUNIT --reporter \
+        $opt_reporter $test_files | tee $OUTPUT_DIR/vmapi.tap
+    else
+        PATH=$NODE_INSTALL/bin:$PATH $NODEUNIT --reporter \
+        $opt_reporter $test_files retval=$?
+    fi
+fi
+
+
+if [[ $opt_reporter == "tap" ]]; then
+    echo ""
+    echo "# test output:"
+    ls $OUTPUT_DIR/*.tap
+
+    # Colored summary of results (borrowed from smartos-live.git/src/vm/run-tests).
+    echo ""
+    echo "# test results:"
+
+    end_time=$(date +%s)
+    elapsed=$((${end_time} - ${start_time}))
+
+    tests=$(grep "^# tests [0-9]" $OUTPUT_DIR/*.tap | cut -d ' ' -f3 | xargs | tr ' ' '+' | bc)
+    passed=$(grep "^# pass  [0-9]" $OUTPUT_DIR/*.tap | tr -s ' ' | cut -d ' ' -f3 | xargs | tr ' ' '+' | bc)
+    [[ -z ${tests} ]] && tests=0
+    [[ -z ${passed} ]] && passed=0
+    fail=$((${tests} - ${passed}))
+
+    echo "# Completed in ${elapsed} seconds."
+    echo -e "# \033[32mPASS: ${passed} / ${tests}\033[39m"
+    if [[ ${fail} -gt 0 ]]; then
+        echo -e "# \033[31mFAIL: ${fail} / ${tests}\033[39m"
+    fi
+    echo ""
+
+    if [[ ${tests} != ${passed} ]]; then
+        exit 1
+    fi
+else
+    exit $retval
+fi

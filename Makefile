@@ -72,6 +72,7 @@ release: all deps docs $(SMF_MANIFESTS)
     $(ROOT)/package.json \
     $(ROOT)/config.json.in \
     $(ROOT)/smf \
+    $(ROOT)/test \
     $(ROOT)/tools \
     $(TMPDIR)/root/opt/smartdc/vmapi/
 	(cd $(TMPDIR) && $(TAR) -jcf $(ROOT)/$(RELEASE_TARBALL) root site)
