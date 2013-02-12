@@ -39,19 +39,22 @@ module.exports = {
         var client = restify.createJsonClient({
             url: VMAPI_URL,
             version: '*',
-            log: logger
+            log: logger,
+            agent: false
         });
 
         var napi = restify.createJsonClient({
             url: NAPI_URL,
             version: '*',
-            log: logger
+            log: logger,
+            agent: false
         });
 
         var cnapi = restify.createJsonClient({
             url: CNAPI_URL,
             version: '*',
-            log: logger
+            log: logger,
+            agent: false
         });
 
         client.napi = napi;
