@@ -64,8 +64,7 @@ vmapi.once('ready', function () {
 });
 
 process.on('uncaughtException', function (err) {
-    vmapi.log.error('Uncaught Exception', err);
-    vmapi.log.error(err.stack);
+    vmapi.log.error(err, 'Uncaught Exception');
 });
 
 
