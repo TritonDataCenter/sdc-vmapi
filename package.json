@@ -23,7 +23,7 @@
     "posix-getopt": "1.0.0"
   },
   "devDependencies": {
-    "tap": "~0.2"
+    "tap": "*"
   },
   "scripts": {
     "start": "node ./server.js"
