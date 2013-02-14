@@ -295,7 +295,8 @@ exports.create_vm = function (t) {
         package_name: 'smartos',
         package_version: '1.6.5',
         ram: 64,
-        customer_metadata: md
+        customer_metadata: md,
+        context: 'foobar'
     };
 
     client.post('/vms', vm,
@@ -333,7 +334,7 @@ exports.wait_provisioned_job = function (t) {
 
 
 exports.stop_vm = function (t) {
-    client.post(vmLocation, { action: 'stop' },
+    client.post(vmLocation, { action: 'stop', context: 'foobar' },
       function (err, req, res, body) {
         t.ifError(err);
         t.equal(res.statusCode, 202);
@@ -354,7 +355,7 @@ exports.wait_stopped_job = function (t) {
 
 
 exports.start_vm = function (t) {
-    client.post(vmLocation, { action: 'start' },
+    client.post(vmLocation, { action: 'start', context: 'foobar' },
       function (err, req, res, body) {
         t.ifError(err);
         t.equal(res.statusCode, 202);
@@ -375,7 +376,7 @@ exports.wait_started_job = function (t) {
 
 
 exports.reboot_vm = function (t) {
-    client.post(vmLocation, { action: 'reboot' },
+    client.post(vmLocation, { action: 'reboot', context: 'foobar' },
       function (err, req, res, body) {
         t.ifError(err);
         t.equal(res.statusCode, 202);
@@ -398,7 +399,8 @@ exports.wait_rebooted_job = function (t) {
 exports.add_nics = function (t) {
     var params = {
         action: 'add_nics',
-        networks: [ { uuid: NETWORKS[1].uuid } ]
+        networks: [ { uuid: NETWORKS[1].uuid } ],
+        context: 'foobar'
     };
 
     client.post(vmLocation, params, function (err, req, res, body) {
@@ -433,7 +435,11 @@ exports.remove_nics = function (t) {
 
         // 2nd NIC is the one we just added
         MAC_ADDRESS = body.nics[1].mac;
-        var params = { action: 'remove_nics', macs: [ MAC_ADDRESS ] };
+        var params = {
+            action: 'remove_nics',
+            macs: [ MAC_ADDRESS ],
+            context: 'foobar'
+        };
 
         client.post(vmLocation, params, function (err, req, res, body) {
             t.ifError(err);
@@ -458,7 +464,8 @@ exports.wait_remove_nics = function (t) {
 // Adding this test due to JPC-1045 bug, where a change to owner_uuid was
 // requested with an empty owner_uuid value:
 exports.change_owner_without_uuid = function (t) {
-    client.post(vmLocation, { action: 'update', owner_uuid: '' },
+    client.post(vmLocation,
+    { action: 'update', owner_uuid: '', context: 'foobar' },
       function (err, req, res, body) {
           t.equal(res.statusCode, 409);
           t.done();
@@ -639,7 +646,7 @@ exports.wait_set_tags = function (t) {
 
 exports.snapshot_vm = function (t) {
     client.post(vmLocation,
-    { action: 'create_snapshot', snapshot_name: 'backup' },
+    { action: 'create_snapshot', snapshot_name: 'backup', context: 'foobar' },
     function (err, req, res, body) {
         t.ifError(err);
         t.equal(res.statusCode, 202);
@@ -661,7 +668,7 @@ exports.wait_snapshot_job = function (t) {
 
 exports.rollback_vm = function (t) {
     client.post(vmLocation,
-    { action: 'rollback_snapshot', snapshot_name: 'backup' },
+    { action: 'rollback_snapshot', snapshot_name: 'backup', context: 'foobar' },
     function (err, req, res, body) {
         t.ifError(err);
         t.equal(res.statusCode, 202);
@@ -683,7 +690,7 @@ exports.wait_rollback_job = function (t) {
 
 exports.delete_snapshot = function (t) {
     client.post(vmLocation,
-    { action: 'delete_snapshot', snapshot_name: 'backup' },
+    { action: 'delete_snapshot', snapshot_name: 'backup', context: 'foobar' },
     function (err, req, res, body) {
         t.ifError(err);
         t.equal(res.statusCode, 202);
