@@ -14,7 +14,7 @@ var PASSWD = 'z3cr3t';
 
 var VMAPI_URL = 'http://' + (process.env.VMAPI_IP || 'localhost:8080');
 var NAPI_URL = 'http://' + (process.env.NAPI_IP || '10.99.99.10');
-var CNAPI_URL = 'http://' + (process.env.CNAPI_IP || '10.99.99.18');
+var CNAPI_URL = 'http://' + (process.env.CNAPI_IP || '10.99.99.22');
 
 
 
