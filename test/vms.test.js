@@ -441,12 +441,12 @@ exports.remove_nics = function (t) {
             context: 'foobar'
         };
 
-        client.post(vmLocation, params, function (err, req, res, body) {
-            t.ifError(err);
-            t.equal(res.statusCode, 202);
-            common.checkHeaders(t, res.headers);
-            t.ok(body);
-            jobLocation = '/jobs/' + body.job_uuid;
+        client.post(vmLocation, params, function (err2, req2, res2, body2) {
+            t.ifError(err2);
+            t.equal(res2.statusCode, 202);
+            common.checkHeaders(t, res2.headers);
+            t.ok(body2);
+            jobLocation = '/jobs/' + body2.job_uuid;
             t.done();
         });
     });
