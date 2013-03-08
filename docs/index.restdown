@@ -367,7 +367,7 @@ the same as a GET to /vms/:uuid, however some VM attributes might not be present
 ### Required Inputs for OS VMs
 
 ||**Param**||**Type**||**Description**||
-||image_uuid||UUID||Image UUID||
+||image_uuid||UUID||Image UUID. **This field is not allowed as a top level attribute for a KVM VM payload, see below**||
 
 ### Required Inputs for KVM VMs
 
@@ -376,7 +376,24 @@ the same as a GET to /vms/:uuid, however some VM attributes might not be present
 
 KVM VMs need a list of disks as an additional parameter. For more specific information on the full format that a disk object can take please refer to vmadm(1). In the case of VMAPI, there are only two conditions that need to be met for a valid disks list:
 
-* The first disk MUST have a 'image_uuid' property. This is required because the first disk of the VM is the disk where the OS gets installed
+* The first disk MUST have a 'image_uuid' property. This is required because the first disk of the VM is the disk where the OS gets installed. Passing 'image_uuid' at the top level of the VM payload ***is not allowed*** as it will not give the expected results.
+
+When image_uuid is passed incorrectly for KVM VMs, VMAPI will return the following error response:
+
+
+      {
+        "code": "ValidationFailed",
+        "message": "Invalid VM parameters",
+        "errors": [
+          {
+            "field": "image_uuid",
+            "code": "Invalid",
+            "message": "Not Allowed"
+          }
+        ]
+      }
+
+
 * The second and following disks in the list MUST have a 'size' property. This is mandatory for any disk that is not the image disk of the VM
 
 The following is a simple example of a valid disks list passed to VMAPI for a KVM VM provision:
