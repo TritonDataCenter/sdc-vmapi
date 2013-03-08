@@ -388,7 +388,7 @@ When image_uuid is passed incorrectly for KVM VMs, VMAPI will return the followi
           {
             "field": "image_uuid",
             "code": "Invalid",
-            "message": "Not Allowed"
+            "message": "'image_uuid' is not allowed as a top level attribute for a KVM VM"
           }
         ]
       }
