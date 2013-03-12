@@ -237,6 +237,7 @@ Use ping when you want a general status report from VMAPI. VMAPI makes HTTP conn
 
     {
       "pid": 12456,
+      "status": "OK",
       "healthy": true,
       "services": {
         "redis": "online",
@@ -256,6 +257,16 @@ Use ping when you want a general status report from VMAPI. VMAPI makes HTTP conn
         "uuid": "32389211-62c7-4e29-a44c-b24ece8b3946"
       }
     }
+
+Of special note is the **status** attribute that lets us know if VMAPI is fully
+functional in terms of data and services initialized. Although a "healthy: true"
+value from the ping response means that VMAPI has not had HTTP or backend
+initialization errors, it doesn't specify if VMAPI is already processing heartbeats
+and populating its internal database correctly. This is mostly an application
+condition where VMAPI gets installed on a new SDC7 headnode and there is a
+window of time before data from active VMs in the datacenter starts to propagate.
+When VMAPI is corretly receving and processing heartbeats then its status is
+going to be "OK".
 
 
 # VMs
@@ -995,9 +1006,151 @@ When one of the UUIDs in the request parameters corresponds to a machine that do
     }
 
 
+# Analysing VMAPI Logs
+
+VMAPI uses Bunyan as its logging module. This allows users to find useful
+debugging information in a very straightforward way since each log message
+produced by Bunyan is a JSON object. VMAPI logs are structured so that they can
+be filtered by component, VM UUID or Server UUID when using the `bunyan` command
+line utility.
+
+The following are the components that describe each of the pieces in the VMAPI
+application and allow for more specific log filtering:
+
+|| **Component Name** || **Description** ||
+|| api || API requests/responses ||
+|| heartbeater || Heartbeater processing activity ||
+|| napi || NIC add/removal activity ||
+|| cnapi || machine_load requests/responses (used to process heartbeats) ||
+|| wfapi || WFAPI requests/responses (for queueing VM jobs) ||
+|| moray || Moray database operations (read/write VM data) ||
+|| redis || Redis cache connection ||
+
+In order to filter a VMAPI log file by component we make use of Bunyan's '-c'
+option:
+
+    -c, --condition CONDITION
+                  Run each log message through the condition and
+                  only show those that return truish. E.g.:
+                      -c 'this.pid == 123'
+                      -c 'this.level == DEBUG'
+                      -c 'this.msg.indexOf("boom") != -1'
+                  'CONDITION' must be legal JS code. `this` holds
+                  the log record. The TRACE, DEBUG, ... FATAL values
+                  are defined to help with comparing `this.level`.
+
+The 'this' variable inside a condition refers to the JSON object that was logged
+by Bunyan at any given point in time. If we wanted to see all messages that have
+been produced by the heartbeater module we would issue the following command:
+
+    cat tmp/local.log | bunyan -c "this.component === 'heartbeater'"
+
+    [2013-03-12T16:46:21.601Z] DEBUG: vmapi/heartbeater/79487: VM object 0c81af15-d3b2-47f9-a75a-db7f16a65434 updated on moray (vm_uuid=0c81af15-d3b2-47f9-a75a-db7f16a65434)
+    [2013-03-12T16:46:21.612Z] DEBUG: vmapi/heartbeater/79487: NICs added for VM 0c81af15-d3b2-47f9-a75a-db7f16a65434 (vm_uuid=0c81af15-d3b2-47f9-a75a-db7f16a65434)
+    [2013-03-12T16:46:21.613Z] DEBUG: vmapi/heartbeater/79487: (vm_uuid=0c81af15-d3b2-47f9-a75a-db7f16a65434)
+        VM 0c81af15-d3b2-47f9-a75a-db7f16a65434 state cached { uuid: '0c81af15-d3b2-47f9-a75a-db7f16a65434',
+          owner_uuid: '00000000-0000-0000-0000-000000000000',
+          quota: 10240,
+          max_physical_memory: 64,
+          zone_state: 'installed',
+          state: 'stopped',
+          brand: 'joyent-minimal',
+          last_modified: '2013-03-12T16:46:14.000Z' }
+
+Bunyan still allows us to filter logs by level, so in case we were looking for
+an exception produced while processing heartbeats we can do the following:
+
+    cat tmp/local.log | bunyan -c "this.component === 'heartbeater'" -l error
+
+    [2013-03-12T19:01:37.103Z] ERROR: vmapi/heartbeater/70242: Cannot process heartbeats for Server 564d3d49-9bb1-3726-a1ea-b265db3a7f39 (server=564d3d49-9bb1-3726-a1ea-b265db3a7f39)
+        Error: connect ECONNREFUSED
+            at errnoException (net.js:770:11)
+            at Object.afterConnect [as oncomplete] (net.js:761:19)
+
+## Filtering specific VM activity
+
+In addition to components, logs can be filtered by VM UUID. This enables operators
+to better track all the API actions called for a VM of interest and see if its
+heartbeats have been processed correctly.
+
+Again, by using the '-c' option in Bunyan, we use the vm_uuid attribute to find
+all log entries related to a single VM:
+
+    cat tmp/local.log | bunyan -c "this.vm_uuid === '0c81af15-d3b2-47f9-a75a-db7f16a65434'"
+
+    [2013-03-12T16:46:23.091Z] TRACE: vmapi/api/79487: GetVm start (vm_uuid=0c81af15-d3b2-47f9-a75a-db7f16a65434)
+    [2013-03-12T16:46:23.092Z]  INFO: vmapi/api/79487: handled: 200 (vm_uuid=0c81af15-d3b2-47f9-a75a-db7f16a65434, audit=true, remoteAddress=127.0.0.1, remotePort=65466, latency=11, _audit=true, req.body="")
+        GET /vms/0c81af15-d3b2-47f9-a75a-db7f16a65434?owner_uuid=00000000-0000-0000-0000-000000000000 HTTP/1.1
+        accept: application/json
+        user-agent: restify/2.2.2 (x64-darwin; v8/3.11.10.25; OpenSSL/1.0.0f) node/0.8.18
+        accept-version: *
+        date: Tue, 12 Mar 2013 16:46:23 GMT
+        host: localhost:8080
+        connection: close
+        ...
+        ...
+    [2013-03-12T16:46:23.105Z] TRACE: vmapi/api/79487: DeleteVm start (vm_uuid=0c81af15-d3b2-47f9-a75a-db7f16a65434)
+    [2013-03-12T16:46:30.039Z] TRACE: vmapi/heartbeater/79487: (server=564d3d49-9bb1-3726-a1ea-b265db3a7f39, vm_uuid=0c81af15-d3b2-47f9-a75a-db7f16a65434)
+        Heartbeat from 0c81af15-d3b2-47f9-a75a-db7f16a65434: { uuid: '0c81af15-d3b2-47f9-a75a-db7f16a65434',
+          owner_uuid: '00000000-0000-0000-0000-000000000000',
+          quota: 10240,
+          max_physical_memory: 64,
+          zone_state: 'installed',
+          state: 'stopped',
+          brand: 'joyent-minimal',
+          last_modified: '2013-03-12T16:46:14.000Z' }
+    [2013-03-12T16:46:30.042Z] TRACE: vmapi/heartbeater/79487: Timestamps for VM 0c81af15-d3b2-47f9-a75a-db7f16a65434, oldLastModified: Tue Mar 12 2013 11:46:14 GMT-0500 (COT), lastModified: Tue Mar 12 2013 11:46:14 GMT-0500 (COT) (vm_uuid=0c81af15-d3b2-47f9-a75a-db7f16a65434)
+
+From this example we can see that there are both API and Heartbeater log records
+for the VM in question. Going further we could filter this information by adding
+an additional component condition:
+
+    cat tmp/local.log | bunyan -c "this.vm_uuid === '0c81af15-d3b2-47f9-a75a-db7f16a65434' && this.component === 'heartbeater'"
+
+Or:
+
+    cat tmp/local.log | bunyan -c "this.vm_uuid === '0c81af15-d3b2-47f9-a75a-db7f16a65434' && this.component === 'api'"
+
+
+## Filtering Server heartbeats
+
+There is an additional filter condition that can be used to analyse VMAPI logs.
+A single heartbeat contains only VMs data for a single server. This means that
+there is a 1:1 correspondence between a heartbeat message and a server. In the
+event that VMAPI is receiving heartbeats for many servers, the `server` condition
+allows a further filtering in the heartbeater module when operators need to
+review the heartbeats coming from a specific server (and even as a way to check
+if the heartbeats are actually arriving).
+
+Similar to our previous examples, logs can be filtered by server with the
+`server` condition:
+
+    cat tmp/local.log | bunyan -c "this.server === '564d3d49-9bb1-3726-a1ea-b265db3a7f39'"
+
+    [2013-03-12T16:46:20.009Z] TRACE: vmapi/heartbeater/79487: Missing VMs list for server 564d3d49-9bb1-3726-a1ea-b265db3a7f39: [] (server=564d3d49-9bb1-3726-a1ea-b265db3a7f39)
+    [2013-03-12T16:46:30.019Z] DEBUG: vmapi/heartbeater/79487: (server=564d3d49-9bb1-3726-a1ea-b265db3a7f39)
+        Heartbeat received from 564d3d49-9bb1-3726-a1ea-b265db3a7f39 { headers: {},
+          deliveryInfo:
+           { contentType: 'application/json',
+             queue: 'heartbeat.vmapi',
+             deliveryTag: 29,
+             redelivered: false,
+             exchange: 'amq.topic',
+             routingKey: 'heartbeat.564d3d49-9bb1-3726-a1ea-b265db3a7f39',
+             consumerTag: 'node-amqp-79487-0.5261222147382796' } }
+    [2013-03-12T16:46:30.033Z] TRACE: vmapi/heartbeater/79487: (server=564d3d49-9bb1-3726-a1ea-b265db3a7f39)
+        Current VMs list for server 564d3d49-9bb1-3726-a1ea-b265db3a7f39: [ 'c995fa61-2754-4e6d-a00d-a78a8cdad9ac',
+          '5f6ae9c6-f817-48b0-9b48-03c5bcabd8d2',
+          '638bed60-d59d-4654-a5aa-e6702cb2eb21',
+          'ac3e34bc-cece-4134-a124-e035ad652093',
+          ...
 
 
 # Changelog
+
+## 2013-03-11
+
+  * Added *status* to /ping response
 
 ## 2013-02-04
 
