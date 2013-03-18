@@ -73,6 +73,7 @@ release: all deps docs $(SMF_MANIFESTS)
 	@touch $(TMPDIR)/site/.do-not-delete-me
 	cp -PR $(NODE_INSTALL) $(TMPDIR)/root/opt/smartdc/vmapi/build/node
 	cp -r $(ROOT)/lib \
+	$(ROOT)/bin \
     $(ROOT)/server.js \
     $(ROOT)/Makefile \
     $(ROOT)/node_modules \

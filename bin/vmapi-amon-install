@@ -1,0 +1,161 @@
+#!/usr/bin/bash
+# vi: expandtab sw=4 ts=4
+#
+# Install Amon probes for VMAPI.
+#
+
+if [[ -n "$TRACE" ]]; then
+    export PS4='${BASH_SOURCE}:${LINENO}: ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+    set -o xtrace
+fi
+set -o errexit
+
+
+#---- globals, config
+
+res_status=
+res_body=
+
+eval $(cat /opt/smartdc/etc/zoneconfig)
+AMON_URL=http://$(echo $AMON_ADMIN_IPS | cut -d, -f1)
+
+
+
+#---- functions
+
+function fatal {
+    echo "$(basename $0): error: $1"
+    exit 1
+}
+
+# Call the amon master.
+function amon() {
+    local path=$1
+    shift
+    local curl_args="-sS -i -H accept:application/json -H content-type:application/json"
+    local res=$(curl $curl_args --url "$AMON_URL$path" "$@")
+    res_status=$(echo "$res" | head -1 | awk '{print $2}')
+    res_body=$(echo "$res" | json -Hq)
+}
+
+function putprobe() {
+    local account=$1
+    local payload=$2
+    local pname=$(echo "$payload" | json name)
+    if [[ -z "$pname" ]]; then
+        fatal "No 'name' for probe: $payload"
+    fi
+    amon /pub/$account/probes
+    local probe_uuid=$(echo "$res_body" | json -H -c "name == '$pname'" -a uuid)
+    if [[ "$res_status" != "200" ]]; then
+        fatal "Error looking for probe '$pname': $res_status $res_body"
+    elif [[ -n "$probe_uuid" ]]; then
+        echo "Probe '$pname' already exists: $probe_uuid"
+    else
+        echo "Create probe '$pname'."
+        amon /pub/$account/probes -X POST -f --data "$payload"
+    fi
+}
+
+
+
+#---- mainline
+
+zonename=$(zonename)
+account=$UFDS_ADMIN_UUID
+
+# Sanity check that amon-master is up.
+amon /ping -f || fatal "amon-master ping failed: $res_status $res_body"
+
+# We'll create a single probe group for this vmapi zone.
+# It would be nice to name it after the zone *alias*, but
+# we'd need to depend on VMAPI to get that: overkill.
+group_name=vmapi-$zonename
+amon /pub/$account/probegroups
+group_uuid=$(echo "$res_body" | json -H -c "name == '$group_name'" -a uuid)
+if [[ "$res_status" != "200" ]]; then
+    fatal "Error looking for '$group_name' probe group: $res_status $res_body"
+elif [[ -n "$group_uuid" ]]; then
+    echo "Probe group '$group_name' already exists: $group_uuid"
+else
+    echo "Create probe group '$group_name'."
+    amon /pub/$account/probegroups -X POST -f -d "{
+      \"name\": \"$group_name\",
+      \"contacts\": [\"email\"]
+    }"
+    group_uuid=$(echo "$res_body" | json -H uuid)
+fi
+
+
+# Probe: Monitor the zone going down/up.
+putprobe $account "{
+    \"skipauthz\": true,
+    \"group\": \"$group_uuid\",
+    \"name\": \"vmapi zone up\",
+    \"type\": \"machine-up\",
+    \"agent\": \"$zonename\"
+}"
+
+
+# Probe: Monitor FATALs in the vmapi service log.
+# TODO: It is silly to have three probes for this. Amon should support
+# rolling these up.
+putprobe $account "{
+    \"skipauthz\": true,
+    \"group\": \"$group_uuid\",
+    \"name\": \"vmapi log fatal\",
+    \"type\": \"bunyan-log-scan\",
+    \"agent\": \"$zonename\",
+    \"config\": {
+        \"smfServiceName\": \"vmapi\",
+        \"fields\": {
+            \"level\": \"fatal\"
+        }
+    }
+}"
+
+# Probe: Monitor ERRORs in the vmapi service log.
+putprobe $account "{
+    \"skipauthz\": true,
+    \"group\": \"$group_uuid\",
+    \"name\": \"vmapi log error\",
+    \"type\": \"bunyan-log-scan\",
+    \"agent\": \"$zonename\",
+    \"config\": {
+        \"smfServiceName\": \"vmapi\",
+        \"fields\": {
+            \"level\": \"error\"
+        }
+    }
+}"
+
+# Probe: Monitor WARNs in the vmapi service log.
+putprobe $account "{
+    \"skipauthz\": true,
+    \"group\": \"$group_uuid\",
+    \"name\": \"vmapi log warn\",
+    \"type\": \"bunyan-log-scan\",
+    \"agent\": \"$zonename\",
+    \"config\": {
+        \"smfServiceName\": \"vmapi\",
+        \"fields\": {
+            \"level\": \"warn\"
+        }
+    }
+}"
+
+# Probe: Monitor the vmapi service stopping.
+# TODO: use an smf probe type when available.
+putprobe $account "{
+    \"skipauthz\": true,
+    \"group\": \"$group_uuid\",
+    \"name\": \"duplicate UUID detected\",
+    \"type\": \"bunyan-log-scan\",
+    \"agent\": \"$zonename\",
+    \"config\": {
+        \"smfServiceName\": \"vmapi\",
+        \"match\": {
+            \"pattern\": \"Found duplicate VM UUIDs\"
+        }
+    }
+}"
