@@ -1,6 +1,7 @@
 {
   "logLevel": "debug",
   "maxSockets": 100,
+  "heartbeatQueueSize": 50,
   "amqp": {
     "host": "RABBIT_ADMIN_IP",
     "queue": "heartbeat.vmapi",
