@@ -290,6 +290,7 @@ All inputs are optional.
 ||alias||String||VM Alias||
 ||state||String||running, stopped, active or destroyed||
 ||ram||Number||Amount of memory of the VM||
+||create_timestamp||Unix Time in milliseconds or UTC ISO Date String||VM creation timestamp||
 ||package_name||String||Package name with which the VM was created||
 ||package_version||String||Package version with which the VM was created||
 ||tag.key||String||VM tags, see below||
@@ -315,8 +316,8 @@ VMs can also be searched by tags. Tags are key/value pairs that let us identify 
 
 ## ListVms With Search Query (GET /vms)
 
-There is also an advanced feature in the VMs endpoint where you can execute an LDAP compatible search filter if you want a more precise object search. However you need to consider that the same rules regarding searchable attributes apply to this endpoint, so any search on an non-indexed column will
-return an error. All the searchable attributes are listed in the Inputs table above for the ListVms endpoint. Additionally, there is a very special format you need to respect if you want to search VMs by tags. More on this below.
+There is also an advanced feature in the VMs endpoint where you can execute an LDAP compatible search filter if you want a more precise object search. However you need to consider that the same rules regarding searchable attributes apply to this endpoint, so any search on an non-indexed column will return an error. All the searchable attributes listed in the Inputs table above for the ListVms endpoint can be used, with the exception of create_timestamp where only
+its Unix time form can be passed. Additionally, there is a very special format you need to respect if you want to search VMs by tags. More on this below.
 
 ## Executing LDAP Search Queries
 
@@ -1006,7 +1007,51 @@ When one of the UUIDs in the request parameters corresponds to a machine that do
     }
 
 
-# Analysing VMAPI Logs
+
+# Operator Guide
+
+This section is intended to give necessary information for diagnosing and
+dealing with issues with VMAPI in a SmartDataCenter installation.
+
+There is one VMAPI service per datacenter. There might actually be more than
+one "vmapi" zone for HA. Use this to list the vmapi zones in a DC:
+
+    sdc-vmapi /vms?owner_uuid=$(bash /lib/sdc/config.sh -json | json ufds_admin_uuid) \
+        | json -H -c "tags.smartdc_role=='vmapi'"
+
+
+## Health
+
+As seen in the API actions documentation, VMAPI has a "/ping" endpoint to
+indicate if it is up
+
+    $ sdc-vmapi /ping
+
+or if there are multiple VMAPI servers:
+
+    $ for ip in $(bash /lib/sdc/config.sh -json | json vmapi_admin_ips | tr ',' ' '); do \
+        echo "# $ip" ; \
+        curl -sS http://$ip/ping | json ; \
+    done
+
+
+## Logs
+
+VMAPI is a single SMF service that operates on a SmartOS VM. The following is the
+location/command for accessing the log file written by the VMAPI service:
+
+||**service/path**||**where**||**format**||**tail -f**||
+||vmapi||in each "vmapi" zone||[Bunyan](https://github.com/trentm/node-bunyan)||`` sdc-login vmapi; tail -f `svcs -L vmapi` | bunyan ``||
+
+Note that the logs for the VMAPI service are rotated, so one might need the
+directory where these files are being written in case older log files contain the
+information that we are looking for. Use the following command to find the
+directory where the VMAPI SMF service writes its files:
+
+
+
+
+## Analysing Logs
 
 VMAPI uses Bunyan as its logging module. This allows users to find useful
 debugging information in a very straightforward way since each log message
@@ -1067,7 +1112,7 @@ an exception produced while processing heartbeats we can do the following:
             at errnoException (net.js:770:11)
             at Object.afterConnect [as oncomplete] (net.js:761:19)
 
-## Filtering specific VM activity
+### Filtering specific VM activity
 
 In addition to components, logs can be filtered by VM UUID and API action. This
 enables operators to better track all the API actions called for a VM of
@@ -1158,7 +1203,7 @@ VMAPI:
     ...
 
 
-## Filtering Server heartbeats
+### Filtering Server heartbeats
 
 There is an additional filter condition that can be used to analyse VMAPI logs.
 A single heartbeat contains only VMs data for a single server. This means that
@@ -1191,6 +1236,103 @@ Similar to our previous examples, logs can be filtered by server with the
           'ac3e34bc-cece-4134-a124-e035ad652093',
           ...
 
+
+## Use Cases and Examples
+
+The following examples make use of the `json` tool (https://github.com/trentm/json)
+as a very convenient way to "pretty print" the output produced by VMAPI. In addition,
+we assume VMAPI is being queried from an SDC Compute Node, thus implying the availability
+of the sdc-vmapi command.
+
+### Counting VMs
+
+Use the HEAD HTTP method to get the number of VMs that match a specific criteria.
+If HEAD is used, VMAPI won't return any objects as specified by the HTTP standard.
+The number of VMs that match the query will be available as the **x-joyent-resource-count**
+response header
+
+*Count all VMs:*
+
+    sdc-vmapi /vms -X HEAD
+
+    HTTP/1.1 200 OK
+    x-joyent-resource-count: 21
+    Connection: close
+    Date: Tue, 26 Mar 2013 09:54:21 GMT
+
+*Count all 128M Vms:*
+
+    sdc-vmapi /vms -X HEAD
+
+    HTTP/1.1 200 OK
+    x-joyent-resource-count: 8
+    Connection: close
+    Date: Tue, 26 Mar 2013 09:54:21 GMT
+
+### Query String vs LDAP Search Query
+
+Use a query string when you need to match specific values for VM attributes.
+Examples of this are "ram=128" or "alias=my-vm". This is the classic behavior
+for passing data values to an HTTP API and it allows client UIs to have tables
+that display data that can be filtered by any given attribute.
+
+VMAPI also allows clients to pass an LDAP search query that can be used when just
+the equality operator is not enough. As an example, one might neeed to get the
+UUIDs of all machines that have less than or equal to 256M of RAM:
+
+    sdc-vmapi "/vms?query=(ram<=256)" | json -H -a uuid ram
+
+    6472ed54-0783-4b2a-b052-ed2991284314 256
+    c6de897f-c5af-4dd2-9659-c1893c95ca31 128
+    20aaee31-7f94-4a5a-b724-48a5b42d4066 128
+    dfcbc0d4-b423-4f13-9583-d6e87aae5801 256
+    cc57ab8b-1f50-4779-828a-2a0109aed360 256
+    d848d326-2502-4200-ace8-8830259f4ef1 128
+    ae21f197-a005-476f-9423-b5d63279686f 128
+    b95db5f7-8b02-472c-a6cc-719bc7566b2a 128
+    47c36d58-b5b8-4e4d-a505-080feeea3386 128
+    a564b236-b158-4231-b060-9a24ba0c257e 128
+    720426ef-82de-4289-9813-44f0badf0b06 128
+
+Or we can also find all the machines created in a period of time:
+
+    sdc-vmapi "/vms?query=(%26(create_timestamp<=1364329137198)(create_timestamp>=1354321137198))" | json -H -a alias
+
+    assets0
+    sapi0
+    zookeeper0
+    manatee0
+    moray0
+    redis0
+    ufds0
+    workflow0
+    amon0
+    napi0
+    rabbitmq0
+    imgapi0
+    cnapi0
+    dhcpd0
+    dapi0
+    fwapi0
+    vmapi0
+    ca0
+    adminui0
+    keyapi0
+    usageapi0
+
+TODO: modifying vms
+
+## Debugging Common Issues
+
+TODO: no vms
+
+TODO: vms data too old
+
+TODO: job failed
+
+TODO: provision failed
+
+TODO: vm destroyed but still there
 
 # Changelog
 
