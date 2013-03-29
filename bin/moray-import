@@ -30,6 +30,7 @@ var LOG = bunyan.createLogger({
 
 var CONFIG = loadConfig();
 var BUCKET = 'vmapi_vms';
+var DRY_RUN = false;
 
 
 ///--- Functions
@@ -73,7 +74,7 @@ function usage(msg) {
     }
 
     var str = 'usage: ' + path.basename(process.argv[1]);
-    str += '[-v] [-d data] [-f file] bucket key';
+    str += ' [-v] [-d ] [-f file]';
     console.error(str);
     process.exit(1);
 }
@@ -82,7 +83,7 @@ function usage(msg) {
 function parseOptions() {
     var opts = {};
     var option;
-    var parser = new getopt.BasicParser('vd:f:', process.argv);
+    var parser = new getopt.BasicParser('vdf:', process.argv);
     var tmp;
 
     while ((option = parser.getopt()) !== undefined && !option.error) {
@@ -92,7 +93,7 @@ function parseOptions() {
                 break;
 
             case 'd':
-                opts.data = option.optarg;
+                DRY_RUN = true;
                 break;
 
             case 'v':
@@ -105,13 +106,12 @@ function parseOptions() {
                 break;
 
             default:
-                process.exit(1);
                 break;
         }
     }
 
-    if (!opts.data && !opts.file) {
-        usage('at least one of "data" or "file" must be specified');
+    if (!opts.file) {
+        usage('"file" must be specified');
     }
 
     return (opts);
@@ -120,64 +120,100 @@ function parseOptions() {
 
 function parseObjects(string) {
     var i, obj;
-    var array = string.split('\n\n');
+    var array = string.split('\n');
     var vms = [];
 
     for (i = 0; i < array.length; i++) {
         if (array[i] !== '') {
             obj = JSON.parse(array[i]);
-
-            // If VM -> add to array
-            if (obj.uuid && obj.brand) {
-                vms.push(obj);
-            }
+            vms.push(obj);
         }
     }
 
     return vms;
 }
 
+function finish(err) {
+    if (MORAY) {
+        MORAY.close();
+    }
+
+    if (err) {
+        process.exit(1);
+    } else {
+        process.exit(0);
+    }
+}
+
 
 ///--- Mainline
 
-var client;
+var MORAY;
 var options = parseOptions();
-var data;
-
-if (options.file) {
-    data = loadDump(options.file);
-} else {
-    data = options.data;
-}
-
+var data = loadDump(options.file);
 var vms = parseObjects(data);
 
-client = moray.createClient({
-    host: CONFIG.moray.host,
+MORAY = moray.createClient({
+    connectTimeout: 10000,
     log: LOG,
-    port: CONFIG.moray.port
+    host: CONFIG.moray.host,
+    noCache: true,
+    port: CONFIG.moray.port,
+    retry: {
+        retries: Infinity,
+        minTimeout: 1000,
+        maxTimeout: 60000
+    }
 });
 
-client.on('connect', putVms);
+function onMorayError(err) {
+    return finish(err);
+}
+
+function onMorayConnect() {
+    MORAY.removeListener('error', onMorayError);
+    MORAY.on('close', function () {
+        MORAY.log.error('moray: closed');
+        finish();
+    });
+
+    MORAY.on('connect', function () {
+        MORAY.log.info('moray: reconnected');
+    });
+
+    MORAY.on('error', function (err) {
+        MORAY.log.warn(err, 'moray: error (reconnecting)');
+    });
+
+    putVms();
+}
+
+MORAY.once('connect', onMorayConnect);
+MORAY.once('error', onMorayError);
+
+function putVm(vm, next) {
+    if (DRY_RUN === true) {
+        console.log(JSON.stringify(vm));
+        return next();
+    }
+
+    MORAY.putObject(BUCKET, vm.uuid, vm, function (err) {
+        if (err) {
+            LOG.error(err, 'Error importing VM %s', vm.uuid);
+        } else {
+            LOG.info('VM %s added to moray', vm.uuid);
+        }
+        next(err);
+    });
+}
 
 function putVms() {
-    // Do we want to fail if a single VM could not be added?
-    async.mapSeries(vms, function (vm, next) {
-        client.putObject(BUCKET, vm.uuid, vm, function (err) {
-            if (err) {
-                LOG.error(err.message);
-            } else {
-                LOG.info('VM %s added to moray', vm.uuid);
-            }
-            next();
-        });
-    }, function (err) {
+    async.each(vms, putVm, function (err) {
         if (err) {
             LOG.error(err);
-            process.exit(1);
         } else {
-            LOG.info('Finished adding VMs');
-            process.exit(0);
+            LOG.info('Finished importing VMs');
         }
+        finish(err);
     });
 }
