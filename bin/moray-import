@@ -55,15 +55,13 @@ function loadConfig() {
  * Loads the mapi dump file
  */
 function loadDump(file) {
-    var filePath = path.join(process.cwd(), file);
-
-    if (!fs.existsSync(filePath)) {
-        console.error('Dump file not found: ' + filePath +
+    if (!fs.existsSync(file)) {
+        console.error('Dump file not found: ' + file +
           ' does not exist. Aborting.');
         process.exit(1);
     }
 
-    var contents = fs.readFileSync(filePath, 'utf-8');
+    var contents = fs.readFileSync(file, 'utf-8');
     return contents;
 }
 
