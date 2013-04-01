@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/opt/smartdc/vmapi/build/node/bin/node
 // -*- mode: js -*-
 
 /*
@@ -201,7 +201,7 @@ function putVm(vm, next) {
         if (err) {
             LOG.error(err, 'Error importing VM %s', vm.uuid);
         } else {
-            LOG.info('VM %s added to moray', vm.uuid);
+            LOG.debug('VM %s added to moray', vm.uuid);
         }
         next(err);
     });
