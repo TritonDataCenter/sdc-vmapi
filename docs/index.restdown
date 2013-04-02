@@ -1020,6 +1020,43 @@ one "vmapi" zone for HA. Use this to list the vmapi zones in a DC:
         | json -H -c "tags.smartdc_role=='vmapi'"
 
 
+## VMAPI Configuration File
+
+By default, VMAPI's configuration file is located at "./config.json". Any value
+in the table below that has a default value can be overrided in the configuration
+file. Note that this file should only be modified if any other service depending
+on VMAPI is updated as well.
+
+||**var**||**type**||**default**||**description**||
+||port||Number||80||Port number on which to listen.||
+||logLevel||String or Number||debug||Level at which to log. One of the supported Bunyan log levels.||
+||heartbeatQueueSize||Number||50||Maximum number of heartbeats to process in parallel.||
+||maxSockets||Number||100||Maximum number of sockets for external API calls||
+||api||Object||-||VMAPI configuration||
+||api||Number||-||VMAPI port||
+||amqp.host||String||-||RabbitMQ hostname||
+||amqp||Object||-||RabbitMQ credentials||
+||amqp.host||String||-||RabbitMQ hostname||
+||amqp.queue||String||heartbeat.vmapi||Heartbeater AMQP queue||
+||redis||Object||-||Redis credentials||
+||redis.host||String||-||Redis hostname||
+||wfapi||Object||-||WFAPI configuration||
+||wfapi.url||String||-||WFAPI URL||
+||wfapi.forceReplace||Boolean||false||Replace workflows every time VMAPI restarts||
+||wfapi.workflows||Array||-||List of workflows to load on start||
+||cnapi||Object||-||CNAPI configuration||
+||cnapi.url||String||-||CNAPI URL||
+||napi||Object||-||NAPI configuration||
+||napi.url||String||-||NAPI URL||
+||moray||Object||-||Moray configuration||
+||moray.host||String||-||Moray hostname||
+||moray.port||Number||-||Moray port||
+||moray.connectTimeout||Number||-||Moray connection timeout||
+||moray.retry||Object||-||Moray retry object||
+||moray.retry.minTimeout||Number||-||Moray minimum retry timeout||
+||moray.retry.maxTimeout||Number||-||Moray maximum retry timeout||
+
+
 ## Health
 
 As seen in the API actions documentation, VMAPI has a "/ping" endpoint to
@@ -1037,6 +1074,8 @@ or if there are multiple VMAPI servers:
 
 ## Logs
 
+TODO: how to dynamically change log levels
+
 VMAPI is a single SMF service that operates on a SmartOS VM. The following is the
 location/command for accessing the log file written by the VMAPI service:
 
@@ -1047,8 +1086,6 @@ Note that the logs for the VMAPI service are rotated, so one might need the
 directory where these files are being written in case older log files contain the
 information that we are looking for. Use the following command to find the
 directory where the VMAPI SMF service writes its files:
-
-
 
 
 ## Analysing Logs
@@ -1324,9 +1361,28 @@ TODO: modifying vms
 
 ## Debugging Common Issues
 
-TODO: no vms
+### VMAPI has no VMs, or VMs are not being updated
 
-TODO: vms data too old
+This is almost always an issue with the heartbeater, since VMAPI should always
+have VMs. Even if VMs are not created from VMAPI they are discovered by the
+heartbeater.
+
+**What To Do?**
+
+* Make sure the heartbeater is having problems to process data. Check the VMAPI
+service log file and see if there are any errors being logged in it.
+
+* If there are no errors logged by VMAPI then check the heartbeater agent and
+confirm it is sending out heartbeats. If not, restart the agent with `svcadm restart heartbeater`
+
+* Optionally (if the heartbeater agent was working): force a redis cache refresh
+
+Refresh the Redis cache with the following commands (starting from the global zone):
+
+    sdc-login redis
+    /opt/redis/bin/redis-cli
+    > select 4
+    > flushdb
 
 TODO: job failed
 
