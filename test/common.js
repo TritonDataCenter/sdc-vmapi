@@ -1,6 +1,8 @@
-// Copyright 2011 Joyent, Inc.  All rights reserved.
+// Copyright 2013 Joyent, Inc.  All rights reserved.
 var assert = require('assert');
 var crypto = require('crypto');
+var path = require('path');
+var fs = require('fs');
 
 var Logger = require('bunyan');
 var restify = require('restify');
@@ -12,9 +14,15 @@ var uuid = require('node-uuid');
 var USER = 'admin';
 var PASSWD = 'z3cr3t';
 
+var DEFAULT_CFG = path.join(__dirname, '..', '/config.json');
+var config = {};
+try {
+    config = JSON.parse(fs.readFileSync(DEFAULT_CFG, 'utf8'));
+} catch (e) {}
+
 var VMAPI_URL = 'http://' + (process.env.VMAPI_IP || 'localhost:8080');
-var NAPI_URL = 'http://' + (process.env.NAPI_IP || '10.99.99.10');
-var CNAPI_URL = 'http://' + (process.env.CNAPI_IP || '10.99.99.22');
+var NAPI_URL = config.napi.url || 'http://10.99.99.10';
+var CNAPI_URL = config.cnapi.url || 'http://10.99.99.22';
 
 
 
@@ -75,6 +83,8 @@ module.exports = {
         // t.equal(headers.server, 'VMs API', 'server header');
         // t.equal(headers.connection, 'Keep-Alive', 'connection header');
         // t.equal(headers['x-api-version'], '7.0.0');
-    }
+    },
+
+    config: config
 
 };

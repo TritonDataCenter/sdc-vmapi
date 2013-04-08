@@ -1,42 +1,49 @@
 {
   "logLevel": "debug",
-  "maxSockets": 10,
+  "maxSockets": 100,
+  "heartbeatQueueSize": 50,
+  "ufdsAdminUuid": "930896af-bf8c-48d4-885c-6573a94b1853",
   "amqp": {
-    "host": "10.99.99.12",
-    "queue": "heartbeat.zapi",
+    "host": "10.99.99.20",
+    "queue": "heartbeat.vmapi",
     "reconnect": 5
   },
   "api": {
-    "username": "admin",
-    "password": "z3cr3t",
-    "port": 8080
+    "port": 80
+  },
+  "redis": {
+    "host": "10.99.99.23"
   },
   "wfapi": {
-    "workflows": ["provision", "start", "stop", "reboot", "destroy"],
-    "url": "http://10.99.99.19",
-    "username": "admin",
-    "password": "joypass123"
+    "workflows": [
+      "provision",
+      "start",
+      "stop",
+      "reboot",
+      "update",
+      "destroy",
+      "snapshot",
+      "rollback",
+      "delete-snapshot",
+      "add-nics",
+      "remove-nics"
+    ],
+    "url": "http://10.99.99.19"
   },
   "cnapi": {
-    "url": "http://10.99.99.20"
-  },
-  "dapi": {
-    "url": "http://10.99.99.21",
-    "username": "admin",
-    "password": "z3cr3t"
+    "maxSockets": 10,
+    "url": "http://10.99.99.22"
   },
   "napi": {
-    "url": "http://10.99.99.22:8080",
-    "username": "admin",
-    "password": "lbpass123"
+    "url": "http://10.99.99.10:80"
   },
-  "ufds": {
-    "url": "ldaps://10.88.88.8:636",
-    "bindDN": "cn=root",
-    "bindPassword": "secret",
-    "cache": {
-      "size": 1000,
-      "expiry": 300
+  "moray": {
+    "host": "10.99.99.17",
+    "port": 2020,
+    "connectTimeout": 200,
+    "retry": {
+      "retries": 2,
+      "minTimeout": 500
     }
   }
 }

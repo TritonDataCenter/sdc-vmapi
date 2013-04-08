@@ -17,7 +17,7 @@ var jobLocation;
 var vmLocation;
 
 var IMAGE = '01b2c898-945f-11e1-a523-af1afbe22822';
-var CUSTOMER = '00000000-0000-0000-0000-000000000000';
+var CUSTOMER = common.config.ufdsAdminUuid;
 var NETWORKS = null;
 var SERVER = null;
 var MAC_ADDRESS = null;

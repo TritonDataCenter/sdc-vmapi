@@ -2,6 +2,7 @@
   "logLevel": "debug",
   "maxSockets": 100,
   "heartbeatQueueSize": 50,
+  "ufdsAdminUuid": "UFDS_ADMIN_UUID",
   "amqp": {
     "host": "RABBIT_ADMIN_IP",
     "queue": "heartbeat.vmapi",
@@ -34,9 +35,7 @@
     "url": "CNAPI_URL"
   },
   "napi": {
-    "url": "NAPI_URL",
-    "username": "NAPI_HTTP_ADMIN_USER",
-    "password": "NAPI_HTTP_ADMIN_PW"
+    "url": "NAPI_URL"
   },
   "moray": {
     "host": "MORAY_HOST",
