@@ -710,6 +710,31 @@ exports.wait_delete_snapshot_job = function (t) {
 };
 
 
+exports.reprovision_vm = function (t) {
+    var repdata = {
+        action: 'reprovision',
+        context: 'foobar',
+        image_uuid: IMAGE
+    };
+    client.post(vmLocation, repdata, function (err, req, res, body) {
+        t.ifError(err);
+        t.equal(res.statusCode, 202);
+        common.checkHeaders(t, res.headers);
+        t.ok(body);
+        jobLocation = '/jobs/' + body.job_uuid;
+        t.done();
+    });
+};
+
+
+exports.wait_reprovision_job = function (t) {
+    waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
+        t.ifError(err);
+        t.done();
+    });
+};
+
+
 exports.destroy_vm = function (t) {
     client.del(vmLocation, function (err, req, res, body) {
         t.ifError(err);

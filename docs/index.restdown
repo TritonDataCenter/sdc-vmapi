@@ -499,14 +499,17 @@ Note how image_uuid is specified for the first disk and not at the top level of 
 
 ## UpdateVm (POST /vms/:uuid)
 
-Queues an update operation on a VM. The folowing operations are supported: **start, stop, reboot, update, add_nics, remove_nics, create_snapshot, delete_snapshot and rollback_snapshot**. Each of these operations is documented below.
+Queues an update operation on a VM. The folowing operations are supported:
+**start, stop, reboot, reprovision, update, add_nics, remove_nics,
+create_snapshot, delete_snapshot and rollback_snapshot**. Each of these
+operations is documented below.
 
 ### UpdateVM General Inputs
 
 ||**Param**||**Type**||**Description**||**Required?**||
 ||uuid||UUID||VM UUID||Yes||
 ||owner_uuid||UUID||VM Owner||No||
-||action||String||start, stop, reboot, update, add_nics, remove_nics, create_snapshot, delete_snapshot, rollback_snapshot||Yes||
+||action||String||start, stop, reboot, reprovision, update, add_nics, remove_nics, create_snapshot, delete_snapshot, rollback_snapshot||Yes||
 
 ### UpdateVm Response Codes
 
@@ -539,6 +542,23 @@ No additional inputs are needed for this action.
 ### Example
 
     POST /vms/e9bd0ed1-7de3-4c66-a649-d675dbce6e83?action=reboot
+
+## VM Action: Reprovision Inputs (POST /vms/:uuid?action=reprovision)
+
+Image UUID is a required input for reprovisioning a VM.
+
+||**Param**||**Type**||**Description**||
+||image_uuid||UUID||Image UUID to reprovision the VM with||
+
+### Example with a JSON payload
+
+    POST /vms/e9bd0ed1-7de3-4c66-a649-d675dbce6e83?action=rollback_snapshot -d \
+    '{ "image_uuid": "01b2c898-945f-11e1-a523-af1afbe22822" }'
+
+### Example with form parameters
+
+    POST /vms/e9bd0ed1-7de3-4c66-a649-d675dbce6e83?action=rollback_snapshot \
+      -d image_uuid=01b2c898-945f-11e1-a523-af1afbe22822
 
 ## VM Action: Update Inputs (POST /vms/:uuid?action=update)
 
@@ -1391,6 +1411,10 @@ TODO: provision failed
 TODO: vm destroyed but still there
 
 # Changelog
+
+## 2013-04-29
+
+  * Added *reprovision* action to POST /vms/:uuid
 
 ## 2013-03-11
 
