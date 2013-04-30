@@ -93,6 +93,9 @@ The VM response object is going a single representation for the two available VM
           "primary": true
         }
       ],
+      "resolvers": [
+        "10.99.99.11"
+      ],
       "customer_metadata": {
         "host-ip": "10.99.99.9"
       },
@@ -148,6 +151,9 @@ There is only one situation when the API can return an 'augmented' VM object and
           "netmask": "255.255.255.0",
           "model": "virtio"
         }
+      ],
+      "resolvers": [
+        "10.99.99.11"
       ],
       "snapshots": [],
       "customer_metadata": {},
@@ -1411,6 +1417,10 @@ TODO: provision failed
 TODO: vm destroyed but still there
 
 # Changelog
+
+## 2013-04-30
+
+  * Property *resolvers* added to VM response object
 
 ## 2013-04-29
 
