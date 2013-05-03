@@ -583,6 +583,7 @@ At least one of the following parameters must be provided when action=update.
 ||tags||Object||VM tags||
 ||customer_metadata||Object||VM metadata||
 ||internal_metadata||Object||VM metadata||
+||resolvers||Array||New set of resolvers for the VM||
 
 ### Example with a JSON payload
 
