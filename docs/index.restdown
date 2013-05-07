@@ -447,12 +447,12 @@ As we can see, the first element in the array is specifying an IP address that n
 ||**Param**||**Type**||**Description**||
 ||server_uuid||UUID||Manually specify a server for the provision||
 ||alias||String||VM alias||
-||max_physical_memory||Number||Same as RAM||
-||max_swap||Number||Defaults to 2 x RAM if not specified||
+||max_physical_memory||Number (MiB)||Same as RAM||
+||max_swap||Number (MiB)||Defaults to 2 x RAM if not specified||
 ||zfs_io_priority||Number||ZFS IO Priority||
 ||cpu_cap||Number||CPU Cap||
 ||max_lwps||Number||Max. Lightweight Processes||
-||quota||Number||VM quota||
+||quota||Number (GiB)||VM quota||
 ||tags||Object||VM tags||
 ||customer_metadata||Object||VM metadata||
 ||internal_metadata||Object||VM metadata||
@@ -574,12 +574,12 @@ At least one of the following parameters must be provided when action=update.
 ||alias||String||VM alias||
 ||new_owner_uuid||UUID||UUID of the new VM Owner||
 ||ram||Number||VM RAM||
-||max_physical_memory||Number||Same as RAM||
-||max_swap||Number||Defaults to 2 x RAM if not specified||
+||max_physical_memory (MiB)||Number||Same as RAM||
+||max_swap (MiB)||Number||Defaults to 2 x RAM if not specified||
 ||zfs_io_priority||Number||ZFS IO Priority||
 ||cpu_cap||Number||CPU Cap||
 ||max_lwps||Number||Max. Lightweight Processes||
-||quota||Number||VM quota (disk)||
+||quota (GiB)||Number||VM quota (disk)||
 ||tags||Object||VM tags||
 ||customer_metadata||Object||VM metadata||
 ||internal_metadata||Object||VM metadata||
