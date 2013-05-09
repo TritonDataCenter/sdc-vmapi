@@ -1,0 +1,42 @@
+#!/bin/bash
+#
+# Rsync the master in this working copy to the install on the given HN.
+#
+
+#set -o xtrace
+set -o errexit
+
+TOP=$(cd $(dirname $0)/../; pwd)
+NODE=$1
+
+if [[ -z "$VMAPI_ZONE" ]]; then
+    VMAPI_ZONE=$(ssh $NODE "/opt/smartdc/bin/sdc-vmapi /vms" 2>/dev/null \
+        | json -H -c 'this.tags && this.tags.smartdc_role === "vmapi"' \
+            -c 'this.state === "running"' 0.uuid)
+fi
+echo "VMAPI_ZONE: $VMAPI_ZONE"
+
+extraOpts=
+if [[ $(uname -s) != "SunOS" ]]; then
+    extraOpts="--exclude *.node --exclude build"
+else
+    # Clean node_modules everytime.
+    ssh $NODE rm -rf /zones/$VMAPI_ZONE/root/opt/smartdc/vmapi/node_modules
+fi
+
+rsync -av ${TOP}/ \
+    $NODE:/zones/$VMAPI_ZONE/root/opt/smartdc/vmapi/ \
+    $extraOpts \
+    --exclude .git/ \
+    --exclude /config.json \
+    --exclude /deps/ \
+    --exclude /doc/ \
+    --exclude /tools/ \
+    --exclude /tmp/
+
+state=$(ssh ${NODE} svcs -z ${VMAPI_ZONE} -H -o state vmapi)
+if [[ "$state" == "maintenance" ]]; then
+    ssh ${NODE} svcadm -z ${VMAPI_ZONE} clear vmapi
+else
+    ssh ${NODE} svcadm -z ${VMAPI_ZONE} restart vmapi
+fi
