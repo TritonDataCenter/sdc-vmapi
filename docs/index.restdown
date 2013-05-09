@@ -456,6 +456,7 @@ As we can see, the first element in the array is specifying an IP address that n
 ||tags||Object||VM tags||
 ||customer_metadata||Object||VM metadata||
 ||internal_metadata||Object||VM metadata||
+||limit_priv||String||List of priviledges to the VM||
 
 ### Optional Inputs for OS VMs
 
@@ -584,6 +585,7 @@ At least one of the following parameters must be provided when action=update.
 ||customer_metadata||Object||VM metadata||
 ||internal_metadata||Object||VM metadata||
 ||resolvers||Array||New set of resolvers for the VM||
+||limit_priv||String||List of priviledges to the VM||
 
 ### Example with a JSON payload
 
