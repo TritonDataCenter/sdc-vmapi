@@ -1,0 +1,20 @@
+{
+      "brand": "kvm",
+      "server_uuid": "564da26a-95d7-15cd-0640-6fecd72373e2",
+      "billing_id": "73a1ca34-1e30-48c7-8681-70314a9c67d3",
+      "package_name": "sdc_128",
+      "package_version": "1.0.0",
+      "alias": "ae82ed04",
+      "ram": 128,
+      "max_physical_memory": 128,
+      "max_swap": 256,
+      "quota": 10240,
+      "cpu_shares": 1,
+      "networks": [
+          "8446957a-6d9d-4b53-a225-217fcbc5adbe",
+          "eed1f050-0a6d-4607-86cf-a7685ed750cc"
+        ],
+      "owner_uuid": "ab114bc1-120d-4f21-a8e7-81de4e51fcab",
+      "customer_metadata": "{\"root_authorized_keys\":\"ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAIEAvad19ePSDckmgmo6Unqmd8n2G7o1794VN3FazVhV09yooXIuUhA+7OmT7ChiHueayxSubgL2MrO/HvvF/GGVUs/t3e0u45YwRC51EVhyDuqthVJWjKrYxgDMbHru8fc1oV51l0bKdmvmJWbA/VyeJvstoX+eiSGT3JgeegSMVtc= mark@foo.local\\nssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDNr4q9zMKtylAZGr17fjtUfH2gS+6Gx4m3TJ1H5QwC97JCmtTgke/PBRSEacbXjsYlBjJ9DifNpIbrZrP9hOGhknPDyC3EaRUe/TCUCVGRiHFspurxZAiHvfENCQcvDaVcu9/tO3QyGjDSoYSaQ6NNvl8+yPZ6+mGtXeMnXlCWEvhy/fe3yNVp0isvSIinB2paI+pQqmytJ8omCGShdLqq4/Lvw/zbROe6gEb78+mvwqS+fqYDuPjGc5DXZATqM8rjOSKSPllzNILh9MbR3cHDBfhVi77jL9P8FfQv1U1SZBTbZj78xFcBRnGxrxWE0H7FcXldK5vJvafqWgxZZpgb test@localhost.local\\n\\n\"}",
+      "disks": "[ { \"image_uuid\": \"da144ada-a558-11e2-8762-538b60994628\" }, { \"size\": \"10240\" } ]"
+}
