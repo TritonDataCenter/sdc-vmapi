@@ -20,7 +20,7 @@
     "vasync": "1.3.1",
     "async": "0.2.6",
     "sigyan": "0.2.0",
-    "moray": "git+ssh://git@git.joyent.com:node-moray.git#4ad5e4a",
+    "moray": "git+ssh://git@git.joyent.com:node-moray.git#14fa66d",
     "posix-getopt": "1.0.0"
   },
   "devDependencies": {
