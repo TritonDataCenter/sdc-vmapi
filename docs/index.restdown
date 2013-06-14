@@ -301,6 +301,26 @@ All inputs are optional.
 ||package_version||String||Package version with which the VM was created||
 ||tag.key||String||VM tags, see below||
 
+### Collection Size Control Inputs
+
+ListVms also allows controlling the size of the resulting collection with the
+use of the sort, limit and offset parameters. These three parameters can be used
+on either the regular or the LDAP query version of the ListVms endpoint.
+
+||**Param**||**Type**||**Description**||
+||sort||String||Sort by any of the ListVms inputs (except tags).||
+||sort.order||String||Order direction. See below||
+||limit||Number||Return only the given number of VMs||
+||offset||Number||Limit the collection starting from the given offset||
+
+The *sort* direction can be 'asc' (ascending) or 'desc' (descending), and it is
+'desc' by default. The following are some examples of valid values for the *sort*
+parameter:
+
+    sort=uuid (results in 'uuid DESC')
+    sort=alias.desc (results in 'uuid DESC')
+    sort=alias.asc (results in 'uuid ASC')
+
 ## Tags
 
 VMs can also be searched by tags. Tags are key/value pairs that let us identify a vm by client-specific criteria. If a VM is tagged as 'role=master', then the search filter to be added to the request params should be 'tag.role=master'. When a tag value is '*', the search is performed for VMs that are tagged with any value of the specified key. Any number of tags can be specified. See the examples section for sample searches of VMs by tags.
