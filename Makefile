@@ -80,6 +80,7 @@ release: all deps docs $(SMF_MANIFESTS)
     $(ROOT)/node_modules \
     $(ROOT)/package.json \
     $(ROOT)/config.json.in \
+    $(ROOT)/sapi_manifests \
     $(ROOT)/smf \
     $(ROOT)/test \
     $(ROOT)/tools \
