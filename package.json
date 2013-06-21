@@ -11,7 +11,7 @@
     "sprintf": "0.1.1",
     "sdc-clients": "git+ssh://git@git.joyent.com:node-sdc-clients.git#248ab3fb",
     "wf-client": "git+ssh://git@git.joyent.com:wf-client.git#7601cae",
-    "wf-shared": "git+ssh://git@git.joyent.com:wf-shared.git#4131c30e88a5770686be5235414ec44fb9c9367f",
+    "wf-shared": "git+ssh://git@git.joyent.com:wf-shared.git#59ee313",
     "restify": "git+ssh://git@github.com:mcavage/node-restify.git#0ac9157",
     "amqp": "git://github.com/postwait/node-amqp.git",
     "nodeunit": "0.7.4",
