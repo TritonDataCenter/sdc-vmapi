@@ -299,8 +299,8 @@ exports.create_vm = function (t) {
         context: 'foobar'
     };
 
-    client.post('/vms', vm,
-      function (err, req, res, body) {
+    var opts = { path: '/vms', headers: { 'x-request-id': uuid() } };
+    client.post(opts, vm, function (err, req, res, body) {
           t.ifError(err);
           t.equal(res.statusCode, 202);
           common.checkHeaders(t, res.headers);
