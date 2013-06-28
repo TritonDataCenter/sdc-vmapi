@@ -292,8 +292,6 @@ exports.create_vm = function (t) {
         networks: [ { uuid: NETWORKS[0].uuid } ],
         brand: 'joyent-minimal',
         billing_id: '00000000-0000-0000-0000-000000000000',
-        package_name: 'sdc_64',
-        package_version: '1.0.0',
         ram: 64,
         customer_metadata: md,
         context: 'foobar'
