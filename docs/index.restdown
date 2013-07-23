@@ -606,6 +606,7 @@ At least one of the following parameters must be provided when action=update.
 ||internal_metadata||Object||VM metadata||
 ||resolvers||Array||New set of resolvers for the VM||
 ||limit_priv||String||List of priviledges to the VM||
+||fs_allowed||String (Comma separated list)||Filesystem types that the VM is allowed to mount||
 
 ### Example with a JSON payload
 
