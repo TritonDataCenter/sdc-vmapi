@@ -294,7 +294,9 @@ exports.create_vm = function (t) {
         billing_id: '00000000-0000-0000-0000-000000000000',
         ram: 64,
         customer_metadata: md,
-        context: 'foobar'
+        context: 'foobar',
+        creator_uuid: CUSTOMER,
+        origin: 'cloudapi'
     };
 
     var opts = { path: '/vms', headers: { 'x-request-id': uuid() } };
