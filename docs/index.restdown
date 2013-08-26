@@ -858,9 +858,9 @@ one present in the VM.
 
 ### Example
 
-    POST /vms/da0dfac1-341e-4e51-b357-99f7355f1008/tags
+    PUT /vms/da0dfac1-341e-4e51-b357-99f7355f1008/tags
       -d customer=tracy
-    POST /vms/da0dfac1-341e-4e51-b357-99f7355f1008/tags
+    PUT /vms/da0dfac1-341e-4e51-b357-99f7355f1008/tags
       --data-binary '{ "customer": "tracy" }'
 
 
