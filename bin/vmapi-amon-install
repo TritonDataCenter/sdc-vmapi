@@ -16,9 +16,9 @@ set -o errexit
 res_status=
 res_body=
 
-eval $(cat /opt/smartdc/etc/zoneconfig)
+AMON_ADMIN_IPS=$(json amon_admin_ips < /var/tmp/metadata.json)
+UFDS_ADMIN_UUID=$(json ufds_admin_uuid < /var/tmp/metadata.json)
 AMON_URL=http://$(echo $AMON_ADMIN_IPS | cut -d, -f1)
-
 
 
 #---- functions
