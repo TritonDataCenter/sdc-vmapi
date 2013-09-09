@@ -1,6 +1,7 @@
 #!/usr/bin/bash
+# -*- mode: shell-script; fill-column: 80; -*-
 #
-# Copyright (c) 2011 Joyent Inc., All rights reserved.
+# Copyright (c) 2013 Joyent Inc., All rights reserved.
 #
 
 export PS4='[\D{%FT%TZ}] ${BASH_SOURCE}:${LINENO}: ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
