@@ -6,7 +6,6 @@ var fs = require('fs');
 
 var Logger = require('bunyan');
 var restify = require('restify');
-var uuid = require('node-uuid');
 
 
 // --- Globals

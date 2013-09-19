@@ -5,7 +5,7 @@
   "author": "Andres Rodriguez (joyent.com)",
   "private": true,
   "dependencies": {
-    "node-uuid": "1.4.0",
+    "libuuid": "0.1.2",
     "filed": "0.0.5",
     "bunyan": "0.18.1",
     "sprintf": "0.1.1",

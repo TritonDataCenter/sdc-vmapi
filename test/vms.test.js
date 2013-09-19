@@ -2,7 +2,7 @@
 
 // var test = require('tap').test;
 var assert = require('assert');
-var uuid = require('node-uuid');
+var uuid = require('libuuid');
 var qs = require('querystring');
 
 var common = require('./common');
@@ -233,7 +233,7 @@ exports.head_vms_ok = function (t) {
 
 
 exports.get_vm_not_found = function (t) {
-    var nouuid = uuid();
+    var nouuid = uuid.create();
     var path = '/vms/' + nouuid + '?owner_uuid=' + CUSTOMER;
 
     client.get(path, function (err, req, res, body) {
@@ -299,7 +299,7 @@ exports.create_vm = function (t) {
         origin: 'cloudapi'
     };
 
-    var opts = { path: '/vms', headers: { 'x-request-id': uuid() } };
+    var opts = { path: '/vms', headers: { 'x-request-id': uuid.create() } };
     client.post(opts, vm, function (err, req, res, body) {
           t.ifError(err);
           t.equal(res.statusCode, 202);
