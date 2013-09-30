@@ -723,14 +723,14 @@ has succeeded.
 
 ## DeleteVm (DELETE /vms/:uuid)
 
-Deletes a VM. The VM will be physically destroyed and it will be marked as destroyed on UFDS when the operation is completed. When sync=true is passed, VMAPI will wait on the workflow API's job to complete before returning and the zone will be marked as destroyed in the process. This is an experimental feature for clients that need to wait until the DELETE has actually destroyed the VM physically before continuing.
+Deletes a VM. The VM will be physically destroyed and it will be marked as destroyed
+in the cache database.
 
 ### Inputs
 
 ||**Param**||**Type**||**Description**||**Required?**||
 ||uuid||UUID||VM UUID||Yes||
 ||owner_uuid||UUID||VM Owner||No||
-||sync||Boolean||Sync delete||No||
 
 ### Responses
 
