@@ -15,6 +15,7 @@ var muuid;
 var newUuid;
 var jobLocation;
 var vmLocation;
+var pkgId;
 
 var IMAGE = '01b2c898-945f-11e1-a523-af1afbe22822';
 var CUSTOMER = common.config.ufdsAdminUuid;
@@ -253,6 +254,7 @@ exports.get_vm_ok = function (t) {
         common.checkHeaders(t, res.headers);
         t.ok(body, 'vm ok');
         checkMachine(t, body);
+        pkgId = body['billing_id'];
         t.done();
     });
 };
@@ -293,6 +295,7 @@ exports.create_vm = function (t) {
         brand: 'joyent-minimal',
         billing_id: '00000000-0000-0000-0000-000000000000',
         ram: 64,
+        quota: 10,
         customer_metadata: md,
         context: 'foobar',
         creator_uuid: CUSTOMER,
@@ -795,6 +798,7 @@ exports.create_nonautoboot_vm = function (t) {
         package_name: 'sdc_64',
         package_version: '1.0.0',
         ram: 64,
+        quota: 10,
         autoboot: false
     };
 
@@ -879,6 +883,102 @@ exports.destroy_nonautoboot_vm = function (t) {
 
 
 exports.wait_nonautoboot_destroyed_job = function (t) {
+    waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
+        t.ifError(err);
+        t.done();
+    });
+};
+
+
+exports.create_vm_with_package = function (t) {
+    var md = {
+        foo: 'bar',
+        credentials: JSON.stringify({ 'user_pw': '12345678' })
+    };
+
+    var vm = {
+        owner_uuid: CUSTOMER,
+        image_uuid: IMAGE,
+        server_uuid: SERVER.uuid,
+        networks: [ { uuid: NETWORKS[0].uuid } ],
+        brand: 'joyent-minimal',
+        billing_id: pkgId
+    };
+
+    var opts = { path: '/vms' };
+    client.post(opts, vm, function (err, req, res, body) {
+          t.ifError(err);
+          t.equal(res.statusCode, 202);
+          common.checkHeaders(t, res.headers);
+          t.ok(body, 'vm ok');
+          jobLocation = '/jobs/' + body.job_uuid;
+          newUuid = body.vm_uuid;
+          vmLocation = '/vms/' + newUuid;
+          t.done();
+    });
+};
+
+
+exports.wait_provisioned_with_package_job = function (t) {
+    waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
+        t.ifError(err);
+        t.done();
+    });
+};
+
+
+exports.find_new_package_ok = function (t) {
+    var path = '/vms?ram=' + 256 + '&owner_uuid=' + CUSTOMER;
+
+    client.get(path, function (err, req, res, body) {
+        t.ifError(err);
+        t.equal(res.statusCode, 200);
+        common.checkHeaders(t, res.headers);
+        t.ok(res.headers['x-joyent-resource-count']);
+        t.ok(body);
+        t.ok(Array.isArray(body));
+        t.ok(body.length);
+        body.forEach(function (m) {
+            checkMachine(t, m);
+            pkgId = m['billing_id'];
+        });
+        t.done();
+    });
+};
+
+
+exports.resize_package = function (t) {
+    client.post(vmLocation, { action: 'update', billing_id: pkgId },
+      function (err, req, res, body) {
+        t.ifError(err);
+        t.equal(res.statusCode, 202);
+        jobLocation = '/jobs/' + body.job_uuid;
+        t.done();
+    });
+};
+
+
+exports.wait_resize_package_job = function (t) {
+    waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
+        t.ifError(err);
+        t.done();
+    });
+};
+
+
+exports.destroy_vm_with_package = function (t) {
+    client.del(vmLocation, function (err, req, res, body) {
+        t.ifError(err);
+        t.equal(res.statusCode, 202);
+        common.checkHeaders(t, res.headers);
+        t.ok(body);
+        jobLocation = '/jobs/' + body.job_uuid;
+        t.done();
+    });
+};
+
+
+exports.wait_destroyed_with_package_job = function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
         t.ifError(err);
         t.done();

@@ -394,13 +394,14 @@ Returns a VM with the specified UUID. When sync=true is passed, VMAPI will direc
 Queues a VM provision. This will validate all parameters and create a new job on workflow API when the request is considered to be valid. The response is
 the same as a GET to /vms/:uuid, however some VM attributes might not be present since it has not been provisioned yet. The response also contains a Job-Location header which can be used to get more information about the provisioning job that is being executed by workflow API.
 
-### General Required Inputs
+### Minimum Required Inputs
 
 ||**Param**||**Type**||**Description**||
 ||owner_uuid||UUID||VM Owner||
 ||networks*||Array*||List of networks||
 ||brand||String||'joyent', 'joyent-minimal' or 'kvm'||
-||ram||Number||VM RAM||
+||ram*||Number||VM RAM. Not required if billing_id is present||
+||billing_id*||UUID||SDC Package UUID. Not required if at least ram is present. See 'Provisioning with an SDC Package' below.||
 
 ### Required Inputs for OS VMs
 
@@ -461,8 +462,24 @@ The 'networks' parameter format has been updated to support the case when a spec
 
 As we can see, the first element in the array is specifying an IP address that needs to be allocated whereas the second element it's just the regular case when IP allocation is left to NAPI.
 
+### Provisioning with an SDC Package
+
+VMs can optionally be provisioned by only providing a 'billing_id' SDC Package identifier. When providing an SDC Package, the following VM attributes can be omitted since they will be inherited from the Package definition:
+
+||**Param**||**Type**||
+||cpu_cap||Number||
+||max_lwps||Number||
+||max_physical_memory||Number (MiB)||
+||max_swap||Number (MiB)||
+||quota||Number (GiB)||VM quota||
+||zfs_io_priority||Number||
+||vcpus||Number||
+
+However, these values can still be individualy overriden by providing new values for them in the VM provisionm payload. Note that for the purpose of having a 1:1 VM - SDC Package correspondence it is advised that individual values should not be overriden when it is needed to refer a VM back to its original SDC Package.
 
 ### General Optional Inputs
+
+These inputs can be passed and will be validated wether or not a 'billing_id' SDC Package parameter has been provided.
 
 ||**Param**||**Type**||**Description**||
 ||server_uuid||UUID||Manually specify a server for the provision||
@@ -499,14 +516,25 @@ As we can see, the first element in the array is specifying an IP address that n
 ||409||Missing parameter||Error object||
 ||409||Invalid parameter||Error object||
 
-### Example: creating a OS VM
+### Example: creating an OS VM
 
     POST /vms -d '{
       "owner_uuid": "930896af-bf8c-48d4-885c-6573a94b1853",
       "image_uuid": "28445220-6eac-11e1-9ce8-5f14ed22e782",
       "brand": "joyent",
-      "networks": "a4457fc9-c415-4ac9-8738-a03b1a8e7aee",
-      "ram": 128
+      "networks": ["a4457fc9-c415-4ac9-8738-a03b1a8e7aee"],
+      "ram": 128,
+      "quota": 10
+    }'
+
+### Example: creating an OS VM by specifying an SDC Package
+
+    POST /vms -d '{
+      "owner_uuid": "930896af-bf8c-48d4-885c-6573a94b1853",
+      "image_uuid": "28445220-6eac-11e1-9ce8-5f14ed22e782",
+      "brand": "joyent",
+      "networks": ["a4457fc9-c415-4ac9-8738-a03b1a8e7aee"],
+      "billing_id":"0ea54d9d-8d4d-4959-a87e-bf47c0f61a47"
     }'
 
 ### Example: creating a KVM VM
@@ -517,6 +545,7 @@ Note how image_uuid is specified for the first disk and not at the top level of 
       "owner_uuid": "930896af-bf8c-48d4-885c-6573a94b1853",
       "brand": "kvm",
       "ram": 256,
+      "networks": ["a4457fc9-c415-4ac9-8738-a03b1a8e7aee"],
       "disks": [
         {"image_uuid": "56108678-1183-11e1-83c3-ff3185a5b47f"},
         {"size": 10240}
@@ -589,7 +618,27 @@ Image UUID is a required input for reprovisioning a VM.
 
 ## UpdateVm (POST /vms/:uuid?action=update)
 
-At least one of the following parameters must be provided when action=update.
+Similar to CreateVm, this endpoint allows udpating a VM to a new SDC Package. Individual SDC Package related attributes can still be provided if one needs to override specific values.
+
+### Updating VM to an SDC Package
+
+||**Param**||**Type**||**Description**||
+||billing_id||UUID||SDC Package UUID||
+
+The UpdateVm payload would automatically retrieve the following values from the provided SDC Package:
+
+||**Param**||**Type**||
+||cpu_cap||Number||
+||max_lwps||Number||
+||max_physical_memory||Number (MiB)||
+||max_swap||Number (MiB)||
+||quota||Number (GiB)||VM quota||
+||zfs_io_priority||Number||
+||vcpus||Number||
+
+### Updating a VM With Individual VM Values
+
+In addition to 'billing_id', the following values can be specified to update additional attributes of the VM.
 
 ||**Param**||**Type**||**Description**||
 ||alias||String||VM alias||
@@ -608,19 +657,18 @@ At least one of the following parameters must be provided when action=update.
 ||limit_priv||String||List of priviledges to the VM||
 ||fs_allowed||String (Comma separated list)||Filesystem types that the VM is allowed to mount||
 
-### Example with a JSON payload
+### Example: Renaming a VM and updating its quota
 
     POST /vms/e9bd0ed1-7de3-4c66-a649-d675dbce6e83?action=update -d '{
-      "alias": "new-alias",
-      "quota": 20
+        "alias": "new-alias",
+        "quota": 20
     }'
 
-### Example with form parameters
+### Example: Updating a VM to a new SDC Package
 
-    POST /vms/e9bd0ed1-7de3-4c66-a649-d675dbce6e83?action=update \
-      -d alias=new-alias \
-      -d quota=20
-
+    POST /vms/e9bd0ed1-7de3-4c66-a649-d675dbce6e83?action=update -d '{
+        "billing_id": "73a1ca34-1e30-48c7-8681-70314a9c67d3"
+    }'
 
 ## AddNics (POST /vms/:uuid?action=add_nics)
 
