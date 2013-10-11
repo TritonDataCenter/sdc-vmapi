@@ -10,12 +10,10 @@ set -o xtrace
 PATH=/opt/local/bin:/opt/local/sbin:/usr/bin:/usr/sbin
 
 role=vmapi
-app_name=$role
-
-CONFIG_AGENT_LOCAL_MANIFESTS_DIRS=/opt/smartdc/$role
 
 # Include common utility functions (then run the boilerplate)
 source /opt/smartdc/boot/lib/util.sh
+CONFIG_AGENT_LOCAL_MANIFESTS_DIRS=/opt/smartdc/$role
 sdc_common_setup
 
 # Cookie to identify this as a SmartDC zone and its role
@@ -33,8 +31,11 @@ echo "export PATH=\$PATH:/opt/smartdc/vmapi/build/node/bin:/opt/smartdc/vmapi/no
 TRACE=1 /opt/smartdc/vmapi/bin/vmapi-amon-install
 
 echo "Adding log rotation"
-logadm -w vmapi -C 48 -s 100m -p 1h \
-    /var/svc/log/smartdc-site-vmapi:default.log
+# Log rotation.
+sdc_log_rotation_add config-agent /var/svc/log/*config-agent*.log 1g
+sdc_log_rotation_add registrar /var/svc/log/*registrar*.log 1g
+sdc_log_rotation_add $role /var/svc/log/*$role*.log 1g
+sdc_log_rotation_setup_end
 
 # All done, run boilerplate end-of-setup
 sdc_setup_complete
