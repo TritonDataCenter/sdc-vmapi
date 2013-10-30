@@ -28,6 +28,7 @@
 			"rollback",
 			"delete-snapshot",
 			"add-nics",
+            "update-nics",
 			"remove-nics"
 		],
 		"url": "http://{{{WORKFLOW_SERVICE}}}"

@@ -688,6 +688,41 @@ For adding NICs to a VM, a networks list parameter must be specified.
     POST /vms/e9bd0ed1-7de3-4c66-a649-d675dbce6e83?action=add_nics \
       -d networks=564ded48-c31d-5029-472a-98d5aa9e5a38 \
 
+## UpdateNics (POST /vms/:uuid?action=update_nics)
+
+Updates NICs for a VM. Currently, these action only serves two purposes: setting a new primary NIC for a VM and/or reordering its NICs. Each NIC object can only contain three properties:
+
+||**Attribute**||**Type**||**Description**||
+||mac||MAC Address||NIC MAC Address||
+||interface||String||NIC interface/order identifier||
+||primary||Boolean||Primary NIC flag||
+
+For the UpdateNics action, a list of at least one NIC object must be specified. If the purpose of the request is to set a new primary NIC, then only one NIC object can have the `primary` attribute set. If the purpose of the request is to reorder the VM NICs, then every NIC object must have its `interface` attribute set and the number of NICs in the array must be the same as the number of NICs the VM currently has. The following table describes the only allowed input for UpdateNics:
+
+||**Param**||**Type**||**Description**||
+||nics||Array||List of NIC objects. See above||
+
+### Example: setting a new primary NIC
+
+    POST /vms/0cb0f7b1-b092-4252-b205-c9c268bfa148?action=update_nics -d '{
+      "nics":[{
+        "mac": "90:b8:d0:d4:02:f5",
+        "primary": true
+      }]
+    }'
+
+### Example: reordering the VM NICs
+
+    POST /vms/0cb0f7b1-b092-4252-b205-c9c268bfa148?action=update_nics -d '{
+      "nics":[{
+        "mac": "90:b8:d0:43:56:ba",
+        "interface": "net0"
+      },{
+        "mac": "90:b8:d0:d4:02:f5",
+        "interface": "net1"
+      }]
+    }'
+
 
 ## RemoveNics (POST /vms/:uuid?action=remove_nics)
 
