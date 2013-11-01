@@ -398,7 +398,7 @@ the same as a GET to /vms/:uuid, however some VM attributes might not be present
 
 ||**Param**||**Type**||**Description**||
 ||owner_uuid||UUID||VM Owner||
-||networks*||Array*||List of networks||
+||networks*||Array*||List of networks. See 'Specifying Networks for a VM' below.||
 ||brand||String||'joyent', 'joyent-minimal' or 'kvm'||
 ||ram*||Number||VM RAM. Not required if billing_id is present||
 ||billing_id*||UUID||SDC Package UUID. Not required if at least ram is present. See 'Provisioning with an SDC Package' below.||
@@ -444,23 +444,56 @@ The following is a simple example of a valid disks list passed to VMAPI for a KV
 
 Additional information that the first disk of the VM needs before the provision is queued is obtained from the Image specified with image_uuid.
 
-### Deprecation Note
+### Specifying Networks for a VM
 
-The CreateVm endpoint accepts a list of network UUIDs in its legacy interface. A list of such UUID strings can be an object like the following:
+CreateVm expects a list of `networks` for provisioning a new VM. In its legacy interface (to be deprecated), a list network UUIDs can be specified like the following example:
 
     [
       '72a9cd7d-2a0d-4f45-8fa5-f092a3654ce2',
       '01b2c898-945f-11e1-a523-af1afbe22822
     ]
 
-The 'networks' parameter format has been updated to support the case when a specific IP wanted on the given network is provided. The following is the new format for the networks parameter:
+This format is suboptimal because it does not allow to specify two additional properties available for each of the network interfaces of the VM. By passing a list of network objects and not a list of UUIDs (strings) for the `networks` parameter, it is possible to manually assign an IP address to any of the networks and/or to specify which is the `primary` network interface of the VM. Let's take a look at some examples.
+
+* Regular provision with no customization for networks
+
+*Network objects only have a `uuid` property:*
+
+    [
+      { uuid: '72a9cd7d-2a0d-4f45-8fa5-f092a3654ce2' },
+      { uuid: '01b2c898-945f-11e1-a523-af1afbe22822' }
+    ]
+
+* Specifying a custom IP address for any of the networks
+
+*Network objects can have an `ip` property. Be advised that manual IP addresses must not be specified without having knowledge of the IP in question
+being available for allocation:*
 
     [
       { uuid: '72a9cd7d-2a0d-4f45-8fa5-f092a3654ce2', ip: '10.99.99.11' },
       { uuid: '01b2c898-945f-11e1-a523-af1afbe22822 }
     ]
 
-As we can see, the first element in the array is specifying an IP address that needs to be allocated whereas the second element it's just the regular case when IP allocation is left to NAPI.
+* Specifying the primary network for a VM
+
+*Network objects can **only** have a `primary` network interface (NIC). When not specified, the first network in the `networks` list becomes the primary NIC for the VM. A VM will set its default gateway and nameservers to the values obtained from its primary NIC. In the following example we make the second NIC of the VM its primary NIC:*
+
+    [
+      { uuid: '72a9cd7d-2a0d-4f45-8fa5-f092a3654ce2' },
+      { uuid: '01b2c898-945f-11e1-a523-af1afbe22822', 'primary': true }
+    ]
+
+* Specifying network names instead of network UUIDs
+
+*It is also possible to use a network's name instead of its UUID when passing the list of `networks` for the VM. The following example illustrates how to specify a payload of admin and external with external as a primary NIC:*
+
+    [
+      { name: 'admin' },
+      { name: 'external', primary: true }
+    ]
+
+It should be noted that the order of the network objects in the `networks` parameter is significant. The resolvers of a VM will be configured in the same order as the `networks` were specified in the provision payload.
+
 
 ### Provisioning with an SDC Package
 
@@ -672,7 +705,7 @@ In addition to 'billing_id', the following values can be specified to update add
 
 ## AddNics (POST /vms/:uuid?action=add_nics)
 
-For adding NICs to a VM, a networks list parameter must be specified.
+For adding NICs to a VM, a `networks` list parameter must be specified. For more information about the format of `networks`, see 'Specifying Networks for a VM' in the CreateVM documentation.
 
 ||**Param**||**Type**||**Description**||
 ||networks*||Array*||List of networks. Same format as CreateVm||
