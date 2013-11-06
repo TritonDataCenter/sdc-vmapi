@@ -18,8 +18,9 @@
 # "tools/mk/Makefile.node_prebuilt.targ" for details.
 NODE_PREBUILT_VERSION=v0.8.22
 ifeq ($(shell uname -s),SunOS)
-	NODE_PREBUILT_CC_VERSION=4.6.2
 	NODE_PREBUILT_TAG=zone
+	# Allow building on a SmartOS image other than smartos-1.6.3.
+	NODE_PREBUILT_IMAGE=01b2c898-945f-11e1-a523-af1afbe22822
 endif
 
 #
