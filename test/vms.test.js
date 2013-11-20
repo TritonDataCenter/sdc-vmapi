@@ -304,14 +304,21 @@ exports.create_vm = function (t) {
 
     var opts = { path: '/vms', headers: { 'x-request-id': uuid.create() } };
     client.post(opts, vm, function (err, req, res, body) {
-          t.ifError(err);
-          t.equal(res.statusCode, 202);
-          common.checkHeaders(t, res.headers);
-          t.ok(body, 'vm ok');
-          jobLocation = '/jobs/' + body.job_uuid;
-          newUuid = body.vm_uuid;
-          vmLocation = '/vms/' + newUuid;
-          t.done();
+        t.ifError(err);
+        t.equal(res.statusCode, 202);
+        common.checkHeaders(t, res.headers);
+        t.ok(body, 'vm ok');
+        jobLocation = '/jobs/' + body.job_uuid;
+        newUuid = body.vm_uuid;
+        vmLocation = '/vms/' + newUuid;
+
+        // Try to stop an unprovisioned VM
+        client.post(vmLocation, { action: 'stop' },
+          function (err2, req2, res2, body2) {
+            t.equal(res2.statusCode, 409, 'cannot stop unprovisioned VM');
+            common.checkHeaders(t, res2.headers);
+            t.done();
+        });
     });
 };
 
