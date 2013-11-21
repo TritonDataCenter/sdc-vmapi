@@ -27,9 +27,6 @@ chown -R nobody:nobody /opt/smartdc/vmapi
 echo "" >>/root/.profile
 echo "export PATH=\$PATH:/opt/smartdc/vmapi/build/node/bin:/opt/smartdc/vmapi/node_modules/.bin" >>/root/.profile
 
-# Install Amon monitor and probes for VMAPI.
-TRACE=1 /opt/smartdc/vmapi/bin/vmapi-amon-install
-
 echo "Adding log rotation"
 # Log rotation.
 sdc_log_rotation_add config-agent /var/svc/log/*config-agent*.log 1g
