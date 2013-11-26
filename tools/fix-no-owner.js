@@ -77,9 +77,9 @@ moray.once('moray-ready', function () {
                 return next(err);
             }
 
-            if (!jobs.length || jobs.length !== 1) {
-                return next(
-                    new Error('Expecting only one job for VM ' + vm.uuid));
+            if (!jobs.length) {
+                log.info('VM %s does not have any jobs, skipping', vm.uuid);
+                return next();
             }
 
             var job = jobs[0];

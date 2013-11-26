@@ -11,6 +11,9 @@
 	"api": {
 		"port": 80
 	},
+  	"cache": {
+    	"type": "moray"
+  	},
 	"redis": {
 		"host": "{{{REDIS_SERVICE}}}"
 	},

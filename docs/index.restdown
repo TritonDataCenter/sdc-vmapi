@@ -235,7 +235,7 @@ Error responses will be returned when the response status code is one of 40X err
 
 # Ping VMAPI
 
-Use ping when you want a general status report from VMAPI. VMAPI makes HTTP connections to REST APIs and TCP connections to services like redis and moray. In addition to service status, one might need to know when was the last time that VMAPI saw an incoming heartbeat when debugging VM data propagation errors. The **ping**  endpoint provides a compact response object that lets clients know what is VMAPI's point of view of the backend services it is connected to. The following is the format of the ping response object. The pingErrors attribute is an object where each of its keys is the name of an API (redis, wfapi, moray, cnapi or napi) and the value of each key is the error response that was obtained after pinging the correspondent service.
+Use ping when you want a general status report from VMAPI. VMAPI makes HTTP connections to REST APIs and TCP connections to services like the heartbeat cache and moray. In addition to service status, one might need to know when was the last time that VMAPI saw an incoming heartbeat when debugging VM data propagation errors. The **ping**  endpoint provides a compact response object that lets clients know what is VMAPI's point of view of the backend services it is connected to. The following is the format of the ping response object. The pingErrors attribute is an object where each of its keys is the name of an API (cache, wfapi, moray, cnapi or napi) and the value of each key is the error response that was obtained after pinging the correspondent service.
 
 ## Ping (GET /ping)
 
@@ -246,7 +246,7 @@ Use ping when you want a general status report from VMAPI. VMAPI makes HTTP conn
       "status": "OK",
       "healthy": true,
       "services": {
-        "redis": "online",
+        "cache": "online",
         "wfapi": "online",
         "moray": "online",
         "cnapi": "online",
@@ -1204,8 +1204,9 @@ on VMAPI is updated as well.
 ||amqp||Object||-||RabbitMQ credentials||
 ||amqp.host||String||-||RabbitMQ hostname||
 ||amqp.queue||String||heartbeat.vmapi||Heartbeater AMQP queue||
-||redis||Object||-||Redis credentials||
-||redis.host||String||-||Redis hostname||
+||cache||Object||-||Cache client definition||
+||cache.type||String||-||Cache type, can be 'redis' or 'moray'||
+||cache.host||String||-||Hostname for cache type 'redis'||
 ||wfapi||Object||-||WFAPI configuration||
 ||wfapi.url||String||-||WFAPI URL||
 ||wfapi.forceReplace||Boolean||false||Replace workflows every time VMAPI restarts||
@@ -1272,7 +1273,7 @@ application and allow for more specific log filtering:
 || cnapi || machine_load requests/responses (used to process heartbeats) ||
 || wfapi || WFAPI requests/responses (for queueing VM jobs) ||
 || moray || Moray database operations (read/write VM data) ||
-|| redis || Redis cache connection ||
+|| cache || Heartbeat cache client ||
 
 In order to filter a VMAPI log file by component we make use of Bunyan's '-c'
 option:
@@ -1540,7 +1541,7 @@ service log file and see if there are any errors being logged in it.
 * If there are no errors logged by VMAPI then check the heartbeater agent and
 confirm it is sending out heartbeats. If not, restart the agent with `svcadm restart heartbeater`
 
-* Optionally (if the heartbeater agent was working): force a redis cache refresh
+* Optionally (if the heartbeater agent was working): force a heartbeat cache refresh when the cache client is configured to use redis
 
 Refresh the Redis cache with the following commands (starting from the global zone):
 
