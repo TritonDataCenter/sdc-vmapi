@@ -1558,6 +1558,10 @@ TODO: vm destroyed but still there
 
 # Changelog
 
+## 2013-11-29
+
+  * Added *wfapi* to *services* property in /ping response
+
 ## 2013-04-30
 
   * Property *resolvers* added to VM response object
