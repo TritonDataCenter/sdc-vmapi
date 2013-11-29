@@ -182,6 +182,11 @@ exports.filter_vms_ok = function (t) {
         body.forEach(function (m) {
             checkMachine(t, m);
             muuid = m.uuid;
+            // Any non-null package works
+            if (m['billing_id'] &&
+                m['billing_id'] !== '00000000-0000-0000-0000-000000000000') {
+                pkgId = m['billing_id'];
+            }
         });
         t.done();
     });
@@ -254,7 +259,6 @@ exports.get_vm_ok = function (t) {
         common.checkHeaders(t, res.headers);
         t.ok(body, 'vm ok');
         checkMachine(t, body);
-        pkgId = body['billing_id'];
         t.done();
     });
 };
@@ -947,7 +951,11 @@ exports.find_new_package_ok = function (t) {
         t.ok(body.length);
         body.forEach(function (m) {
             checkMachine(t, m);
-            pkgId = m['billing_id'];
+            // Any non-null package works
+            if (m['billing_id'] &&
+                m['billing_id'] !== '00000000-0000-0000-0000-000000000000') {
+                pkgId = m['billing_id'];
+            }
         });
         t.done();
     });
