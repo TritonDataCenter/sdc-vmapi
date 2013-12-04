@@ -902,11 +902,6 @@ exports.wait_nonautoboot_destroyed_job = function (t) {
 
 
 exports.create_vm_with_package = function (t) {
-    var md = {
-        foo: 'bar',
-        credentials: JSON.stringify({ 'user_pw': '12345678' })
-    };
-
     var vm = {
         owner_uuid: CUSTOMER,
         image_uuid: IMAGE,
