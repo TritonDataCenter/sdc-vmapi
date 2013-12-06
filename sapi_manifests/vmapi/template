@@ -1,7 +1,7 @@
 {
 	"logLevel": "debug",
 	"maxSockets": 100,
-	"heartbeatQueueSize": 50,
+	"heartbeatQueueSize": 500,
 	"ufdsAdminUuid": "{{{ufds_admin_uuid}}}",
 	"amqp": {
 		"host": "{{{RABBITMQ_SERVICE}}}",
