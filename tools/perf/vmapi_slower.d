@@ -22,33 +22,45 @@ dtrace:::BEGIN
 {
 	min_ns = $1 * 1000000;
 	printf("Tracing VMAPI server requests slower than %d ms\n", $1);
-        printf("%-20s %-6s %6s %s\n", "TIME", "PID", "ms", "URL");
+    printf("%-20s %-6s %8s %6s %6s %6s %s\n", "TIME", "PID", "SERVER", "METHOD",
+            "STATUS", "ms", "URL");
 }
 
-node*:::http-server-request
+/*
+ *                server_name, route_name, id, method, url, headers (json)
+ * 'route-start': ['char *', 'char *', 'int', 'char *', 'char *', 'json'],
+ */
+restify*:::route-start
 {
-	this->fd = args[1]->fd;
-	url[pid, this->fd] = args[0]->url;
-	ts[pid, this->fd] = timestamp;
+	this->server = copyinstr(arg0);
+    this->method = copyinstr(arg3);
+	url[pid, this->server] = copyinstr(arg4);
+	ts[pid, this->server] = timestamp;
 }
 
-node*:::http-server-response
+/*
+ *                server_name, route_name, id, statusCode, headers (json)
+ * ' route-done': ['char *', 'char *', 'int', 'int', 'json'],
+ */
+restify*:::route-done
 {
-	this->fd = args[0]->fd;
+	this->server = copyinstr(arg0);
+    this->status = arg3;
 	/* FALLTHRU */
 }
 
-node*:::http-server-response
-/(this->start = ts[pid, this->fd]) &&
+restify*:::route-done
+/(this->start = ts[pid, this->server]) &&
     (this->delta = timestamp - this->start) > min_ns/
 {
-        printf("%-20Y %-6d %6d %s\n", walltimestamp, pid,
-	    this->delta / 1000000, url[pid, this->fd]);
+        printf("%-20Y %-6d %8s %6s %6d %6d %s\n", walltimestamp, pid,
+        this->server, this->method, this->status,
+        this->delta / 1000000, url[pid, this->server]);
 }
 
-node*:::http-server-response
+restify*:::route-done
 /this->start/
 {
-	ts[pid, this->fd] = 0;
-	url[pid, this->fd] = 0;
+	ts[pid, this->server] = 0;
+	url[pid, this->server] = 0;
 }
