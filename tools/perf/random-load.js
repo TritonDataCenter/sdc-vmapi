@@ -103,3 +103,34 @@ process.on('SIGINT', function() {
     console.log('Received CTRL-C. Exiting...');
     vmapi.client.close();
 });
+
+
+function drainStdoutAndExit(code) {
+    var stdoutFlushed = process.stdout.write('');
+    if (stdoutFlushed) {
+        process.exit(code);
+    } else {
+        process.stdout.on('drain', function () {
+            process.exit(code);
+        });
+    }
+}
+
+
+process.stdout.on('error', function (err) {
+    if (err.code === 'EPIPE') {
+        // See <https://github.com/trentm/json/issues/9>.
+        process.exit(0);
+        /**
+         * ^^^ A hard exit here means that stderr won't get drained, which
+         * might mean some missing logging. However, attempting
+         *      drainStdoutAndExit(0);
+         * is proving difficult -- getting repeated "Error: This socket is
+         * closed." on write attempts to stdout leading to "RangeError:
+         * Maximum call stack size exceeded"
+         */
+    } else {
+        console.warn('mill error: stdout (%s): %s', err.code, err);
+        drainStdoutAndExit(1);
+    }
+});
