@@ -25,6 +25,9 @@
   "devDependencies": {
     "tap": "*"
   },
+  "optionalDependencies": {
+    "dtrace-provider": "0.2.8"
+  },
   "scripts": {
     "start": "node ./server.js"
   }
