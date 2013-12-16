@@ -1,21 +1,22 @@
 {
     "logLevel": "debug",
     "maxSockets": 100,
-    "heartbeatQueueSize": 500,
     "ufdsAdminUuid": "{{{ufds_admin_uuid}}}",
-    "amqp": {
-        "host": "{{{RABBITMQ_SERVICE}}}",
-        "queue": "heartbeat.vmapi",
-        "reconnect": 5
-    },
     "api": {
         "port": 80
     },
+    "heartbeater": {
+        "host": "{{{RABBITMQ_SERVICE}}}",
+        "queue": "heartbeat.vmapi",
+        "reconnect": 5,
+        "concurrency": 500,
+        "retry": {
+            "initialDelay": 8,
+            "maxDelay": 32
+        }
+    },
     "cache": {
         "type": "redis",
-        "host": "{{{REDIS_SERVICE}}}"
-    },
-    "redis": {
         "host": "{{{REDIS_SERVICE}}}"
     },
     "wfapi": {
