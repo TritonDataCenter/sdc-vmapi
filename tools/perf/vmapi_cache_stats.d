@@ -31,9 +31,8 @@ dtrace:::BEGIN
  */
 vmapi*:::heartbeat-process-start
 {
-	this->server = copyinstr(arg0);
-	this->vm = copyinstr(arg1);
 	ts[arg2] = timestamp;
+	uuids[arg2] = copyinstr(arg1);
 }
 
 /*
@@ -43,8 +42,8 @@ vmapi*:::heartbeat-process-start
  */
 vmapi*:::heartbeat-process-invalidate
 {
-    printf("%-20Y %36s %36s %6s %6s\n", walltimestamp, this->server, this->vm,
-        copyinstr(arg3), copyinstr(arg4));
+    printf("%-20Y %36s %36s %6s %6s\n", walltimestamp, copyinstr(arg0),
+    	copyinstr(arg1), copyinstr(arg3), copyinstr(arg4));
 }
 
 /*
@@ -52,7 +51,7 @@ vmapi*:::heartbeat-process-invalidate
  * 'heartbeat-process-done': ['char *', 'char *', 'int'],
  */
 vmapi*:::heartbeat-process-done
-/this->vm == copyinstr(arg1) && ts[arg2]/
+/uuids[arg2] == copyinstr(arg1) && ts[arg2]/
 {
 	this->start = ts[arg2];
 	this->delta = (timestamp - this->start) / 1000000;
@@ -63,4 +62,5 @@ vmapi*:::heartbeat-process-done
 /this->start/
 {
 	ts[arg2] = 0;
+	uuids[arg2] = 0;
 }
