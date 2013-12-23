@@ -375,14 +375,14 @@ Returns a VM with the specified UUID. When sync=true is passed, VMAPI will direc
 
 ||**Param**||**Type**||**Description**||**Required?**||
 ||uuid||UUID||VM UUID||Yes||
-||owner_uuid||UUID||VM Owner||No||
+||owner_uuid||UUID||VM Owner. If specified, the VM object will be checked for ownership against this owner_uuid. If vm.owner_uuid does not match the provided value the call will result in a 404 VM Not Found error||No||
 ||sync||Boolean||Load VM info from CNAPI||No||
 
 ### Responses
 
 ||**Code**||**Description**||**Response**||
 ||200||||VM object||
-||404||VM not found||Error object||
+||404||VM Not Found. VM does not exist or VM does not belong to the specified owner||Error object||
 
 ### Example
 
@@ -597,14 +597,14 @@ operations is documented below.
 
 ||**Param**||**Type**||**Description**||**Required?**||
 ||uuid||UUID||VM UUID||Yes||
-||owner_uuid||UUID||VM Owner||No||
+||owner_uuid||UUID||VM Owner. If specified, the VM object will be checked for ownership against this owner_uuid. If vm.owner_uuid does not match the provided value the call will result in a 404 VM Not Found error||No||
 ||action||String||start, stop, reboot, reprovision, update, add_nics, remove_nics, create_snapshot, delete_snapshot, rollback_snapshot||Yes||
 
 ### Response Codes
 
 ||**Code**||**Description**||**Response**||
 ||202||New job created||VM response object||
-||404||VM not found||Error object||
+||404||VM Not Found. VM does not exist or VM does not belong to the specified owner||Error object||
 ||409||Missing parameter||Error object||
 ||409||Invalid parameter||Error object||
 
@@ -846,13 +846,14 @@ in the cache database.
 
 ||**Param**||**Type**||**Description**||**Required?**||
 ||uuid||UUID||VM UUID||Yes||
-||owner_uuid||UUID||VM Owner||No||
+||uuid||UUID||VM UUID||Yes||
+||owner_uuid||UUID||VM Owner. If specified, the VM object will be checked for ownership against this owner_uuid. If vm.owner_uuid does not match the provided value the call will result in a 404 VM Not Found error||No||
 
 ### Responses
 
 ||**Code**||**Description**||**Response**||
 ||202||New job created||VM response object||
-||404||VM not found||Error object||
+||404||VM Not Found. VM does not exist or VM does not belong to the specified owner||Error object||
 ||409||VM not allocated to a server yet||Error object||
 
 
@@ -893,7 +894,7 @@ Returns metadata assigned to a VM.
 
 ||**Code**||**Description**||**Response**||
 ||200||||Metadata object||
-||404||VM not found||Error object||
+||404||VM Not Found. VM does not exist or VM does not belong to the specified owner||Error object||
 
 ### Example
 
@@ -920,7 +921,7 @@ Returns the value of a metadata key.
 
 ||**Code**||**Description**||**Response**||
 ||200||||String value of the metadata key||
-||404||VM not found||Error object||
+||404||VM Not Found. VM does not exist or VM does not belong to the specified owner||Error object||
 
 ### Example
 
@@ -944,7 +945,7 @@ Adds a new metadata to a VM. Keep in mind that metadata gets appended, not overw
 
 ||**Code**||**Description**||**Response**||
 ||202||New job created||VM response object||
-||404||VM not found||Error object||
+||404||VM Not Found. VM does not exist or VM does not belong to the specified owner||Error object||
 
 ### Example
 
@@ -970,7 +971,7 @@ one present in the VM.
 
 ||**Code**||**Description**||**Response**||
 ||202||New job created||VM response object||
-||404||VM not found||Error object||
+||404||VM Not Found. VM does not exist or VM does not belong to the specified owner||Error object||
 
 ### Example
 
@@ -995,7 +996,7 @@ Deletes a metadata key from a VM.
 
 ||**Code**||**Description**||**Response**||
 ||202||New job created||VM response object||
-||404||VM not found||Error object||
+||404||VM Not Found. VM does not exist or VM does not belong to the specified owner||Error object||
 
 ### Example
 
@@ -1016,7 +1017,7 @@ Deletes all metadata keys from a VM.
 
 ||**Code**||**Description**||**Response**||
 ||202||New job created||VM response object||
-||404||VM not found||Error object||
+||404||VM Not Found. VM does not exist or VM does not belong to the specified owner||Error object||
 
 ### Example
 
