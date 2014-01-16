@@ -476,7 +476,7 @@ being available for allocation:*
 
 * Specifying the primary network for a VM
 
-*Network objects can **only** have a `primary` network interface (NIC). When not specified, the first network in the `networks` list becomes the primary NIC for the VM. A VM will set its default gateway and nameservers to the values obtained from its primary NIC. In the following example we make the second NIC of the VM its primary NIC:*
+*Network objects can **only** have one `primary` network interface (NIC). When not specified, the first network in the `networks` list becomes the primary NIC for the VM. A VM will set its default gateway and nameservers to the values obtained from its primary NIC. In the following example we make the second NIC of the VM its primary NIC:*
 
     [
       { uuid: '72a9cd7d-2a0d-4f45-8fa5-f092a3654ce2' },
@@ -494,6 +494,20 @@ being available for allocation:*
 
 It should be noted that the order of the network objects in the `networks` parameter is significant. The resolvers of a VM will be configured in the same order as the `networks` were specified in the provision payload.
 
+* Specifying antispoof options for a nic
+
+*Network objects can contain boolean antispoof options that enable various types of spoofing. See the NAPI documentation for more details. In the following example we set all antispoof options for the NIC:*
+
+    [
+      {
+        uuid: '72a9cd7d-2a0d-4f45-8fa5-f092a3654ce2',
+        allow_dhcp_spoofing: true,
+        allow_ip_spoofing: true,
+        allow_mac_spoofing: true,
+        allow_restricted_traffic: true,
+        allow_unfiltered_promisc: true
+      }
+    ]
 
 ### Provisioning with an SDC Package
 
