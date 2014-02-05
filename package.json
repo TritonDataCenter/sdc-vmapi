@@ -12,7 +12,7 @@
     "sdc-clients": "git+ssh://git@git.joyent.com:node-sdc-clients.git#26d1dff",
     "wf-client": "git+ssh://git@git.joyent.com:wf-client.git#9bcb3a0ebec7cd5b4052acaacde8fd6e3e2dfcf9",
     "restify": "git+ssh://git@github.com:mcavage/node-restify.git#0d7b4ba",
-    "amqp": "git://github.com/postwait/node-amqp.git#7becb031a3517a22490addc46654e807bce5f37e",
+    "amqp": "git://github.com/postwait/node-amqp.git#2a5b1e9d2cd5838991ea378251f186c13ba79f97",
     "nodeunit": "0.7.4",
     "redis": "0.7.2",
     "assert-plus": "0.1.0",

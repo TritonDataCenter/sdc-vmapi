@@ -316,13 +316,14 @@ exports.create_vm = function (t) {
         newUuid = body.vm_uuid;
         vmLocation = '/vms/' + newUuid;
 
-        // Try to stop an unprovisioned VM
-        client.post(vmLocation, { action: 'stop' },
-          function (err2, req2, res2, body2) {
-            t.equal(res2.statusCode, 409, 'cannot stop unprovisioned VM');
-            common.checkHeaders(t, res2.headers);
-            t.done();
-        });
+        setTimeout(function () {
+            client.post(vmLocation, { action: 'stop' },
+              function (err2, req2, res2, body2) {
+                t.equal(res2.statusCode, 409, 'cannot stop unprovisioned VM');
+                common.checkHeaders(t, res2.headers);
+                t.done();
+            });
+        }, 1000);
     });
 };
 
