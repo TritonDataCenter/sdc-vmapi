@@ -977,6 +977,49 @@ exports.wait_resize_package_job = function (t) {
 };
 
 
+exports.find_small_package_ok = function (t) {
+    var path = '/vms?ram=' + 128 + '&owner_uuid=' + CUSTOMER;
+
+    client.get(path, function (err, req, res, body) {
+        t.ifError(err);
+        t.equal(res.statusCode, 200);
+        common.checkHeaders(t, res.headers);
+        t.ok(res.headers['x-joyent-resource-count']);
+        t.ok(body);
+        t.ok(Array.isArray(body));
+        t.ok(body.length);
+        body.forEach(function (m) {
+            checkMachine(t, m);
+            // Any non-null package works
+            if (m['billing_id'] &&
+                m['billing_id'] !== '00000000-0000-0000-0000-000000000000') {
+                pkgId = m['billing_id'];
+            }
+        });
+        t.done();
+    });
+};
+
+
+exports.resize_small_package = function (t) {
+    client.post(vmLocation, { action: 'update', billing_id: pkgId },
+      function (err, req, res, body) {
+        t.ifError(err);
+        t.equal(res.statusCode, 202);
+        jobLocation = '/jobs/' + body.job_uuid;
+        t.done();
+    });
+};
+
+
+exports.wait_resize_small_package_job_failed = function (t) {
+    waitForValue(jobLocation, 'execution', 'failed', function (err) {
+        t.ifError(err);
+        t.done();
+    });
+};
+
+
 exports.destroy_vm_with_package = function (t) {
     client.del(vmLocation, function (err, req, res, body) {
         t.ifError(err);
