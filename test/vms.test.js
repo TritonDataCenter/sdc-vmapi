@@ -17,7 +17,7 @@ var jobLocation;
 var vmLocation;
 var pkgId;
 
-var IMAGE = '01b2c898-945f-11e1-a523-af1afbe22822';
+var IMAGE = 'fd2cc906-8938-11e3-beab-4359c665ac99';
 var CUSTOMER = common.config.ufdsAdminUuid;
 var NETWORKS = null;
 var SERVER = null;
