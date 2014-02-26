@@ -11,7 +11,7 @@
         "reconnect": 5,
         "concurrency": 500,
         "retry": {
-            "initialDelay": 8
+            "initialDelay": 4000
         }
     },
     "cache": {

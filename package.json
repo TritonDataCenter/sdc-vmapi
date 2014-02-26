@@ -20,7 +20,8 @@
     "async": "0.2.6",
     "sigyan": "0.2.0",
     "moray": "git+ssh://git@git.joyent.com:node-moray.git#1c65ad3",
-    "posix-getopt": "1.0.0"
+    "posix-getopt": "1.0.0",
+    "backoff": "2.3.0"
   },
   "devDependencies": {
     "tap": "*"
