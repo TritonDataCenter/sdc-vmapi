@@ -504,8 +504,7 @@ It should be noted that the order of the network objects in the `networks` param
         allow_dhcp_spoofing: true,
         allow_ip_spoofing: true,
         allow_mac_spoofing: true,
-        allow_restricted_traffic: true,
-        allow_unfiltered_promisc: true
+        allow_restricted_traffic: true
       }
     ]
 
@@ -737,7 +736,7 @@ For adding NICs to a VM, a `networks` list parameter must be specified. For more
 
 ## UpdateNics (POST /vms/:uuid?action=update_nics)
 
-Updates NICs for a VM. Currently, this action serves three purposes: setting a new primary NIC for a VM, setting antispoof flags for a nic, or reordering its NICs. Each NIC object can only contain three properties:
+Updates NICs for a VM. Currently, this action serves three purposes: setting a new primary NIC for a VM, setting antispoof flags for a nic, or reordering its NICs. Each NIC object can only contain the following properties:
 
 ||**Attribute**||**Type**||**Description**||
 ||mac||MAC Address||NIC MAC Address||
@@ -746,7 +745,6 @@ Updates NICs for a VM. Currently, this action serves three purposes: setting a n
 ||allow_ip_spoofing||Boolean||Allow IP spoofing||
 ||allow_mac_spoofing||Boolean||Allow MAC spoofing||
 ||allow_restricted_traffic||Boolean||Allow unrestricted traffic||
-||allow_unfiltered_promisc||Boolean||Allow unfiltered promiscuous traffic||
 
 For the UpdateNics action, a list of at least one NIC object must be specified. If the purpose of the request is to set a new primary NIC, then only one NIC object can have the `primary` attribute set. If the purpose of the request is to reorder the VM NICs, then every NIC object must have its `interface` attribute set and the number of NICs in the array must be the same as the number of NICs the VM currently has. The following table describes the only allowed input for UpdateNics:
 
