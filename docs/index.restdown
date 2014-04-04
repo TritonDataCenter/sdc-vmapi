@@ -654,12 +654,12 @@ Image UUID is a required input for reprovisioning a VM.
 
 ### Example with a JSON payload
 
-    POST /vms/e9bd0ed1-7de3-4c66-a649-d675dbce6e83?action=rollback_snapshot -d \
+    POST /vms/e9bd0ed1-7de3-4c66-a649-d675dbce6e83?action=reprovision -d \
     '{ "image_uuid": "01b2c898-945f-11e1-a523-af1afbe22822" }'
 
 ### Example with form parameters
 
-    POST /vms/e9bd0ed1-7de3-4c66-a649-d675dbce6e83?action=rollback_snapshot \
+    POST /vms/e9bd0ed1-7de3-4c66-a649-d675dbce6e83?action=reprovision \
       -d image_uuid=01b2c898-945f-11e1-a523-af1afbe22822
 
 ## UpdateVm (POST /vms/:uuid?action=update)
