@@ -959,7 +959,8 @@ exports.find_new_package_ok = function (t) {
 
 
 exports.resize_package = function (t) {
-    client.post(vmLocation, { action: 'update', billing_id: pkgId },
+    var params = { action: 'update', billing_id: pkgId };
+    client.post(vmLocation + '?force=true', params,
       function (err, req, res, body) {
         t.ifError(err);
         t.equal(res.statusCode, 202);

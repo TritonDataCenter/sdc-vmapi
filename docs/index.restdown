@@ -670,6 +670,7 @@ Similar to CreateVm, this endpoint allows udpating a VM to a new SDC Package. In
 
 ||**Param**||**Type**||**Description**||
 ||billing_id||UUID||SDC Package UUID||
+||force||Boolean||Force the update even if the Compute Node that hosts the VM doesn't have enough capacity||
 
 The UpdateVm payload would automatically retrieve the following values from the provided SDC Package:
 
@@ -678,7 +679,7 @@ The UpdateVm payload would automatically retrieve the following values from the 
 ||max_lwps||Number||
 ||max_physical_memory||Number (MiB)||
 ||max_swap||Number (MiB)||
-||quota||Number (GiB)||VM quota||
+||quota||Number (GiB)||
 ||zfs_io_priority||Number||
 ||vcpus||Number||
 
@@ -687,6 +688,7 @@ The UpdateVm payload would automatically retrieve the following values from the 
 In addition to 'billing_id', the following values can be specified to update additional attributes of the VM.
 
 ||**Param**||**Type**||**Description**||
+||force||Boolean||Force the udpate even if the Compute Node that hosts the VM doesn't have enough capacity||
 ||alias||String||VM alias||
 ||new_owner_uuid||UUID||UUID of the new VM Owner||
 ||ram||Number||VM RAM||
