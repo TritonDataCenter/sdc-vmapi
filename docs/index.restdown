@@ -55,9 +55,84 @@ You can set your own local install of VMAPI assuming you are also running a loca
     # node server.js
 
 
-# VM Response Object
+# VM Object
 
-The VM response object is going a single representation for the two available VM GET actions. GET /vms will return a collection of VM objects and GET /vms/<uuid> will return a single VM object. This object will conform to the attributes shown below as they reflect the same VM attributes found when issuing a `vmadm get <uuid>` command from the command line interface on a SDC compute node. Note that vmadm returns more attributes that might not be relevant at the HTTP API layer.
+The following is the list of attributes that can be associated with a VM. By
+default the API returns a fixed list of fields, so there are additional fields
+that will also be returned if they are set, otherwise they are considered to have
+null values. Some of these fields can be set by both a CreateVm or UpdateVm
+call, while some of them can only be set at VM creation time. In the next table,
+the column "VM Response Default" refers to attributes that are always going to
+be part of the VM response object. Those with a column value of 'No' are only
+going to be returned when set via CreateVm or UpdateVm. Finally, the last two
+columns specify wether or not some VM attributes can be set at creation or
+update time.
+
+||**Param**||**Type**||**Description**||**Vm Response Default**||**Create**||**Update**||
+||alias||String||VM alias||Yes||Yes||Yes||
+||autoboot||Boolean||VM alias||Yes||Yes||Yes||
+||billing_id||UUID||Billing Id||Yes||Yes||Yes||
+||brand||String|| Brand of the VM (joyent, joyent-minimal, kvm or sngl)||Yes||Yes||No||
+||billing_id||UUID||Billing Id||Yes||Yes||Yes||
+||cpu_cap||Number||CPU Cap||No||Yes||Yes||
+||cpu_shares||Number||CPU Shares||Yes||Yes||Yes||
+||create_timestamp||Date||The time at which the VM was created in ISO 8601 format||Yes||No||No||
+||customer_metadata||Object||VM metadata||Yes||Yes||Yes||
+||destroyed||Date||The time at which the VM was destroyed in ISO 8601 format||Yes||No||No||
+||datasets||Array||VM datasets||Yes||No||No||
+||delegate_dataset||Boolean||Delegate a data dataset to the VM||No||Yes||No||
+||dns_domain||String||Domain value for /etc/hosts||No||Yes||No||
+||firewall_enabled||Boolean||Enable firewall for the VM||Yes||Yes||Yes||
+||fs_allowed||String (comma-separated list)||Filesystems allowed for the VM||No||Yes||Yes||
+||image_uuid||UUID||Image of the VM||Yes||Yes||No||
+||internal_metadata||Object||Internal VM metadata||Yes||Yes||Yes||
+||limit_priv||String (comma-separated list)||Privileges available to the VM||Yes||Yes||Yes||
+||last_modified||Date||The time at which the VM was last modified in ISO 8601 format||Yes||No||No||
+||maintain_resolvers||Boolean||This boolean indicates that /etc/resolv.conf must be updated when the VM resolvers are updated||No||Yes||Yes||
+||max_locked_memory||Number (MiB)||Amounf of memory that can be locked for the VM||Yes||Yes||Yes||
+||max_lwps||Number||Max. Lightweight Processes||Yes||Yes||Yes||
+||max_physical_memory||Number (MiB)||Amount of memory of the VM. For KVM VMs this value should be ram + 1024||Yes||Yes||Yes||
+||max_swap||Number (MiB)||Maximum amount of virtual memory. Defaults to 2 x max_phsical_memory and cannot be lower than 256||Yes||Yes||Yes||
+||mdata_exec_timeout||Number||Timeout in seconds on the start method of the svc:/smartdc/mdata:execute service running in the VM||No||Yes||No||
+||networks||Array||At provision time, specify the networks on which the VM NICs should be provisioned||No||Yes||No||
+||networks.*.uuid||String||Network UUID. Optional, required if networks.*.name is not present||--||--||--||
+||networks.*.name||String||Network name. Optional, required if networks.*.uuid is not present||--||--||--||
+||networks.*.primary||String||Specifies that this will be the primary NIC of the VM. Optional||--||--||--||
+||networks.*.ip||IP Address||Specifies the IP address desired on this network. Optional||--||--||--||
+||nics||Array||VM NICs. They can only be updated. NICs get provisioned for a VM from the values of `networks` in CreateVm. See UpdateNIcs for more details.||Yes||No||No||
+||owner_uuid||UUID||VM Owner||Yes||Yes||Yes||
+||package_name||String||Private field intended for use by Joyent's SDC product.||No||Yes||Yes||
+||package_version||String||Private field intended for use by Joyent's SDC product.||No||Yes||Yes||
+||quota||Number (GiB)||VM quota||Yes||Yes||Yes||
+||ram||Number (MiB)||Amount of memory of the VM||Yes||Yes||Yes||
+||resolvers||Array||DNS resolvers for the VM||Yes||Yes||Yes||
+||server_uuid||UUID||Server UUID of the VM||Yes||Yes||No||
+||snapshots||Array||VM snapshots||Yes||No||No||
+||state||String||State of the VM||Yes||No||No||
+||zfs_data_compression||String||Specifies a compression algorithm used for the VM's data dataset||No||Yes||Yes||
+||zfs_io_priority||Number||ZFS IO Priority||Yes||Yes||Yes||
+||tags||Object||VM tags||Yes||Yes||Yes||
+||tmpfs||Number||Amount of memory for the /tmp filesystem||No||Yes||Yes||
+
+Furthermore, when dealing with KVM VMs there are additional attributes to know
+about and are specific to KVM being a different type of virtualization: cpu_type,
+disks, disk_driver, hostname, nic_driver and vcpus. KVM VMs require at least
+two disks and only the properties documented below should be specified. For
+additional advanced attributes that can be set on disks please refer to the
+vmadm(1) man page.
+
+||**Param**||**Type**||**Description**||**Vm Response Default**||**Create**||**Update**||
+||cpu_type||String||Type of virtual CPU exposed to the guest||Yes||Yes||No||
+||disk_driver||String||Drivel model for the VM disks||Yes||Yes||No||
+||disks||Array||Disks for the KVM VM.||Yes||Yes||No||
+||disks[0].image_uuid||UUID||Image UUID for the KVM VM||Yes||Yes||No||
+||disks[1].size||Number (MiB)||Size of the disk||Yes||Yes||No||
+||hostname||String||Hostname of the VM||No||Yes||No||
+||nic_driver||String||Drivel model for the VM NICs||Yes||Yes||No||
+||vcpus||Number||Number of virtual CPUs||Yes||Yes||No||
+
+The following is a sample VM response object. The only two endpoints that return
+VM objects are GetVm and ListVms. ListVms returns a collection of VM objects.
 
     {
       "uuid": "ef375f03-57ca-44a9-bc8d-63aec09fbc37",
@@ -113,7 +188,8 @@ The VM response object is going a single representation for the two available VM
       ],
     }
 
-There is only one situation when the API can return an 'augmented' VM object and this is when we are requesting a KVM VM (brand == kvm) object. In this case the response JSON in question will have three additional attributes: cpu_type, vcpus and disks. The following example illustrates a sample KVM VM response object:
+The following is a sample KVM VM response object (brand == kvm). Note the additional
+attributes present in the payload:
 
     {
       "uuid": "03750e6a-fcf6-4755-85b5-22b8ddf0f1fb",
@@ -517,7 +593,7 @@ VMs can optionally be provisioned by only providing a 'billing_id' SDC Package i
 ||max_lwps||Number||
 ||max_physical_memory||Number (MiB)||
 ||max_swap||Number (MiB)||
-||quota||Number (GiB)||VM quota||
+||quota||Number (GiB)||
 ||zfs_io_priority||Number||
 ||vcpus||Number||
 
@@ -540,6 +616,13 @@ These inputs can be passed and will be validated wether or not a 'billing_id' SD
 ||customer_metadata||Object||VM metadata||
 ||internal_metadata||Object||VM metadata||
 ||limit_priv||String||List of priviledges to the VM||
+
+### Advanced Inputs
+
+The attributes listed above cover the most common VM creation scenarios. There
+are additional advanced properties that can be set for a VM. The full set of
+attributes that can be specified on VM creation or update are listed in the `VM Object`
+section in this documentation.
 
 ### Optional Inputs for OS VMs
 
@@ -704,6 +787,12 @@ In addition to 'billing_id', the following values can be specified to update add
 ||resolvers||Array||New set of resolvers for the VM||
 ||limit_priv||String||List of priviledges to the VM||
 ||fs_allowed||String (Comma separated list)||Filesystem types that the VM is allowed to mount||
+
+### Advanced Update Inputs
+
+As stated in CreateVm, there are additional advanced properties that can be updated
+for a VM. The full set of attributes available for update are listed in the
+`VM Object` section in this documentation.
 
 ### Example: Renaming a VM and updating its quota
 
