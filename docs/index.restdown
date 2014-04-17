@@ -376,6 +376,20 @@ All inputs are optional.
 ||package_name||String||Package name with which the VM was created||
 ||package_version||String||Package version with which the VM was created||
 ||tag.key||String||VM tags, see below||
+||fields||String (comma-separated values)||Specify which VM fields to return, see below||
+
+### Specifying VM Fields to Return
+
+Clients can also modify the response objects by specifying the only fields they are
+interested in. This is not only useful for fetching smaller responses but for
+accessing attributes that can only be explicitly requested, such as `role_tags`.
+The fields query parameter is a comma-separated string of VM fields, any field that
+is not part of the VM object will be ignored. The following are some example requests
+that use the fields query parameter:
+
+    GET /vms?fields=role_tags
+    GET /vms?fields=uuid,role_tags,nics
+    GET /vms?fields=state,alias,server_uuid
 
 ### Collection Size Control Inputs
 
@@ -397,18 +411,20 @@ parameter:
     sort=alias.desc (results in 'uuid DESC')
     sort=alias.asc (results in 'uuid ASC')
 
-## Tags
+### Tags
 
 VMs can also be searched by tags. Tags are key/value pairs that let us identify a vm by client-specific criteria. If a VM is tagged as 'role=master', then the search filter to be added to the request params should be 'tag.role=master'. When a tag value is '*', the search is performed for VMs that are tagged with any value of the specified key. Any number of tags can be specified. See the examples section for sample searches of VMs by tags.
 
-### Responses
+### ListVms Responses
 
 ||**Code**||**Description**||**Response**||
-||200||||Array of VM objects||
+||200||Response OK||Array of VM objects||
 
-### Examples
+### ListVms Examples
 
     GET /vms
+    GET /vms?limit=10
+    GET /vms?sort=alias.asc&limit=100
     GET /vms?alias=my-vm
     GET /vms?state=running
     GET /vms?tag.role=sdc
@@ -416,12 +432,12 @@ VMs can also be searched by tags. Tags are key/value pairs that let us identify 
     GET /vms?tag.role=*
 
 
-## ListVms With Search Query (GET /vms)
+## ListVms With Search Query (GET /vms?query)
 
 There is also an advanced feature in the VMs endpoint where you can execute an LDAP compatible search filter if you want a more precise object search. However you need to consider that the same rules regarding searchable attributes apply to this endpoint, so any search on an non-indexed column will return an error. All the searchable attributes listed in the Inputs table above for the ListVms endpoint can be used, with the exception of create_timestamp where only
 its Unix time form can be passed. Additionally, there is a very special format you need to respect if you want to search VMs by tags. More on this below.
 
-## Executing LDAP Search Queries
+### Executing LDAP Search Queries
 
 In order to execute a search query against the /vms endpoint, you need to pass a string parameter called query. The string must have the form of a valid LDAP search filter or else you will get an error. Here are some usage examples of this feature:
 
@@ -454,16 +470,22 @@ Returns a VM with the specified UUID. When sync=true is passed, VMAPI will direc
 ||owner_uuid||UUID||VM Owner. If specified, the VM object will be checked for ownership against this owner_uuid. If vm.owner_uuid does not match the provided value the call will result in a 404 VM Not Found error||No||
 ||sync||Boolean||Load VM info from CNAPI||No||
 
+### Specifying VM Fields to Return
+
+Same as ListVms, clients can modify the response object by specifying the only fields they are interested in. The fields query parameter is a comma-separated
+string of VM fields, any field that is not part of the VM object will be ignored.
+
 ### Responses
 
 ||**Code**||**Description**||**Response**||
-||200||||VM object||
+||200||Response OK||VM object||
 ||404||VM Not Found. VM does not exist or VM does not belong to the specified owner||Error object||
 
-### Example
+### Examples
 
     GET /vms/00956725-4689-4e2c-9d25-f2172f496f9c
-
+    GET /vms/00956725-4689-4e2c-9d25-f2172f496f9c?fields=uuid,role_tags
+    GET /vms/00956725-4689-4e2c-9d25-f2172f496f9c?sync=true
 
 ## CreateVm (POST /vms)
 
@@ -1665,6 +1687,10 @@ TODO: provision failed
 TODO: vm destroyed but still there
 
 # Changelog
+
+## 2014-04-17
+
+  * Added support for `fields` query parameter in ListVms and GetVm
 
 ## 2013-11-29
 
