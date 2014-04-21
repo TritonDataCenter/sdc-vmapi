@@ -432,7 +432,7 @@ VMs can also be searched by tags. Tags are key/value pairs that let us identify 
     GET /vms?tag.role=*
 
 
-## ListVms With Search Query (GET /vms?query)
+## ListVms With Search Query
 
 There is also an advanced feature in the VMs endpoint where you can execute an LDAP compatible search filter if you want a more precise object search. However you need to consider that the same rules regarding searchable attributes apply to this endpoint, so any search on an non-indexed column will return an error. All the searchable attributes listed in the Inputs table above for the ListVms endpoint can be used, with the exception of create_timestamp where only
 its Unix time form can be passed. Additionally, there is a very special format you need to respect if you want to search VMs by tags. More on this below.
@@ -1146,6 +1146,284 @@ Deletes all metadata keys from a VM.
 
 ||**Code**||**Description**||**Response**||
 ||202||New job created||VM response object||
+||404||VM Not Found. VM does not exist or VM does not belong to the specified owner||Error object||
+
+### Example
+
+    DELETE /vms/da0dfac1-341e-4e51-b357-99f7355f1008/tags
+
+
+
+
+
+
+# VM Role Tags
+
+Role Tags is a role based access control (RBAC) feature for Manta and CloudAPI.
+At the VMAPI level, VMs can be assigned a list of role tags (UUID strings) and
+then the API exposes functionality to allow searching for VMs that match a
+specific list of role UUIDs. The use of role tags doesn't have any effects on
+the lifecycle of VMs and doesn't make physical changes to them either. The use
+of this feature is optional.
+
+## ListVms With Role Tags
+
+ListVms accepts a role_tags query parameter that enables filtering all VMs that
+match one or more role_tags provided. Since VM objects are returned without
+role_tags by default, clients need to additionally pass which fields they want
+to be returned as part of the response, should they need each VM's role_tags in
+addition to their default properties.
+
+### Inputs
+
+||**Param**||**Type**||**Description**||
+||role_tags||String (comma-separated list of UUIDs)||Role Tags||
+||fields||String (comma-separated values)||Specify which VM fields to return||
+
+### Responses
+
+||**Code**||**Description**||**Response**||
+||200||Response OK||Array of VM objects||
+||409||Invalid Role Tags||Error object||
+
+### Examples
+
+Specify one or more role_tags:
+
+    GET /vms?role_tags=c4cbe913-f15a-4232-985b-950c23d68873
+
+    HTTP/1.1 200 OK
+    x-joyent-resource-count: 1
+    Connection: close
+    Content-Type: application/json
+    Content-Length: 1047
+    Content-MD5: DE97n7WReix5z/TC4B/zig==
+    Date: Fri, 18 Apr 2014 00:00:28 GMT
+    Server: VMAPI
+    ...
+
+    [
+      {
+        "uuid": "6cfa6474-d838-42ef-9f38-4e66b604deb7",
+        "alias": null,
+        "autoboot": true,
+        "brand": "joyent-minimal",
+    ...
+
+    GET /vms?role_tags=c4cbe913-f15a-4232-985b-950c23d68873,f8b5ed20-c598-11e3-8bd4-f74769a100ec
+    HTTP/1.1 200 OK
+    x-joyent-resource-count: 2
+    Connection: close
+    Content-Type: application/json
+    Content-Length: 3119
+    Content-MD5: ePnd9pbA/jcxugimI9Flyw==
+    Date: Fri, 18 Apr 2014 00:01:44 GMT
+    Server: VMAPI
+    ...
+
+    [
+      {
+        "uuid": "c4cbe913-f15a-4232-985b-950c23d68873",
+        "alias": "adminui0",
+        "autoboot": true,
+        "brand": "joyent-minimal",
+        ...
+        ...
+        ...
+      },
+      {
+        "uuid": "6cfa6474-d838-42ef-9f38-4e66b604deb7",
+        "alias": null,
+        "autoboot": true,
+        "brand": "joyent-minimal",
+        ...
+        ...
+        ...
+      }
+    ]
+
+Return role_tags and additional fields for every VM object:
+
+    GET /vms?role_tags=c4cbe913-f15a-4232-985b-950c23d68873,f8b5ed20-c598-11e3-8bd4-f74769a100ec&fields=uuid,state,role_tags
+    HTTP/1.1 200 OK
+    x-joyent-resource-count: 2
+    Connection: close
+    Content-Type: application/json
+    Content-Length: 241
+    Content-MD5: G/U2xT9peoZ8ZozkH60ZEg==
+    Date: Fri, 18 Apr 2014 00:03:38 GMT
+    Server: VMAPI
+    ...
+
+    [
+      {
+        "uuid": "c4cbe913-f15a-4232-985b-950c23d68873",
+        "state": "running",
+        "role_tags": [
+          "f8b5ed20-c598-11e3-8bd4-f74769a100ec"
+        ]
+      },
+      {
+        "uuid": "6cfa6474-d838-42ef-9f38-4e66b604deb7",
+        "state": "destroyed",
+        "role_tags": [
+          "c4cbe913-f15a-4232-985b-950c23d68873"
+        ]
+      }
+    ]
+
+## GetVm With Role Tags
+
+Similarly to ListVms, The VM object returned by GetVm doesn't have a role_tags
+attribute by default, clients need to make that explicity via the fields query
+parameter.
+
+
+### Inputs
+
+||**Param**||**Type**||**Description**||
+||fields||String (comma-separated values)||Specify which VM fields to return||
+
+### Responses
+
+||**Code**||**Description**||**Response**||
+||200||Response OK||VM object||
+||409||Invalid Role Tags||Error object||
+
+### Example
+
+Return basic VM attributes in addition to role_tags
+
+    GET /vms/c4cbe913-f15a-4232-985b-950c23d68873?fields=uuid,alias,ram,state,nics,role_tags
+
+    HTTP/1.1 200 OK
+    Content-Type: application/json
+    Content-Length: 294
+    Content-MD5: eNeaJ38SPtlU8Xa4osHgrg==
+    Date: Mon, 21 Apr 2014 17:31:40 GMT
+    Server: VMAPI
+    ...
+
+    {
+      "uuid": "c4cbe913-f15a-4232-985b-950c23d68873",
+      "alias": "adminui0",
+      "ram": 2048,
+      "state": "running",
+      "nics": [
+        {
+          "interface": "net0",
+          "mac": "82:6e:d6:5c:e4:36",
+          "vlan_id": 0,
+          "nic_tag": "admin",
+          "ip": "10.99.99.32",
+          "netmask": "255.255.255.0",
+          "primary": true
+        }
+      ],
+      "role_tags": [
+        "f8b5ed20-c598-11e3-8bd4-f74769a100ec"
+      ]
+    }
+
+
+## AddRoleTags (POST /vms/:uuid/role_tags)
+
+Appends one or more role tags to a VM.
+
+### Inputs
+
+||**Param**||**Type**||**Description**||**Required?**||
+||uuid||UUID||VM UUID||Yes||
+||owner_uuid||UUID||VM Owner||No||
+||role_tags||Array of UUID||Role Tags||Yes||
+
+### Responses
+
+||**Code**||**Description**||**Response**||
+||200||Response OK. Role Tags Added||VM Role Tags. Array of UUID||
+||404||VM Not Found. VM does not exist or VM does not belong to the specified owner||Error object||
+||409||Invalid Role Tags||Error object||
+
+### Example
+
+    POST /vms/a1593802-79c9-4bf1-a7af-c6d43a36852c/role_tags
+      -d '{ "role_tags": ["d034f9e0-c97b-11e3-a970-7bd3b454fb1a"] }'
+
+    [
+      "b6368edf-464f-4c72-a134-a21bb6bae434",
+      "d034f9e0-c97b-11e3-a970-7bd3b454fb1a"
+    ]
+
+
+## SetRoleTags (PUT /vms/:uuid/role_tags)
+
+Sets new role tags for a VM.
+
+### Inputs
+
+||**Param**||**Type**||**Description**||**Required?**||
+||uuid||UUID||VM UUID||Yes||
+||owner_uuid||UUID||VM Owner||No||
+||role_tags||Array of UUID||Role Tags||Yes||
+
+### Responses
+
+||**Code**||**Description**||**Response**||
+||200||Response OK. Role Tags Replaced||New VM Role Tags. Array of UUID||
+||404||VM Not Found. VM does not exist or VM does not belong to the specified owner||Error object||
+||409||Invalid Role Tags||Error object||
+
+
+### Example
+
+    PUT /vms/a1593802-79c9-4bf1-a7af-c6d43a36852c/role_tags
+      -d '{ "role_tags": ["d034f9e0-c97b-11e3-a970-7bd3b454fb1a"] }'
+
+    [
+      "d034f9e0-c97b-11e3-a970-7bd3b454fb1a"
+    ]
+
+
+## DeleteRoleTag (DELETE /vms/:uuid/role_tags/:role_tag)
+
+Deletes a role tag from a VM.
+
+### Inputs
+
+||**Param**||**Type**||**Description**||**Required?**||
+||uuid||UUID||VM UUID||Yes||
+||owner_uuid||UUID||VM Owner||No||
+||role_tag||UUID||Role Tag||Yes||
+
+### Responses
+
+||**Code**||**Description**||**Response**||
+||200||Response OK. Role Tag removed||New VM Role Tags. Array of UUID||
+||404||VM or Role Tag Not Found. VM or Role Tag do not exist or VM does not belong to the specified owner||Error object||
+
+### Example
+
+    DELETE /vms/a1593802-79c9-4bf1-a7af-c6d43a36852c/role_tags/d034f9e0-c97b-11e3-a970-7bd3b454fb1
+
+    [
+      "b6368edf-464f-4c72-a134-a21bb6bae434"
+    ]
+
+
+## DeleteAllRoleTags (DELETE /vms/:uuid/role_tags)
+
+Deletes all role tags from a VM.
+
+### Inputs
+
+||**Param**||**Type**||**Description**||**Required?**||
+||uuid||UUID||VM UUID||Yes||
+||owner_uuid||UUID||VM Owner||No||
+
+### Responses
+
+||**Code**||**Description**||**Response**||
+||200||Response OK. Role Tags removed||No response body||
 ||404||VM Not Found. VM does not exist or VM does not belong to the specified owner||Error object||
 
 ### Example
