@@ -16,7 +16,7 @@
 
 # The prebuilt sdcnode version we want. See
 # "tools/mk/Makefile.node_prebuilt.targ" for details.
-NODE_PREBUILT_VERSION=v0.8.22
+NODE_PREBUILT_VERSION=v0.10.26
 ifeq ($(shell uname -s),SunOS)
 	NODE_PREBUILT_TAG=zone
 	# Allow building on a SmartOS image other than sdc-smartos/1.6.3.
