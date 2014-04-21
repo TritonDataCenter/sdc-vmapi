@@ -1968,6 +1968,7 @@ TODO: vm destroyed but still there
 
 ## 2014-04-17
 
+  * Added support for VM Role Tags
   * Added support for `fields` query parameter in ListVms and GetVm
 
 ## 2013-11-29
