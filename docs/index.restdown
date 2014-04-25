@@ -70,7 +70,7 @@ update time.
 
 ||**Param**||**Type**||**Description**||**Vm Response Default**||**Create**||**Update**||
 ||alias||String||VM alias||Yes||Yes||Yes||
-||autoboot||Boolean||VM alias||Yes||Yes||Yes||
+||autoboot||Boolean||Controls whether or not a VM is booted when the system is rebooted.||Yes||Yes||Yes||
 ||billing_id||UUID||Billing Id||Yes||Yes||Yes||
 ||brand||String|| Brand of the VM (joyent, joyent-minimal, kvm or sngl)||Yes||Yes||No||
 ||billing_id||UUID||Billing Id||Yes||Yes||Yes||
@@ -82,9 +82,12 @@ update time.
 ||datasets||Array||VM datasets||Yes||No||No||
 ||delegate_dataset||Boolean||Delegate a data dataset to the VM||No||Yes||No||
 ||dns_domain||String||Domain value for /etc/hosts||No||Yes||No||
+||do_not_inventory||Boolean||The primary use-case of this attribute is for test VMs that are created but you don't want their existence propagated up to VMAPI since they'll be short-lived and its lifecycle will be physically managed in the server||No||Yes||Yes||
 ||firewall_enabled||Boolean||Enable firewall for the VM||Yes||Yes||Yes||
 ||fs_allowed||String (comma-separated list)||Filesystems allowed for the VM||No||Yes||Yes||
 ||image_uuid||UUID||Image of the VM||Yes||Yes||No||
+||indestructible_delegated||Boolean||When set this property adds an @indestructible snapshot to the delegated data dataset and sets a zfs hold on that snapshot. This hold must be removed before the VM can be deleted enabling a two-step deletion||No||Yes||Yes||
+||indestructible_zoneroot||Boolean||When set this property adds an @indestructible snapshot to the zoneroot dataset and sets a zfs hold on that snapshot. This hold must be removed before the VM can be deleted or reprovisioned||No||Yes||Yes||
 ||internal_metadata||Object||Internal VM metadata||Yes||Yes||Yes||
 ||limit_priv||String (comma-separated list)||Privileges available to the VM||Yes||Yes||Yes||
 ||last_modified||Date||The time at which the VM was last modified in ISO 8601 format||Yes||No||No||
