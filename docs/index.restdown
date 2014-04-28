@@ -383,13 +383,17 @@ All inputs are optional.
 
 ### Specifying VM Fields to Return
 
-Clients can also modify the response objects by specifying the only fields they are
-interested in. This is not only useful for fetching smaller responses but for
-accessing attributes that can only be explicitly requested, such as `role_tags`.
-The fields query parameter is a comma-separated string of VM fields, any field that
-is not part of the VM object will be ignored. The following are some example requests
-that use the fields query parameter:
+Clients can also modify the response objects by specifying the only fields they
+are interested in. This is not only useful for fetching smaller responses but
+for accessing attributes that can only be explicitly requested, such as
+`role_tags`. The fields query parameter is a comma-separated string of VM
+fields, any field that is not part of the VM object will be ignored. This
+parameter allows an additional wildcard '*' field, as a shortcut for asking the
+API to return all default and non-default fields available. At the moment,
+role_tags is the only non-default field supported. The following are some
+example requests that use the fields query parameter:
 
+    GET /vms?fields=*
     GET /vms?fields=role_tags
     GET /vms?fields=uuid,role_tags,nics
     GET /vms?fields=state,alias,server_uuid
@@ -476,7 +480,9 @@ Returns a VM with the specified UUID. When sync=true is passed, VMAPI will direc
 ### Specifying VM Fields to Return
 
 Same as ListVms, clients can modify the response object by specifying the only fields they are interested in. The fields query parameter is a comma-separated
-string of VM fields, any field that is not part of the VM object will be ignored.
+string of VM fields, any field that is not part of the VM object will be
+ignored. This parameter allows an additional wildcard '*' field, as a shortcut for asking the API to return all default and non-default fields available. At
+the moment, role_tags is the only non-default field supported.
 
 ### Responses
 
@@ -488,6 +494,7 @@ string of VM fields, any field that is not part of the VM object will be ignored
 
     GET /vms/00956725-4689-4e2c-9d25-f2172f496f9c
     GET /vms/00956725-4689-4e2c-9d25-f2172f496f9c?fields=uuid,role_tags
+    GET /vms/00956725-4689-4e2c-9d25-f2172f496f9c?fields=*
     GET /vms/00956725-4689-4e2c-9d25-f2172f496f9c?sync=true
 
 ## CreateVm (POST /vms)
@@ -1967,7 +1974,12 @@ TODO: provision failed
 
 TODO: vm destroyed but still there
 
+
 # Changelog
+
+## 2014-04-28
+
+  * Added wildcard ('*') support for `fields` query parameter
 
 ## 2014-04-17
 
