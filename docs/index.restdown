@@ -269,7 +269,7 @@ attributes present in the payload:
       ]
     }
 
-## VM States
+# VM States
 
 The VM response object contains a state attribute that should be used as the high level representation of the machine state. There are three 'running state' values for a VM, two 'provisioning state' values and an additional 'active' state that is only available as a search filter when used in the ListVms API endpoint:
 
@@ -290,6 +290,56 @@ In addition, there is a 'zone_state' property that represents the Solaris Zones 
 || ready ||
 || running ||
 || shutting down ||
+
+
+# VM Features
+
+Some VM attributes can be updated (or set at VM creation time) in order to make
+use of features that are supported on SDC. Currently, the following three
+features can be activated for VMs: delegate dataset, firewall and indestructible
+zoneroot/dataset.
+
+## Delegate Dataset
+
+If the `delegate_dataset` property is set when creating a non-KVM VM, the
+machine will get a ZFS dataset mounted at (zoneroot dataset)/data (or just /data
+when inside the VM). This property will only have an effect when passed as a
+boolean with a value of true. The following is an example CreateVm call for
+a VM with a delegate dataset:
+
+    POST /vms -d '{
+      "owner_uuid": "930896af-bf8c-48d4-885c-6573a94b1853",
+      "image_uuid": "28445220-6eac-11e1-9ce8-5f14ed22e782",
+      "brand": "joyent",
+      "networks": ["a4457fc9-c415-4ac9-8738-a03b1a8e7aee"],
+      "billing_id":"0ea54d9d-8d4d-4959-a87e-bf47c0f61a47",
+      "delegate_dataset": true
+    }'
+
+## Firewall
+
+If the `firewall_enabled` property is set when creating or updating a VM,
+firewall rules will be applied according to FWAPI and `fwadm`. For more
+information about how to specify firewall rules for VMs, please refer to the
+FWAPI documentation. The following is an example UpdateVm call for activating
+firewall on a VM:
+
+    POST /vms/e9bd0ed1-7de3-4c66-a649-d675dbce6e83?action=update -d '{
+        "firewall_enabled": true
+    }'
+
+## Indestructible Zoneroot and Delegated
+
+Both properties have the effect of adding an @indestructible snapshot to either
+the zoneroot (the VM itself) or the delegate dataset in order to prevent them
+from being deleted. Having an indestructible delegate dataset is useful when
+reprovisioning a VM, since it's data dataset will be preserved but the VM itself
+is going to be recreated. The following is an example UpdateVm call for setting
+indestructible on the zoneroot:
+
+    POST /vms/e9bd0ed1-7de3-4c66-a649-d675dbce6e83?action=update -d '{
+        "indestructible_zoneroot": true
+    }'
 
 
 # VM Job Response Object
