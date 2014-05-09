@@ -1226,6 +1226,30 @@ specific list of role UUIDs. The use of role tags doesn't have any effects on
 the lifecycle of VMs and doesn't make physical changes to them either. The use
 of this feature is optional.
 
+## CreateVm With Role Tags
+
+CreateVm also accepts a role_tags parameter in order to provision a VM that
+will have role tags assigned from the moment it starts running. Role tags for
+new VMs are specified in the request body of the CreateVm request call exactly
+the same way as other allowed parameters.
+
+### Inputs
+
+||**Param**||**Type**||**Description**||
+||role_tags||String (comma-separated list of UUIDs)||Role Tags||
+
+### Example CreateVm Call with Role Tags
+
+    POST /vms -d '{
+      "owner_uuid": "930896af-bf8c-48d4-885c-6573a94b1853",
+      "image_uuid": "28445220-6eac-11e1-9ce8-5f14ed22e782",
+      "brand": "joyent",
+      "networks": ["a4457fc9-c415-4ac9-8738-a03b1a8e7aee"],
+      "ram": 128,
+      "quota": 10,
+      "role_tags": ["fd48177c-d7c3-11e3-9330-28cfe91a33c9"]
+    }'
+
 ## ListVms With Role Tags
 
 ListVms accepts a role_tags query parameter that enables filtering all VMs that

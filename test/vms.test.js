@@ -303,7 +303,8 @@ exports.create_vm = function (t) {
         customer_metadata: md,
         context: 'foobar',
         creator_uuid: CUSTOMER,
-        origin: 'cloudapi'
+        origin: 'cloudapi',
+        role_tags: ['fd48177c-d7c3-11e3-9330-28cfe91a33c9']
     };
 
     var opts = { path: '/vms', headers: { 'x-request-id': uuid.create() } };
