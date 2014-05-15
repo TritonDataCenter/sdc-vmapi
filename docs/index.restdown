@@ -299,6 +299,21 @@ use of features that are supported on SDC. Currently, the following three
 features can be activated for VMs: delegate dataset, firewall and indestructible
 zoneroot/dataset.
 
+## VM Resize
+
+When properties that represent physical attributes (RAM, swap, quota, I/O
+priority, etc) of a VM are changed, the VM is considered to have been resized.
+Since resizing a VM might cause unwanted effects depending on the current
+resources being utilized on the machine, this feature is only partially
+supported at the moment. For more information about how to resize a VM please
+refer to the [UpdateVm](#UpdateVm) section of this document. The following table
+describes the current resize support for KVM and OS VMs. Upsizing means when
+some VM attributes are increased and downsizing refers to the opposite.
+
+||**VM Type**||**Upsize**||**Downsize**||
+||KVM||Not supported||Not supported||
+||OS||Supported||Not supported||
+
 ## Delegate Dataset
 
 If the `delegate_dataset` property is set when creating a non-KVM VM, the
@@ -829,7 +844,8 @@ Image UUID is a required input for reprovisioning a VM.
 
 ## UpdateVm (POST /vms/:uuid?action=update)
 
-Similar to CreateVm, this endpoint allows udpating a VM to a new SDC Package. Individual SDC Package related attributes can still be provided if one needs to override specific values.
+Similar to CreateVm, this endpoint allows udpating a VM to a new SDC Package. Individual SDC Package related attributes can still be provided if one needs to override specific values. **UpdateVm is only supported for OS VMs**. See
+[VM Resize](#vm-resize) for more information.
 
 ### Updating VM to an SDC Package
 
