@@ -21,7 +21,6 @@ var IMAGE = 'fd2cc906-8938-11e3-beab-4359c665ac99';
 var CUSTOMER = common.config.ufdsAdminUuid;
 var NETWORKS = null;
 var SERVER = null;
-var MAC_ADDRESS = null;
 
 // In seconds
 var TIMEOUT = 120;
@@ -412,7 +411,7 @@ exports.wait_rebooted_job = function (t) {
 };
 
 
-exports.add_nics = function (t) {
+exports.add_nics_with_networks = function (t) {
     var params = {
         action: 'add_nics',
         networks: [ { uuid: NETWORKS[1].uuid } ],
@@ -430,7 +429,45 @@ exports.add_nics = function (t) {
 };
 
 
-exports.wait_add_nics = function (t) {
+exports.wait_add_nics_with_networks = function (t) {
+    waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
+        t.ifError(err);
+        t.done();
+    });
+};
+
+
+exports.add_nics_with_macs = function (t) {
+    var params = {
+        belongs_to_uuid: newUuid,
+        belongs_to_type: 'zone',
+        owner_uuid: CUSTOMER,
+        network_uuid: NETWORKS[1].uuid,
+        nic_tag: NETWORKS[1].nic_tag
+    };
+
+    client.napi.post('/nics', params, function (err, req, res, nic) {
+        t.ifError(err);
+
+        var params2 = {
+            action: 'add_nics',
+            macs: [ nic.mac ],
+            context: 'foobar'
+        };
+
+        client.post(vmLocation, params2, function (err2, req2, res2, body2) {
+            t.ifError(err2);
+            t.equal(res2.statusCode, 202);
+            common.checkHeaders(t, res2.headers);
+            t.ok(body2);
+            jobLocation = '/jobs/' + body2.job_uuid;
+            t.done();
+        });
+    });
+};
+
+
+exports.wait_add_nics_with_macs = function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
         t.ifError(err);
         t.done();
@@ -447,13 +484,14 @@ exports.remove_nics = function (t) {
         t.ok(body, 'vm ok');
         checkMachine(t, body);
         t.ok(body.nics);
-        t.equal(body.nics.length, 2);
+        t.equal(body.nics.length, 3);
 
-        // 2nd NIC is the one we just added
-        MAC_ADDRESS = body.nics[1].mac;
+        // 2nd & 3rd NICs are the ones we just added
+        var macs = body.nics.slice(1, 3).map(function (n) { return n.mac; });
+
         var params = {
             action: 'remove_nics',
-            macs: [ MAC_ADDRESS ],
+            macs: macs,
             context: 'foobar'
         };
 
