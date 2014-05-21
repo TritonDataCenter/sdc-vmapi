@@ -907,10 +907,18 @@ for a VM. The full set of attributes available for update are listed in the
 
 ## AddNics (POST /vms/:uuid?action=add_nics)
 
-For adding NICs to a VM, a `networks` list parameter must be specified. For more information about the format of `networks`, see 'Specifying Networks for a VM' in the CreateVM documentation.
+For adding NICs to a VM, either a `networks` or `macs` list parameter must be
+specified (only one, not both). If `networks` is provided, NICs will be created
+on the VM and in NAPI which attach to those networks. If `macs` is provided,
+NICs will be created on the VM using details from already-created NIC objects in
+NAPI.
+
+For more information about the format of `networks`, see 'Specifying Networks
+for a VM' in the CreateVM documentation.
 
 ||**Param**||**Type**||**Description**||
-||networks*||Array*||List of networks. Same format as CreateVm||
+||networks||Array||List of networks. Same format as CreateVm||
+||macs||Array||List of MAC addresses of NICs already created in NAPI||
 
 ### Example with a JSON payload
 
@@ -921,7 +929,7 @@ For adding NICs to a VM, a `networks` list parameter must be specified. For more
 ### Example with form parameters
 
     POST /vms/e9bd0ed1-7de3-4c66-a649-d675dbce6e83?action=add_nics \
-      -d networks=564ded48-c31d-5029-472a-98d5aa9e5a38 \
+      -d macs=0a:fc:23:10:6e:ff
 
 ## UpdateNics (POST /vms/:uuid?action=update_nics)
 
