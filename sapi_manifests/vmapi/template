@@ -42,6 +42,9 @@
         "maxSockets": 10,
         "url": "http://{{{CNAPI_SERVICE}}}"
     },
+    "papi": {
+        "url": "http://{{{PAPI_SERVICE}}}"
+    },
     "napi": {
         "url": "http://{{{NAPI_SERVICE}}}"
     },
