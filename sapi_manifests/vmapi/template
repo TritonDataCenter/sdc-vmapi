@@ -42,11 +42,14 @@
         "maxSockets": 10,
         "url": "http://{{{CNAPI_SERVICE}}}"
     },
-    "papi": {
-        "url": "http://{{{PAPI_SERVICE}}}"
+    "imgapi": {
+        "url": "http://{{{IMGAPI_SERVICE}}}"
     },
     "napi": {
         "url": "http://{{{NAPI_SERVICE}}}"
+    },
+    "papi": {
+        "url": "http://{{{PAPI_SERVICE}}}"
     },
     "moray": {
         "host": "{{{MORAY_SERVICE}}}",
