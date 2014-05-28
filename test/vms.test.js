@@ -4,6 +4,7 @@
 var assert = require('assert');
 var uuid = require('libuuid');
 var qs = require('querystring');
+var async = require('async');
 
 var common = require('./common');
 
@@ -106,6 +107,54 @@ function waitForValue(url, key, value, callback) {
 
     return checkValue(url, key, value, onReady);
 }
+
+
+function waitForNicState(query, status, waitCallback) {
+    var stop = false;
+    var count = 0;
+    var maxSeconds = 30;
+
+    function getNicStatus(callback) {
+        client.napi.get({
+            path: '/nics',
+            query: query
+        }, function (err, req, res, nics) {
+            if (err) {
+                return callback(err);
+            } else if (!nics.length || !nics[0].status) {
+                return callback(new Error('VM does not have valid NICs'));
+            } else {
+                return callback(null, nics[0].status);
+            }
+        });
+    }
+
+    async.doWhilst(
+        function (callback) {
+            getNicStatus(function (err, nicStatus) {
+                if (err) {
+                    return callback(err);
+                }
+
+                count++;
+                // Assume just one NIC
+                if (nicStatus === status) {
+                    stop = true;
+                    return callback();
+                } else if (count === maxSeconds) {
+                    stop = true;
+                    return callback(new Error('Timeout waiting on NIC status ' +
+                        'change to ' + status));
+                }
+
+                setTimeout(callback, 1000);
+            });
+        },
+        function () { return !stop; },
+        waitCallback
+    );
+}
+
 
 
 
@@ -350,18 +399,13 @@ exports.wait_provisioned_job = function (t) {
 
 
 exports.check_create_vm_nics_running = function (t) {
-    client.napi.get({
-        path: '/nics',
-        query: {
-            belongs_to_uuid: newUuid,
-            belongs_to_type: 'zone'
-        }
-    }, function (err, req, res, nics) {
+    var query = {
+        belongs_to_uuid: newUuid,
+        belongs_to_type: 'zone'
+    };
+
+    waitForNicState(query, 'running', function(err) {
         t.ifError(err);
-
-        t.equal(nics.length, 1);
-        t.equal(nics[0].status, 'running');
-
         t.done();
     });
 };
@@ -389,18 +433,13 @@ exports.wait_stopped_job = function (t) {
 
 
 exports.check_stop_vm_nics_stopped = function (t) {
-    client.napi.get({
-        path: '/nics',
-        query: {
-            belongs_to_uuid: newUuid,
-            belongs_to_type: 'zone'
-        }
-    }, function (err, req, res, nics) {
+    var query = {
+        belongs_to_uuid: newUuid,
+        belongs_to_type: 'zone'
+    };
+
+    waitForNicState(query, 'stopped', function(err) {
         t.ifError(err);
-
-        t.equal(nics.length, 1);
-        t.equal(nics[0].status, 'stopped');
-
         t.done();
     });
 };
@@ -428,18 +467,13 @@ exports.wait_started_job = function (t) {
 
 
 exports.check_start_vm_nics_running = function (t) {
-    client.napi.get({
-        path: '/nics',
-        query: {
-            belongs_to_uuid: newUuid,
-            belongs_to_type: 'zone'
-        }
-    }, function (err, req, res, nics) {
+    var query = {
+        belongs_to_uuid: newUuid,
+        belongs_to_type: 'zone'
+    };
+
+    waitForNicState(query, 'running', function(err) {
         t.ifError(err);
-
-        t.equal(nics.length, 1);
-        t.equal(nics[0].status, 'running');
-
         t.done();
     });
 };
@@ -467,18 +501,13 @@ exports.wait_rebooted_job = function (t) {
 
 
 exports.check_reboot_vm_nics_running = function (t) {
-    client.napi.get({
-        path: '/nics',
-        query: {
-            belongs_to_uuid: newUuid,
-            belongs_to_type: 'zone'
-        }
-    }, function (err, req, res, nics) {
+    var query = {
+        belongs_to_uuid: newUuid,
+        belongs_to_type: 'zone'
+    };
+
+    waitForNicState(query, 'running', function(err) {
         t.ifError(err);
-
-        t.equal(nics.length, 1);
-        t.equal(nics[0].status, 'running');
-
         t.done();
     });
 };
@@ -511,19 +540,14 @@ exports.wait_add_nics_with_networks = function (t) {
 
 
 exports.check_add_nics_with_network_nics_running = function (t) {
-    client.napi.get({
-        path: '/nics',
-        query: {
-            belongs_to_uuid: newUuid,
-            belongs_to_type: 'zone',
-            nic_tag: NETWORKS[1].nic_tag
-        }
-    }, function (err, req, res, nics) {
+    var query = {
+        belongs_to_uuid: newUuid,
+        belongs_to_type: 'zone',
+        nic_tag: NETWORKS[1].nic_tag
+    };
+
+    waitForNicState(query, 'running', function(err) {
         t.ifError(err);
-
-        t.equal(nics.length, 1);
-        t.equal(nics[0].status, 'running');
-
         t.done();
     });
 };
@@ -569,22 +593,14 @@ exports.wait_add_nics_with_macs = function (t) {
 
 
 exports.check_add_nics_with_macs_nics_running = function (t) {
-    client.napi.get({
-        path: '/nics',
-        query: {
-            belongs_to_uuid: newUuid,
-            belongs_to_type: 'zone',
-            nic_tag: NETWORKS[1].nic_tag
-        }
-    }, function (err, req, res, nics) {
+    var query = {
+        belongs_to_uuid: newUuid,
+        belongs_to_type: 'zone',
+        nic_tag: NETWORKS[1].nic_tag
+    };
+
+    waitForNicState(query, 'running', function(err) {
         t.ifError(err);
-
-        t.equal(nics.length, 2);
-
-        nics.forEach(function (nic) {
-            t.equal(nic.status, 'running');
-        });
-
         t.done();
     });
 };
