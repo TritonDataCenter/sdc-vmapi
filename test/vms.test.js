@@ -4,6 +4,7 @@
 var assert = require('assert');
 var uuid = require('libuuid');
 var qs = require('querystring');
+var async = require('async');
 
 var common = require('./common');
 
@@ -106,6 +107,54 @@ function waitForValue(url, key, value, callback) {
 
     return checkValue(url, key, value, onReady);
 }
+
+
+function waitForNicState(query, status, waitCallback) {
+    var stop = false;
+    var count = 0;
+    var maxSeconds = 30;
+
+    function getNicStatus(callback) {
+        client.napi.get({
+            path: '/nics',
+            query: query
+        }, function (err, req, res, nics) {
+            if (err) {
+                return callback(err);
+            } else if (!nics.length || !nics[0].status) {
+                return callback(new Error('VM does not have valid NICs'));
+            } else {
+                return callback(null, nics[0].status);
+            }
+        });
+    }
+
+    async.doWhilst(
+        function (callback) {
+            getNicStatus(function (err, nicStatus) {
+                if (err) {
+                    return callback(err);
+                }
+
+                count++;
+                // Assume just one NIC
+                if (nicStatus === status) {
+                    stop = true;
+                    return callback();
+                } else if (count === maxSeconds) {
+                    stop = true;
+                    return callback(new Error('Timeout waiting on NIC status ' +
+                        'change to ' + status));
+                }
+
+                setTimeout(callback, 1000);
+            });
+        },
+        function () { return !stop; },
+        waitCallback
+    );
+}
+
 
 
 
@@ -348,6 +397,20 @@ exports.wait_provisioned_job = function (t) {
 };
 
 
+
+exports.check_create_vm_nics_running = function (t) {
+    var query = {
+        belongs_to_uuid: newUuid,
+        belongs_to_type: 'zone'
+    };
+
+    waitForNicState(query, 'running', function(err) {
+        t.ifError(err);
+        t.done();
+    });
+};
+
+
 exports.stop_vm = function (t) {
     client.post(vmLocation, { action: 'stop', context: 'foobar' },
       function (err, req, res, body) {
@@ -363,6 +426,19 @@ exports.stop_vm = function (t) {
 
 exports.wait_stopped_job = function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
+        t.ifError(err);
+        t.done();
+    });
+};
+
+
+exports.check_stop_vm_nics_stopped = function (t) {
+    var query = {
+        belongs_to_uuid: newUuid,
+        belongs_to_type: 'zone'
+    };
+
+    waitForNicState(query, 'stopped', function(err) {
         t.ifError(err);
         t.done();
     });
@@ -390,6 +466,19 @@ exports.wait_started_job = function (t) {
 };
 
 
+exports.check_start_vm_nics_running = function (t) {
+    var query = {
+        belongs_to_uuid: newUuid,
+        belongs_to_type: 'zone'
+    };
+
+    waitForNicState(query, 'running', function(err) {
+        t.ifError(err);
+        t.done();
+    });
+};
+
+
 exports.reboot_vm = function (t) {
     client.post(vmLocation, { action: 'reboot', context: 'foobar' },
       function (err, req, res, body) {
@@ -405,6 +494,19 @@ exports.reboot_vm = function (t) {
 
 exports.wait_rebooted_job = function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
+        t.ifError(err);
+        t.done();
+    });
+};
+
+
+exports.check_reboot_vm_nics_running = function (t) {
+    var query = {
+        belongs_to_uuid: newUuid,
+        belongs_to_type: 'zone'
+    };
+
+    waitForNicState(query, 'running', function(err) {
         t.ifError(err);
         t.done();
     });
@@ -437,13 +539,28 @@ exports.wait_add_nics_with_networks = function (t) {
 };
 
 
+exports.check_add_nics_with_network_nics_running = function (t) {
+    var query = {
+        belongs_to_uuid: newUuid,
+        belongs_to_type: 'zone',
+        nic_tag: NETWORKS[1].nic_tag
+    };
+
+    waitForNicState(query, 'running', function(err) {
+        t.ifError(err);
+        t.done();
+    });
+};
+
+
 exports.add_nics_with_macs = function (t) {
     var params = {
         belongs_to_uuid: newUuid,
         belongs_to_type: 'zone',
         owner_uuid: CUSTOMER,
         network_uuid: NETWORKS[1].uuid,
-        nic_tag: NETWORKS[1].nic_tag
+        nic_tag: NETWORKS[1].nic_tag,
+        status: 'provisioning'
     };
 
     client.napi.post('/nics', params, function (err, req, res, nic) {
@@ -475,6 +592,20 @@ exports.wait_add_nics_with_macs = function (t) {
 };
 
 
+exports.check_add_nics_with_macs_nics_running = function (t) {
+    var query = {
+        belongs_to_uuid: newUuid,
+        belongs_to_type: 'zone',
+        nic_tag: NETWORKS[1].nic_tag
+    };
+
+    waitForNicState(query, 'running', function(err) {
+        t.ifError(err);
+        t.done();
+    });
+};
+
+
 exports.remove_nics = function (t) {
     // Get VM object to get its NICs
     client.get(vmLocation, function (err, req, res, body) {
@@ -486,8 +617,13 @@ exports.remove_nics = function (t) {
         t.ok(body.nics);
         t.equal(body.nics.length, 3);
 
-        // 2nd & 3rd NICs are the ones we just added
-        var macs = body.nics.slice(1, 3).map(function (n) { return n.mac; });
+        var macs = body.nics.filter(function (nic) {
+            return nic.nic_tag === NETWORKS[1].nic_tag;
+        }).map(function (nic) {
+            return nic.mac;
+        });
+
+        t.equal(macs.length, 2);
 
         var params = {
             action: 'remove_nics',
@@ -510,6 +646,22 @@ exports.remove_nics = function (t) {
 exports.wait_remove_nics = function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
         t.ifError(err);
+        t.done();
+    });
+};
+
+
+exports.check_remove_nics_removed = function (t) {
+    client.napi.get({
+        path: '/nics',
+        query: {
+            belongs_to_uuid: newUuid,
+            belongs_to_type: 'zone',
+            nic_tag: NETWORKS[1].nic_tag
+        }
+    }, function (err, req, res, nics) {
+        t.ifError(err);
+        t.equal(nics.length, 0);
         t.done();
     });
 };
