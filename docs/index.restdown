@@ -1699,7 +1699,7 @@ There is one VMAPI service per datacenter. There might actually be more than
 one "vmapi" zone for HA. Use this to list the vmapi zones in a DC:
 
     sdc-vmapi /vms?owner_uuid=$(bash /lib/sdc/config.sh -json | json ufds_admin_uuid) \
-        | json -H -c "tags.smartdc_role=='vmapi'"
+        | json -H -c "this.tags.smartdc_role=='vmapi'"
 
 
 ## VMAPI Configuration File

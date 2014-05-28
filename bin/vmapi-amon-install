@@ -46,7 +46,7 @@ function putprobe() {
         fatal "No 'name' for probe: $payload"
     fi
     amon /pub/$account/probes
-    local probe_uuid=$(echo "$res_body" | json -H -c "name == '$pname'" -a uuid)
+    local probe_uuid=$(echo "$res_body" | json -H -c "this.name == '$pname'" -a uuid)
     if [[ "$res_status" != "200" ]]; then
         fatal "Error looking for probe '$pname': $res_status $res_body"
     elif [[ -n "$probe_uuid" ]]; then
@@ -72,7 +72,7 @@ amon /ping -f || fatal "amon-master ping failed: $res_status $res_body"
 # we'd need to depend on VMAPI to get that: overkill.
 group_name=vmapi-$zonename
 amon /pub/$account/probegroups
-group_uuid=$(echo "$res_body" | json -H -c "name == '$group_name'" -a uuid)
+group_uuid=$(echo "$res_body" | json -H -c "this.name == '$group_name'" -a uuid)
 if [[ "$res_status" != "200" ]]; then
     fatal "Error looking for '$group_name' probe group: $res_status $res_body"
 elif [[ -n "$group_uuid" ]]; then

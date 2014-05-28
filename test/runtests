@@ -138,7 +138,7 @@ else
     [[ ! -f "$CFG_FILE" ]] && fatal "'$CFG_FILE' does not exist"
     if [[ $(zonename) == "global" ]]; then
         export VMAPI_URL=http://$(/opt/smartdc/bin/sdc-vmapi /vms \
-            | json -H -c 'tags.smartdc_role=="vmapi"' -c 'state=="running"' 0.nics.0.ip)
+            | json -H -c 'this.tags.smartdc_role=="vmapi"' -c 'this.state=="running"' 0.nics.0.ip)
     else
         export VMAPI_URL=http://$(/usr/sbin/ifconfig net0 | grep inet | awk '{print $2}')
     fi
