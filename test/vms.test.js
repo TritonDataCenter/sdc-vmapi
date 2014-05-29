@@ -151,8 +151,7 @@ function waitForNicState(query, status, waitCallback) {
             });
         },
         function () { return !stop; },
-        waitCallback
-    );
+        waitCallback);
 }
 
 
@@ -410,7 +409,7 @@ exports.check_create_vm_nics_running = function (t) {
         belongs_to_type: 'zone'
     };
 
-    waitForNicState(query, 'running', function(err) {
+    waitForNicState(query, 'running', function (err) {
         t.ifError(err);
         t.done();
     });
@@ -444,7 +443,7 @@ exports.check_stop_vm_nics_stopped = function (t) {
         belongs_to_type: 'zone'
     };
 
-    waitForNicState(query, 'stopped', function(err) {
+    waitForNicState(query, 'stopped', function (err) {
         t.ifError(err);
         t.done();
     });
@@ -478,7 +477,7 @@ exports.check_start_vm_nics_running = function (t) {
         belongs_to_type: 'zone'
     };
 
-    waitForNicState(query, 'running', function(err) {
+    waitForNicState(query, 'running', function (err) {
         t.ifError(err);
         t.done();
     });
@@ -512,7 +511,7 @@ exports.check_reboot_vm_nics_running = function (t) {
         belongs_to_type: 'zone'
     };
 
-    waitForNicState(query, 'running', function(err) {
+    waitForNicState(query, 'running', function (err) {
         t.ifError(err);
         t.done();
     });
@@ -552,7 +551,7 @@ exports.check_add_nics_with_network_nics_running = function (t) {
         nic_tag: NETWORKS[1].nic_tag
     };
 
-    waitForNicState(query, 'running', function(err) {
+    waitForNicState(query, 'running', function (err) {
         t.ifError(err);
         t.done();
     });
@@ -605,7 +604,7 @@ exports.check_add_nics_with_macs_nics_running = function (t) {
         nic_tag: NETWORKS[1].nic_tag
     };
 
-    waitForNicState(query, 'running', function(err) {
+    waitForNicState(query, 'running', function (err) {
         t.ifError(err);
         t.done();
     });
