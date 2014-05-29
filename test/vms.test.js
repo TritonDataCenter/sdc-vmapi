@@ -365,14 +365,20 @@ exports.create_vm = function (t) {
         newUuid = body.vm_uuid;
         vmLocation = '/vms/' + newUuid;
 
-        setTimeout(function () {
+        // GetVm should not fail after provision has been queued
+        client.get(vmLocation, function (err2, req2, res2, body2) {
+            t.ifError(err2);
+            t.equal(res2.statusCode, 200, '200 OK');
+            common.checkHeaders(t, res2.headers);
+            t.ok(body2, 'provisioning vm ok');
+
             client.post(vmLocation, { action: 'stop' },
-              function (err2, req2, res2, body2) {
-                t.equal(res2.statusCode, 409, 'cannot stop unprovisioned VM');
-                common.checkHeaders(t, res2.headers);
+              function (err3, req3, res3, body3) {
+                t.equal(res3.statusCode, 409, 'cannot stop unprovisioned VM');
+                common.checkHeaders(t, res3.headers);
                 t.done();
             });
-        }, 1000);
+        });
     });
 };
 
