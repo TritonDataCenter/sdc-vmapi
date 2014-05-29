@@ -144,7 +144,7 @@ function waitForNicState(query, status, waitCallback) {
                 } else if (count === maxSeconds) {
                     stop = true;
                     return callback(new Error('Timeout waiting on NIC status ' +
-                        'change to ' + status));
+                        'change from ' + nicStatus + ' to ' + status));
                 }
 
                 setTimeout(callback, 1000);
