@@ -106,6 +106,7 @@ update time.
 ||owner_uuid||UUID||VM Owner||Yes||Yes||Yes||
 ||package_name||String||Private field intended for use by Joyent's SDC product.||No||Yes||Yes||
 ||package_version||String||Private field intended for use by Joyent's SDC product.||No||Yes||Yes||
+||platform_buildstamp||String||Timestamp of the SDC platform the VM is running on. This value only changes when the platform of the Compute Node where the VM is running is upgraded||Yes||No||No||
 ||quota||Number (GiB)||VM quota||Yes||Yes||Yes||
 ||ram||Number (MiB)||Amount of memory of the VM||Yes||Yes||Yes||
 ||resolvers||Array||DNS resolvers for the VM||Yes||Yes||Yes||
