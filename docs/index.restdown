@@ -313,7 +313,7 @@ some VM attributes are increased and downsizing refers to the opposite.
 
 ||**VM Type**||**Upsize**||**Downsize**||
 ||KVM||Not supported||Not supported||
-||OS||Supported||Not supported||
+||OS||Supported||Supported||
 
 ## Delegate Dataset
 
