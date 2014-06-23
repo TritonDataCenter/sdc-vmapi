@@ -109,7 +109,7 @@ function waitForValue(url, key, value, callback) {
 }
 
 
-function waitForNicState(query, status, waitCallback) {
+function waitForNicState(query, state, waitCallback) {
     var stop = false;
     var count = 0;
     var maxSeconds = 30;
@@ -121,30 +121,30 @@ function waitForNicState(query, status, waitCallback) {
         }, function (err, req, res, nics) {
             if (err) {
                 return callback(err);
-            } else if (!nics.length || !nics[0].status) {
+            } else if (!nics.length || !nics[0].state) {
                 return callback(new Error('VM does not have valid NICs'));
             } else {
-                return callback(null, nics[0].status);
+                return callback(null, nics[0].state);
             }
         });
     }
 
     async.doWhilst(
         function (callback) {
-            getNicStatus(function (err, nicStatus) {
+            getNicStatus(function (err, nicState) {
                 if (err) {
                     return callback(err);
                 }
 
                 count++;
                 // Assume just one NIC
-                if (nicStatus === status) {
+                if (nicState === state) {
                     stop = true;
                     return callback();
                 } else if (count === maxSeconds) {
                     stop = true;
-                    return callback(new Error('Timeout waiting on NIC status ' +
-                        'change from ' + nicStatus + ' to ' + status));
+                    return callback(new Error('Timeout waiting on NIC state ' +
+                        'change from ' + nicState + ' to ' + state));
                 }
 
                 setTimeout(callback, 1000);
