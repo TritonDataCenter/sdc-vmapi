@@ -505,6 +505,85 @@ VMs can also be searched by tags. Tags are key/value pairs that let us identify 
     GET /vms?tag.role=*
 
 
+## ListVms With Search Predicate
+
+Using a predicate is the preferred method for performing advanced searches at
+GET /vms. A predicate allows us to easily express a complex query when there are
+several fields that need to match specific values. VMAPI uses the same predicate
+syntax exposed by Cloud Analtyics (https://mo.joyent.com/docs/ca/master), but
+some operations such as "lt" (less than) are not supported since they do not
+form a valid LDAP query syntax.
+
+A predicate can be composed of leaf predicates and compound predicates. Leaf
+predicates denote a direct comparison, like "field equals value", and compound
+predicates have one or more subpredicates that can be either compound or leaf
+predicates themselves.
+
+### Leaf Predicates
+
+||**Predicate**||**Description**||
+||{ eq: [ fieldname, value ] }||Equality (field=value)||
+||{ ne: [ fieldname, value ] }||Inequality (!(field=value))||
+||{ le: [ fieldname, value ] }||Less than or equal to (field<=value)||
+||{ ge: [ fieldname, value ] }||Greater than or equal to (field>=value)||
+
+### Compound Predicates
+
+||**Predicate**||**Description**||
+||{ and: [ predicate, ... ] }||All subpredicates must be true.||
+||{ or: [ predicate, ... ] }||At least one of subpredicates must be true.||
+
+### Executing Predicate Queries
+
+A predicate search can be performed by passing a "predicate" query parameter to
+the GET /vms endpoint. Keep in mind that predicate must be URL encoded, as it
+contains characters like '[', '{' , '&', etc. that will not be parsed correctly
+by the HTTP server and will result in a request error.
+
+In order to make testing of predicates easy, use the following code snippet that
+creates a urlencode helper function that can be called to convert a predicate
+object to a URL encoded string:
+
+    urlencode() {
+        # urlencode <string>
+
+        local length="${#1}"
+        for (( i = 0; i < length; i++ )); do
+            local c="${1:i:1}"
+            case $c in
+                [a-zA-Z0-9.~_-]) printf "$c" ;;
+                *) printf '%%%02X' "'$c"
+            esac
+        done
+    }
+
+Let's look at some usage examples of search predicates:
+
+#### Search for VMs with less than or equal to 128MB RAM
+
+    sdc-vmapi "/vms?predicate=$(urlencode '{ "le" : [ "ram", 128 ] }')" \
+      | json -Ha uuid ram
+
+    215366ea-1646-4d2b-934d-ba10d7859189 128
+    54a70ea7-aa36-473f-a095-c1e1dee99966 128
+    1af5138e-8c23-4fdf-f13a-b0c4d275a026 64
+    73edd07f-93b9-4463-e132-fcb64b46f3be 64
+
+#### Search for destroyed VMs tagged with role=database
+
+    sdc-vmapi "/vms?predicate=$(urlencode '{ "and" : [ { "eq": ["state", "destroyed" ] }, { "eq": ["tag.role", "database" ] }  ] }')" \
+      | json -Ha uuid ram state tags.role
+
+    1af5138e-8c23-4fdf-f13a-b0c4d275a026 64 destroyed database
+
+#### Search all VMs with a wildcard alias of vmapi* that have 1024MB RAM
+
+    sdc-vmapi "/vms?predicate=$(urlencode '{ "and" : [ { "eq" : [ "ram", 1024 ] }, { "eq" : [ "alias", "vmapi0"  ] } ] }')" \
+      | json -Ha uuid ram
+
+    2a564d9f-ae52-4ac7-8d98-1ef00a95e086 1024
+
+
 ## ListVms With Search Query
 
 There is also an advanced feature in the VMs endpoint where you can execute an LDAP compatible search filter if you want a more precise object search. However you need to consider that the same rules regarding searchable attributes apply to this endpoint, so any search on an non-indexed column will return an error. All the searchable attributes listed in the Inputs table above for the ListVms endpoint can be used, with the exception of create_timestamp where only
@@ -2075,6 +2154,10 @@ TODO: vm destroyed but still there
 
 
 # Changelog
+
+## 2014-07-31
+
+  * Added search predicate support to GET /vms
 
 ## 2014-04-28
 
