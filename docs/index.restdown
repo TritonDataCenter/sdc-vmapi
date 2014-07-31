@@ -578,7 +578,7 @@ Let's look at some usage examples of search predicates:
 
 #### Search all VMs with a wildcard alias of vmapi* that have 1024MB RAM
 
-    sdc-vmapi "/vms?predicate=$(urlencode '{ "and" : [ { "eq" : [ "ram", 1024 ] }, { "eq" : [ "alias", "vmapi0"  ] } ] }')" \
+    sdc-vmapi "/vms?predicate=$(urlencode '{ "and" : [ { "eq" : [ "ram", 1024 ] }, { "eq" : [ "alias", "vmapi*"  ] } ] }')" \
       | json -Ha uuid ram
 
     2a564d9f-ae52-4ac7-8d98-1ef00a95e086 1024
