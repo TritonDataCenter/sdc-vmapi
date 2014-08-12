@@ -10,7 +10,7 @@
         "host": "{{{RABBITMQ_SERVICE}}}",
         "queue": "heartbeat.vmapi",
         "reconnect": 5,
-        "concurrency": 500,
+        "concurrency": 50,
         "retry": {
             "initialDelay": 4000
         }
