@@ -30,5 +30,6 @@
   },
   "scripts": {
     "start": "node ./server.js"
-  }
+  },
+  "license": "MPL-2.0"
 }
