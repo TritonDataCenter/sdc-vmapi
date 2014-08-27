@@ -10,7 +10,7 @@
     "bunyan": "0.22.3",
     "sprintf": "0.1.1",
     "sdc-clients": "git+ssh://git@github.com:joyent/node-sdc-clients.git#c962959",
-    "wf-client": "git+ssh://git@git.joyent.com:wf-client.git#469fc74",
+    "wf-client": "git+ssh://git@github.com:joyent/sdc-wf-client.git#469fc74",
     "restify": "2.7.0",
     "amqp": "git://github.com/postwait/node-amqp.git#2a5b1e9d2cd5838991ea378251f186c13ba79f97",
     "nodeunit": "0.7.4",
