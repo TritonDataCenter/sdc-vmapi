@@ -8,53 +8,34 @@
     Copyright (c) 2014, Joyent, Inc.
 -->
 
-# VMs API
+# sdc-vmapi
 
- * Repository: git clone git@git.joyent.com:vmapi.git
- * Browsing: <https://mo.joyent.com/vmapi>
- * Docs: <https://mo.joyent.com/docs/vmapi>
- * Who: Andres Rodriguez
- * Tickets/bugs: <https://devhub.joyent.com/jira/browse/VMAPI>
+VMAPI is an HTTP API server for managing VMs on an SDC installation.
 
-# Introduction
+This repository is part of the Joyent SmartDataCenter project (SDC).  For
+contribution guidelines, issues, and general documentation, visit the main
+[SDC](http://github.com/joyent/sdc) project page.
 
-VMs API allows clients to get information about machines on a datacenter by using an HTTP API. VMAPI offers the following features:
+# Features
 
- * Search machines by specific criteria such as ram, owner, tags, server, dataset, etc.
- * Get information about a single machine
- * Create new machines
- * Perform actions on an existing machine such as start, stop, reboot and resize
- * Update machines
- * Destroy machines
-
-
-# Design & Requirements
-
-* Node.js restify HTTP server
-* UFDS is the remote datastore for VMAPI. VMAPI does not have persistency and all zones data living on UFDS should be considered a cache
-* A heartbeater AMQP client listens for zone heartbeats so VMAPI can return status information for zones
- * VMAPI is only concerned for exposing zones information to users the same way CNAPI does for compute nodes
- * There is one VMAPI instance per datacenter
- * VMAPI is stateless: when any machine action is called (create, destroy, reboot, etc) the message is passed through a workflow API instance that takes care of it
- * VMAPI should be as dumb as possible. Contrary to MAPI, VMAPI does not have complicated logic that prevents users to call actions on zones (and even creating zones). Much of the required logic for this is moved to the corresponding workflow and other participant APIs
- * ...
+* Search for VMs by specific criteria such as ram, owner, tags, etc.
+* Get information about a single VM
+* Create VMs
+* Perform actions on an existing VM such as start, stop, reboot, update, modify NICs, destroy, etc.
 
 # Development and Local Installation
 
     # Get the source and build.
-    git clone git@git.joyent.com:vmapi.git
-    cd vmapi/
+    git clone git@github.com:joyent/sdc-vmapi.git
+    cd sdc-vmapi/
     make all
 
-    # Setup config.
-    # Note that there is a dependency on a headnode instance with a running UFDS
-    cp config.mac.json config.json
-    vi config.json
+    # Rsync your local copy to a running SDC headnode
+    ./tools/rsync-to <headnode-ip>
 
-    # node server.js
-
-
-# Testing
-
-    make test
+    # Run the VMAPI test suite
+    ssh <headnode-ip>
+    [root@headnode ~]# touch /lib/sdc/.sdc-test-no-production-data
+    [root@headnode ~]# /zones/`vmadm lookup -1 \
+        alias=vmapi0`/root/opt/smartdc/vmapi/test/runtests
 
