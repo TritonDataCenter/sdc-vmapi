@@ -10,11 +10,12 @@
 
 # sdc-vmapi
 
-VMAPI is an HTTP API server for managing VMs on an SDC installation.
-
 This repository is part of the Joyent SmartDataCenter project (SDC).  For
 contribution guidelines, issues, and general documentation, visit the main
 [SDC](http://github.com/joyent/sdc) project page.
+
+VMAPI is an HTTP API server for managing VMs on an SDC installation.
+
 
 # Features
 
