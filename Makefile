@@ -113,9 +113,11 @@ publish: release
 	cp $(ROOT)/$(RELEASE_TARBALL) $(BITS_DIR)/vmapi/$(RELEASE_TARBALL)
 
 
-.PHONY: test
-test: $(NODEUNIT)
-	$(NODEUNIT) test/vms.test.js
+.PHONY: test-coal
+COAL=root@10.99.99.7
+test-coal:
+	./tools/rsync-to coal
+	ssh $(COAL) "/zones/\$$(vmadm lookup -1 alias=vmapi0)/root/opt/smartdc/vmapi/test/runtests"
 
 
 include ./tools/mk/Makefile.deps

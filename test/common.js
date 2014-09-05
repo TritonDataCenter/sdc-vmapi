@@ -28,11 +28,9 @@ try {
     config = JSON.parse(fs.readFileSync(DEFAULT_CFG, 'utf8'));
 } catch (e) {}
 
-var VMAPI_URL = 'http://' + (process.env.VMAPI_IP || 'localhost:8080');
+var VMAPI_URL = process.env.VMAPI_URL || 'http://localhost';
 var NAPI_URL = config.napi.url || 'http://10.99.99.10';
 var CNAPI_URL = config.cnapi.url || 'http://10.99.99.22';
-
-
 
 // --- Library
 

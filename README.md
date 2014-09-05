@@ -24,19 +24,34 @@ VMAPI is an HTTP API server for managing VMs on an SDC installation.
 * Create VMs
 * Perform actions on an existing VM such as start, stop, reboot, update, modify NICs, destroy, etc.
 
-# Development and Local Installation
+# Development
 
-    # Get the source and build.
-    git clone git@github.com:joyent/sdc-vmapi.git
-    cd sdc-vmapi/
-    make all
+Typically VMAPI development is done by:
 
-    # Rsync your local copy to a running SDC headnode
-    ./tools/rsync-to <headnode-ip>
+- making edits to a clone of sdc-vmapi.git on a Mac (likely Linux too, but
+  that's untested) or a SmartOS development zone,
 
-    # Run the VMAPI test suite
-    ssh <headnode-ip>
-    [root@headnode ~]# touch /lib/sdc/.sdc-test-no-production-data
-    [root@headnode ~]# /zones/`vmadm lookup -1 \
-        alias=vmapi0`/root/opt/smartdc/vmapi/test/runtests
+        git clone git@github.com:joyent/sdc-vmapi.git
+        cd sdc-vmapi
+        git submodule update --init   # not necessary first time
+        vi
+
+- building:
+
+        make all
+        make check
+
+- syncing changes to a running SDC (typically a COAL running locally in VMWare)
+  via:
+        ./tools/rsync-to coal
+
+- then testing changes in that SDC (e.g. COAL).
+  See "Testing" below for running the test suite.
+
+
+## Testing
+
+To sync local changes to a running COAL and run the test suite there try:
+
+    make test-coal
 
