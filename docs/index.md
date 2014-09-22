@@ -1,7 +1,7 @@
 ---
 title: VMs API (VMAPI)
 apisections: Ping, VMs, VM Snapshots, VM Metadata, Jobs, Changelog
-markdown2extras: wiki-tables, code-friendly
+markdown2extras: tables, code-friendly
 ---
 <!--
     This Source Code Form is subject to the terms of the Mozilla Public
@@ -39,55 +39,56 @@ going to be returned when set via CreateVm or UpdateVm. Finally, the last two
 columns specify wether or not some VM attributes can be set at creation or
 update time.
 
-||**Param**||**Type**||**Description**||**Vm Response Default**||**Create**||**Update**||
-||alias||String||VM alias||Yes||Yes||Yes||
-||autoboot||Boolean||Controls whether or not a VM is booted when the system is rebooted.||Yes||Yes||Yes||
-||billing_id||UUID||Billing Id||Yes||Yes||Yes||
-||brand||String|| Brand of the VM (joyent, joyent-minimal, kvm or sngl)||Yes||Yes||No||
-||billing_id||UUID||Billing Id||Yes||Yes||Yes||
-||cpu_cap||Number||CPU Cap||No||Yes||Yes||
-||cpu_shares||Number||CPU Shares||Yes||Yes||Yes||
-||create_timestamp||Date||The time at which the VM was created in ISO 8601 format||Yes||No||No||
-||customer_metadata||Object||VM metadata||Yes||Yes||Yes||
-||destroyed||Date||The time at which the VM was destroyed in ISO 8601 format||Yes||No||No||
-||datasets||Array||VM datasets||Yes||No||No||
-||delegate_dataset||Boolean||Delegate a data dataset to the VM||No||Yes||No||
-||dns_domain||String||Domain value for /etc/hosts||No||Yes||No||
-||do_not_inventory||Boolean||The primary use-case of this attribute is for test VMs that are created but you don't want their existence propagated up to VMAPI since they'll be short-lived and its lifecycle will be physically managed in the server||No||Yes||Yes||
-||firewall_enabled||Boolean||Enable firewall for the VM||Yes||Yes||Yes||
-||fs_allowed||String (comma-separated list)||Filesystems allowed for the VM||No||Yes||Yes||
-||image_uuid||UUID||Image of the VM||Yes||Yes||No||
-||indestructible_delegated||Boolean||When set this property adds an @indestructible snapshot to the delegated data dataset and sets a zfs hold on that snapshot. This hold must be removed before the VM can be deleted enabling a two-step deletion||No||Yes||Yes||
-||indestructible_zoneroot||Boolean||When set this property adds an @indestructible snapshot to the zoneroot dataset and sets a zfs hold on that snapshot. This hold must be removed before the VM can be deleted or reprovisioned||No||Yes||Yes||
-||internal_metadata||Object||Internal VM metadata||Yes||Yes||Yes||
-||limit_priv||String (comma-separated list)||Privileges available to the VM||Yes||Yes||Yes||
-||last_modified||Date||The time at which the VM was last modified in ISO 8601 format||Yes||No||No||
-||maintain_resolvers||Boolean||This boolean indicates that /etc/resolv.conf must be updated when the VM resolvers are updated||No||Yes||Yes||
-||max_locked_memory||Number (MiB)||Amounf of memory that can be locked for the VM||Yes||Yes||Yes||
-||max_lwps||Number||Max. Lightweight Processes||Yes||Yes||Yes||
-||max_physical_memory||Number (MiB)||Amount of memory of the VM. For KVM VMs this value should be ram + 1024||Yes||Yes||Yes||
-||max_swap||Number (MiB)||Maximum amount of virtual memory. Defaults to 2 x max_phsical_memory and cannot be lower than 256||Yes||Yes||Yes||
-||mdata_exec_timeout||Number||Timeout in seconds on the start method of the svc:/smartdc/mdata:execute service running in the VM||No||Yes||No||
-||networks||Array||At provision time, specify the networks on which the VM NICs should be provisioned||No||Yes||No||
-||networks.*.uuid||String||Network UUID. Optional, required if networks.*.name is not present||--||--||--||
-||networks.*.name||String||Network name. Optional, required if networks.*.uuid is not present||--||--||--||
-||networks.*.primary||String||Specifies that this will be the primary NIC of the VM. Optional||--||--||--||
-||networks.*.ip||IP Address||Specifies the IP address desired on this network. Optional||--||--||--||
-||nics||Array||VM NICs. They can only be updated. NICs get provisioned for a VM from the values of `networks` in CreateVm. See UpdateNIcs for more details.||Yes||No||No||
-||owner_uuid||UUID||VM Owner||Yes||Yes||Yes||
-||package_name||String||Private field intended for use by Joyent's SDC product.||No||Yes||Yes||
-||package_version||String||Private field intended for use by Joyent's SDC product.||No||Yes||Yes||
-||platform_buildstamp||String||Timestamp of the SDC platform the VM is running on. This value only changes when the platform of the Compute Node where the VM is running is upgraded||Yes||No||No||
-||quota||Number (GiB)||VM quota||Yes||Yes||Yes||
-||ram||Number (MiB)||Amount of memory of the VM||Yes||Yes||Yes||
-||resolvers||Array||DNS resolvers for the VM||Yes||Yes||Yes||
-||server_uuid||UUID||Server UUID of the VM||Yes||Yes||No||
-||snapshots||Array||VM snapshots||Yes||No||No||
-||state||String||State of the VM||Yes||No||No||
-||zfs_data_compression||String||Specifies a compression algorithm used for the VM's data dataset||No||Yes||Yes||
-||zfs_io_priority||Number||ZFS IO Priority||Yes||Yes||Yes||
-||tags||Object||VM tags||Yes||Yes||Yes||
-||tmpfs||Number||Amount of memory for the /tmp filesystem||No||Yes||Yes||
+| Param                    | Type                          | Description                                                                                                                                                                                                               | Vm Response Default | Create | Update |
+| ------------------------ | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- | ------ | ------ |
+| alias                    | String                        | VM alias                                                                                                                                                                                                                  | Yes                 | Yes    | Yes    |
+| autoboot                 | Boolean                       | Controls whether or not a VM is booted when the system is rebooted.                                                                                                                                                       | Yes                 | Yes    | Yes    |
+| billing_id               | UUID                          | Billing Id                                                                                                                                                                                                                | Yes                 | Yes    | Yes    |
+| brand                    | String                        | Brand of the VM (joyent, joyent-minimal, kvm or sngl)                                                                                                                                                                     | Yes                 | Yes    | No     |
+| billing_id               | UUID                          | Billing Id                                                                                                                                                                                                                | Yes                 | Yes    | Yes    |
+| cpu_cap                  | Number                        | CPU Cap                                                                                                                                                                                                                   | No                  | Yes    | Yes    |
+| cpu_shares               | Number                        | CPU Shares                                                                                                                                                                                                                | Yes                 | Yes    | Yes    |
+| create_timestamp         | Date                          | The time at which the VM was created in ISO 8601 format                                                                                                                                                                   | Yes                 | No     | No     |
+| customer_metadata        | Object                        | VM metadata                                                                                                                                                                                                               | Yes                 | Yes    | Yes    |
+| destroyed                | Date                          | The time at which the VM was destroyed in ISO 8601 format                                                                                                                                                                 | Yes                 | No     | No     |
+| datasets                 | Array                         | VM datasets                                                                                                                                                                                                               | Yes                 | No     | No     |
+| delegate_dataset         | Boolean                       | Delegate a data dataset to the VM                                                                                                                                                                                         | No                  | Yes    | No     |
+| dns_domain               | String                        | Domain value for /etc/hosts                                                                                                                                                                                               | No                  | Yes    | No     |
+| do_not_inventory         | Boolean                       | The primary use-case of this attribute is for test VMs that are created but you don't want their existence propagated up to VMAPI since they'll be short-lived and its lifecycle will be physically managed in the server | No                  | Yes    | Yes    |
+| firewall_enabled         | Boolean                       | Enable firewall for the VM                                                                                                                                                                                                | Yes                 | Yes    | Yes    |
+| fs_allowed               | String (comma-separated list) | Filesystems allowed for the VM                                                                                                                                                                                            | No                  | Yes    | Yes    |
+| image_uuid               | UUID                          | Image of the VM                                                                                                                                                                                                           | Yes                 | Yes    | No     |
+| indestructible_delegated | Boolean                       | When set this property adds an @indestructible snapshot to the delegated data dataset and sets a zfs hold on that snapshot. This hold must be removed before the VM can be deleted enabling a two-step deletion           | No                  | Yes    | Yes    |
+| indestructible_zoneroot  | Boolean                       | When set this property adds an @indestructible snapshot to the zoneroot dataset and sets a zfs hold on that snapshot. This hold must be removed before the VM can be deleted or reprovisioned                             | No                  | Yes    | Yes    |
+| internal_metadata        | Object                        | Internal VM metadata                                                                                                                                                                                                      | Yes                 | Yes    | Yes    |
+| limit_priv               | String (comma-separated list) | Privileges available to the VM                                                                                                                                                                                            | Yes                 | Yes    | Yes    |
+| last_modified            | Date                          | The time at which the VM was last modified in ISO 8601 format                                                                                                                                                             | Yes                 | No     | No     |
+| maintain_resolvers       | Boolean                       | This boolean indicates that /etc/resolv.conf must be updated when the VM resolvers are updated                                                                                                                            | No                  | Yes    | Yes    |
+| max_locked_memory        | Number (MiB)                  | Amounf of memory that can be locked for the VM                                                                                                                                                                            | Yes                 | Yes    | Yes    |
+| max_lwps                 | Number                        | Max. Lightweight Processes                                                                                                                                                                                                | Yes                 | Yes    | Yes    |
+| max_physical_memory      | Number (MiB)                  | Amount of memory of the VM. For KVM VMs this value should be ram + 1024                                                                                                                                                   | Yes                 | Yes    | Yes    |
+| max_swap                 | Number (MiB)                  | Maximum amount of virtual memory. Defaults to 2 x max_phsical_memory and cannot be lower than 256                                                                                                                         | Yes                 | Yes    | Yes    |
+| mdata_exec_timeout       | Number                        | Timeout in seconds on the start method of the svc:/smartdc/mdata:execute service running in the VM                                                                                                                        | No                  | Yes    | No     |
+| networks                 | Array                         | At provision time, specify the networks on which the VM NICs should be provisioned                                                                                                                                        | No                  | Yes    | No     |
+| networks.*.uuid          | String                        | Network UUID. Optional, required if networks.*.name is not present                                                                                                                                                        | --                  | --     | --     |
+| networks.*.name          | String                        | Network name. Optional, required if networks.*.uuid is not present                                                                                                                                                        | --                  | --     | --     |
+| networks.*.primary       | String                        | Specifies that this will be the primary NIC of the VM. Optional                                                                                                                                                           | --                  | --     | --     |
+| networks.*.ip            | IP Address                    | Specifies the IP address desired on this network. Optional                                                                                                                                                                | --                  | --     | --     |
+| nics                     | Array                         | VM NICs. They can only be updated. NICs get provisioned for a VM from the values of `networks` in CreateVm. See UpdateNIcs for more details.                                                                              | Yes                 | No     | No     |
+| owner_uuid               | UUID                          | VM Owner                                                                                                                                                                                                                  | Yes                 | Yes    | Yes    |
+| package_name             | String                        | Private field intended for use by Joyent's SDC product.                                                                                                                                                                   | No                  | Yes    | Yes    |
+| package_version          | String                        | Private field intended for use by Joyent's SDC product.                                                                                                                                                                   | No                  | Yes    | Yes    |
+| platform_buildstamp      | String                        | Timestamp of the SDC platform the VM is running on. This value only changes when the platform of the Compute Node where the VM is running is upgraded                                                                     | Yes                 | No     | No     |
+| quota                    | Number (GiB)                  | VM quota                                                                                                                                                                                                                  | Yes                 | Yes    | Yes    |
+| ram                      | Number (MiB)                  | Amount of memory of the VM                                                                                                                                                                                                | Yes                 | Yes    | Yes    |
+| resolvers                | Array                         | DNS resolvers for the VM                                                                                                                                                                                                  | Yes                 | Yes    | Yes    |
+| server_uuid              | UUID                          | Server UUID of the VM                                                                                                                                                                                                     | Yes                 | Yes    | No     |
+| snapshots                | Array                         | VM snapshots                                                                                                                                                                                                              | Yes                 | No     | No     |
+| state                    | String                        | State of the VM                                                                                                                                                                                                           | Yes                 | No     | No     |
+| zfs_data_compression     | String                        | Specifies a compression algorithm used for the VM's data dataset                                                                                                                                                          | No                  | Yes    | Yes    |
+| zfs_io_priority          | Number                        | ZFS IO Priority                                                                                                                                                                                                           | Yes                 | Yes    | Yes    |
+| tags                     | Object                        | VM tags                                                                                                                                                                                                                   | Yes                 | Yes    | Yes    |
+| tmpfs                    | Number                        | Amount of memory for the /tmp filesystem                                                                                                                                                                                  | No                  | Yes    | Yes    |
 
 Furthermore, when dealing with KVM VMs there are additional attributes to know
 about and are specific to KVM being a different type of virtualization: cpu_type,
@@ -96,15 +97,16 @@ two disks and only the properties documented below should be specified. For
 additional advanced attributes that can be set on disks please refer to the
 vmadm(1) man page.
 
-||**Param**||**Type**||**Description**||**Vm Response Default**||**Create**||**Update**||
-||cpu_type||String||Type of virtual CPU exposed to the guest||Yes||Yes||No||
-||disk_driver||String||Drivel model for the VM disks||Yes||Yes||No||
-||disks||Array||Disks for the KVM VM.||Yes||Yes||No||
-||disks[0].image_uuid||UUID||Image UUID for the KVM VM||Yes||Yes||No||
-||disks[1].size||Number (MiB)||Size of the disk||Yes||Yes||No||
-||hostname||String||Hostname of the VM||No||Yes||No||
-||nic_driver||String||Drivel model for the VM NICs||Yes||Yes||No||
-||vcpus||Number||Number of virtual CPUs||Yes||Yes||No||
+| Param               | Type         | Description                              | Vm Response Default | Create | Update |
+| ------------------- | ------------ | ---------------------------------------- | ------------------- | ------ | ------ |
+| cpu_type            | String       | Type of virtual CPU exposed to the guest | Yes                 | Yes    | No     |
+| disk_driver         | String       | Drivel model for the VM disks            | Yes                 | Yes    | No     |
+| disks               | Array        | Disks for the KVM VM.                    | Yes                 | Yes    | No     |
+| disks[0].image_uuid | UUID         | Image UUID for the KVM VM                | Yes                 | Yes    | No     |
+| disks[1].size       | Number (MiB) | Size of the disk                         | Yes                 | Yes    | No     |
+| hostname            | String       | Hostname of the VM                       | No                  | Yes    | No     |
+| nic_driver          | String       | Drivel model for the VM NICs             | Yes                 | Yes    | No     |
+| vcpus               | Number       | Number of virtual CPUs                   | Yes                 | Yes    | No     |
 
 The following is a sample VM response object. The only two endpoints that return
 VM objects are GetVm and ListVms. ListVms returns a collection of VM objects.
@@ -245,23 +247,25 @@ attributes present in the payload:
 
 The VM response object contains a state attribute that should be used as the high level representation of the machine state. There are three 'running state' values for a VM, two 'provisioning state' values and an additional 'active' state that is only available as a search filter when used in the ListVms API endpoint:
 
-|| **VM State** || **Description** ||
-|| running || Self-explanatory ||
-|| stopped || Self-explanatory ||
-|| destroyed || Self-explanatory||
-|| provisioning || VM is currently being provisioned in the system ||
-|| failed || VM provisioning has failed ||
-|| active || When used in ListVms, denotes machines that are not destroyed ||
+| VM State     | Description                                                   |
+| ------------ | ------------------------------------------------------------- |
+| running      | Self-explanatory                                              |
+| stopped      | Self-explanatory                                              |
+| destroyed    | Self-explanatory                                              |
+| provisioning | VM is currently being provisioned in the system               |
+| failed       | VM provisioning has failed                                    |
+| active       | When used in ListVms, denotes machines that are not destroyed |
 
 In addition, there is a 'zone_state' property that represents the Solaris Zones state, since every VM is really a zone internally. The state property should be used in favor of zone_state at all times, but zone_state is provided in case it's needed for debugging purposes. The following is a table that shows all the possible zone_state values:
 
-|| **Zone State** ||
-|| configured ||
-|| incomplete ||
-|| installed ||
-|| ready ||
-|| running ||
-|| shutting down ||
+| Zone State    |
+| ------------- |
+| configured    |
+| incomplete    |
+| installed     |
+| ready         |
+| running       |
+| shutting down |
 
 
 # VM Features
@@ -282,9 +286,10 @@ refer to the [UpdateVm](#UpdateVm) section of this document. The following table
 describes the current resize support for KVM and OS VMs. Upsizing means when
 some VM attributes are increased and downsizing refers to the opposite.
 
-||**VM Type**||**Upsize**||**Downsize**||
-||KVM||Not supported||Not supported||
-||OS||Supported||Supported||
+| VM Type | Upsize        | Downsize      |
+| ------- | ------------- | ------------- |
+| KVM     | Not supported | Not supported |
+| OS      | Supported     | Supported     |
 
 ## Delegate Dataset
 
@@ -403,20 +408,21 @@ Returns a list of VMs according the specified search filter.
 
 All inputs are optional.
 
-||**Param**||**Type**||**Description**||
-||owner_uuid||UUID||VM Owner||
-||server_uuid||UUID||Server where the VM lives||
-||image_uuid||UUID||Image of the VM||
-||billing_uuid||UUID||UUID of the package the VM was created with||
-||brand||String|| Brand of the VM (joyent, joyent-minimal or kvm)||
-||alias||String||VM Alias||
-||state||String||running, stopped, active or destroyed||
-||ram||Number||Amount of memory of the VM||
-||create_timestamp||Unix Time in milliseconds or UTC ISO Date String||VM creation timestamp||
-||package_name||String||Package name with which the VM was created||
-||package_version||String||Package version with which the VM was created||
-||tag.key||String||VM tags, see below||
-||fields||String (comma-separated values)||Specify which VM fields to return, see below||
+| Param            | Type                                             | Description                                     |
+| ---------------- | ------------------------------------------------ | ----------------------------------------------- |
+| owner_uuid       | UUID                                             | VM Owner                                        |
+| server_uuid      | UUID                                             | Server where the VM lives                       |
+| image_uuid       | UUID                                             | Image of the VM                                 |
+| billing_uuid     | UUID                                             | UUID of the package the VM was created with     |
+| brand            | String                                           | Brand of the VM (joyent, joyent-minimal or kvm) |
+| alias            | String                                           | VM Alias                                        |
+| state            | String                                           | running, stopped, active or destroyed           |
+| ram              | Number                                           | Amount of memory of the VM                      |
+| create_timestamp | Unix Time in milliseconds or UTC ISO Date String | VM creation timestamp                           |
+| package_name     | String                                           | Package name with which the VM was created      |
+| package_version  | String                                           | Package version with which the VM was created   |
+| tag.key          | String                                           | VM tags, see below                              |
+| fields           | String (comma-separated values)                  | Specify which VM fields to return, see below    |
 
 ### Specifying VM Fields to Return
 
@@ -441,11 +447,12 @@ ListVms also allows controlling the size of the resulting collection with the
 use of the sort, limit and offset parameters. These three parameters can be used
 on either the regular or the LDAP query version of the ListVms endpoint.
 
-||**Param**||**Type**||**Description**||
-||sort||String||Sort by any of the ListVms inputs (except tags).||
-||sort.order||String||Order direction. See below||
-||limit||Number||Return only the given number of VMs||
-||offset||Number||Limit the collection starting from the given offset||
+| Param      | Type   | Description                                         |
+| ---------- | ------ | --------------------------------------------------- |
+| sort       | String | Sort by any of the ListVms inputs (except tags).    |
+| sort.order | String | Order direction. See below                          |
+| limit      | Number | Return only the given number of VMs                 |
+| offset     | Number | Limit the collection starting from the given offset |
 
 The *sort* direction can be 'asc' (ascending) or 'desc' (descending), and it is
 'desc' by default. The following are some examples of valid values for the *sort*
@@ -461,8 +468,9 @@ VMs can also be searched by tags. Tags are key/value pairs that let us identify 
 
 ### ListVms Responses
 
-||**Code**||**Description**||**Response**||
-||200||Response OK||Array of VM objects||
+| Code | Description | Response            |
+| ---- | ----------- | ------------------- |
+| 200  | Response OK | Array of VM objects |
 
 ### ListVms Examples
 
@@ -492,17 +500,19 @@ predicates themselves.
 
 ### Leaf Predicates
 
-||**Predicate**||**Description**||
-||{ eq: [ fieldname, value ] }||Equality (field=value)||
-||{ ne: [ fieldname, value ] }||Inequality (!(field=value))||
-||{ le: [ fieldname, value ] }||Less than or equal to (field<=value)||
-||{ ge: [ fieldname, value ] }||Greater than or equal to (field>=value)||
+| Predicate                    | Description                             |
+| ---------------------------- | --------------------------------------- |
+| { eq: [ fieldname, value ] } | Equality (field=value)                  |
+| { ne: [ fieldname, value ] } | Inequality (!(field=value))             |
+| { le: [ fieldname, value ] } | Less than or equal to (field<=value)    |
+| { ge: [ fieldname, value ] } | Greater than or equal to (field>=value) |
 
 ### Compound Predicates
 
-||**Predicate**||**Description**||
-||{ and: [ predicate, ... ] }||All subpredicates must be true.||
-||{ or: [ predicate, ... ] }||At least one of subpredicates must be true.||
+| Predicate                   | Description                                 |
+| --------------------------- | ------------------------------------------- |
+| { and: [ predicate, ... ] } | All subpredicates must be true.             |
+| { or: [ predicate, ... ] }  | At least one of subpredicates must be true. |
 
 ### Executing Predicate Queries
 
@@ -575,10 +585,11 @@ Note how the '&' character is escaped as '%26' since the query must be URL encod
 
 As we can see, all we need to do is to enclose the key=value format of tag by the '\*-'' and '-\*'' characters. These are some examples of how to convert tags into a search expression for VMAPI:
 
-|| **Tag Key** || **Tag Value** || **Tag String** || **Search Expression** ||
-|| role || dns || role=dns || tags=\*-role=dns-\* ||
-|| priority || high || priority=high || tags=\*-priority=high-\* ||
-|| purpose || db || purpose=db || tags=\*-purpose=db-\* ||
+| Tag Key  | Tag Value | Tag String    | Search Expression        |
+| -------- | --------- | ------------- | ------------------------ |
+| role     | dns       | role=dns      | tags=\*-role=dns-\*      |
+| priority | high      | priority=high | tags=\*-priority=high-\* |
+| purpose  | db        | purpose=db    | tags=\*-purpose=db-\*    |
 
 
 
@@ -588,10 +599,11 @@ Returns a VM with the specified UUID. When sync=true is passed, VMAPI will direc
 
 ### Inputs
 
-||**Param**||**Type**||**Description**||**Required?**||
-||uuid||UUID||VM UUID||Yes||
-||owner_uuid||UUID||VM Owner. If specified, the VM object will be checked for ownership against this owner_uuid. If vm.owner_uuid does not match the provided value the call will result in a 404 VM Not Found error||No||
-||sync||Boolean||Load VM info from CNAPI||No||
+| Param      | Type    | Description                                                                                                                                                                                      | Required? |
+| ---------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------- |
+| uuid       | UUID    | VM UUID                                                                                                                                                                                          | Yes       |
+| owner_uuid | UUID    | VM Owner. If specified, the VM object will be checked for ownership against this owner_uuid. If vm.owner_uuid does not match the provided value the call will result in a 404 VM Not Found error | No        |
+| sync       | Boolean | Load VM info from CNAPI                                                                                                                                                                          | No        |
 
 ### Specifying VM Fields to Return
 
@@ -602,9 +614,10 @@ the moment, role_tags is the only non-default field supported.
 
 ### Responses
 
-||**Code**||**Description**||**Response**||
-||200||Response OK||VM object||
-||404||VM Not Found. VM does not exist or VM does not belong to the specified owner||Error object||
+| Code | Description                                                                  | Response     |
+| ---- | ---------------------------------------------------------------------------- | ------------ |
+| 200  | Response OK                                                                  | VM object    |
+| 404  | VM Not Found. VM does not exist or VM does not belong to the specified owner | Error object |
 
 ### Examples
 
@@ -620,22 +633,25 @@ the same as a GET to /vms/:uuid, however some VM attributes might not be present
 
 ### Minimum Required Inputs
 
-||**Param**||**Type**||**Description**||
-||owner_uuid||UUID||VM Owner||
-||networks*||Array*||List of networks. See 'Specifying Networks for a VM' below.||
-||brand||String||'joyent', 'joyent-minimal' or 'kvm'||
-||ram*||Number||VM RAM. Not required if billing_id is present||
-||billing_id*||UUID||SDC Package UUID. Not required if at least ram is present. See 'Provisioning with an SDC Package' below.||
+| Param       | Type   | Description                                                                                              |
+| ----------- | ------ | -------------------------------------------------------------------------------------------------------- |
+| owner_uuid  | UUID   | VM Owner                                                                                                 |
+| networks*   | Array* | List of networks. See 'Specifying Networks for a VM' below.                                              |
+| brand       | String | 'joyent', 'joyent-minimal' or 'kvm'                                                                      |
+| ram*        | Number | VM RAM. Not required if billing_id is present                                                            |
+| billing_id* | UUID   | SDC Package UUID. Not required if at least ram is present. See 'Provisioning with an SDC Package' below. |
 
 ### Required Inputs for OS VMs
 
-||**Param**||**Type**||**Description**||
-||image_uuid||UUID||Image UUID. **This field is not allowed as a top level attribute for a KVM VM payload, see below**||
+| Param      | Type | Description                                                                                        |
+| ---------- | ---- | -------------------------------------------------------------------------------------------------- |
+| image_uuid | UUID | Image UUID. **This field is not allowed as a top level attribute for a KVM VM payload, see below** |
 
 ### Required Inputs for KVM VMs
 
-||**Param**||**Type**||**Description**||
-||disks||Array||Disks definition for the KVM VM, see below||
+| Param | Type  | Description                                |
+| ----- | ----- | ------------------------------------------ |
+| disks | Array | Disks definition for the KVM VM, see below |
 
 KVM VMs need a list of disks as an additional parameter. For more specific information on the full format that a disk object can take please refer to vmadm(1). In the case of VMAPI, there are only two conditions that need to be met for a valid disks list:
 
@@ -736,14 +752,15 @@ It should be noted that the order of the network objects in the `networks` param
 
 VMs can optionally be provisioned by only providing a 'billing_id' SDC Package identifier. When providing an SDC Package, the following VM attributes can be omitted since they will be inherited from the Package definition:
 
-||**Param**||**Type**||
-||cpu_cap||Number||
-||max_lwps||Number||
-||max_physical_memory||Number (MiB)||
-||max_swap||Number (MiB)||
-||quota||Number (GiB)||
-||zfs_io_priority||Number||
-||vcpus||Number||
+| Param               | Type         |
+| ------------------- | ------------ |
+| cpu_cap             | Number       |
+| max_lwps            | Number       |
+| max_physical_memory | Number (MiB) |
+| max_swap            | Number (MiB) |
+| quota               | Number (GiB) |
+| zfs_io_priority     | Number       |
+| vcpus               | Number       |
 
 However, these values can still be individualy overriden by providing new values for them in the VM provisionm payload. Note that for the purpose of having a 1:1 VM - SDC Package correspondence it is advised that individual values should not be overriden when it is needed to refer a VM back to its original SDC Package.
 
@@ -751,19 +768,20 @@ However, these values can still be individualy overriden by providing new values
 
 These inputs can be passed and will be validated wether or not a 'billing_id' SDC Package parameter has been provided.
 
-||**Param**||**Type**||**Description**||
-||server_uuid||UUID||Manually specify a server for the provision||
-||alias||String||VM alias||
-||max_physical_memory||Number (MiB)||Same as RAM||
-||max_swap||Number (MiB)||Defaults to 2 x RAM if not specified||
-||zfs_io_priority||Number||ZFS IO Priority||
-||cpu_cap||Number||CPU Cap||
-||max_lwps||Number||Max. Lightweight Processes||
-||quota||Number (GiB)||VM quota||
-||tags||Object||VM tags||
-||customer_metadata||Object||VM metadata||
-||internal_metadata||Object||VM metadata||
-||limit_priv||String||List of priviledges to the VM||
+| Param               | Type         | Description                                 |
+| ------------------- | ------------ | ------------------------------------------- |
+| server_uuid         | UUID         | Manually specify a server for the provision |
+| alias               | String       | VM alias                                    |
+| max_physical_memory | Number (MiB) | Same as RAM                                 |
+| max_swap            | Number (MiB) | Defaults to 2 x RAM if not specified        |
+| zfs_io_priority     | Number       | ZFS IO Priority                             |
+| cpu_cap             | Number       | CPU Cap                                     |
+| max_lwps            | Number       | Max. Lightweight Processes                  |
+| quota               | Number (GiB) | VM quota                                    |
+| tags                | Object       | VM tags                                     |
+| customer_metadata   | Object       | VM metadata                                 |
+| internal_metadata   | Object       | VM metadata                                 |
+| limit_priv          | String       | List of priviledges to the VM               |
 
 ### Advanced Inputs
 
@@ -774,24 +792,27 @@ section in this documentation.
 
 ### Optional Inputs for OS VMs
 
-||**Param**||**Type**||**Description**||
-||filesystems||Array||Additional filesystems for the OS VM||
+| Param       | Type  | Description                          |
+| ----------- | ----- | ------------------------------------ |
+| filesystems | Array | Additional filesystems for the OS VM |
 
 ### Optional Inputs for KVM VMs
 
-||**Param**||**Type**||**Description**||
-||cpu_type||String||One of qemu64, host||
-||vcpus||Number||Number of virtual CPUs for the guest||
-||disk_driver||String||One of virtio, ide, scsi||
-||nic_driver||String||One of virtio, e1000, rtl8139||
+| Param       | Type   | Description                          |
+| ----------- | ------ | ------------------------------------ |
+| cpu_type    | String | One of qemu64, host                  |
+| vcpus       | Number | Number of virtual CPUs for the guest |
+| disk_driver | String | One of virtio, ide, scsi             |
+| nic_driver  | String | One of virtio, e1000, rtl8139        |
 
 
 ### Response Codes
 
-||**Code**||**Description**||**Response**||
-||202||New job created||VM response object||
-||409||Missing parameter||Error object||
-||409||Invalid parameter||Error object||
+| Code | Description       | Response           |
+| ---- | ----------------- | ------------------ |
+| 202  | New job created   | VM response object |
+| 409  | Missing parameter | Error object       |
+| 409  | Invalid parameter | Error object       |
 
 ### Example: creating an OS VM
 
@@ -839,18 +860,20 @@ operations is documented below.
 
 ### General Inputs
 
-||**Param**||**Type**||**Description**||**Required?**||
-||uuid||UUID||VM UUID||Yes||
-||owner_uuid||UUID||VM Owner. If specified, the VM object will be checked for ownership against this owner_uuid. If vm.owner_uuid does not match the provided value the call will result in a 404 VM Not Found error||No||
-||action||String||start, stop, reboot, reprovision, update, add_nics, remove_nics, create_snapshot, delete_snapshot, rollback_snapshot||Yes||
+| Param      | Type   | Description                                                                                                                                                                                      | Required? |
+| ---------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------- |
+| uuid       | UUID   | VM UUID                                                                                                                                                                                          | Yes       |
+| owner_uuid | UUID   | VM Owner. If specified, the VM object will be checked for ownership against this owner_uuid. If vm.owner_uuid does not match the provided value the call will result in a 404 VM Not Found error | No        |
+| action     | String | start, stop, reboot, reprovision, update, add_nics, remove_nics, create_snapshot, delete_snapshot, rollback_snapshot                                                                             | Yes       |
 
 ### Response Codes
 
-||**Code**||**Description**||**Response**||
-||202||New job created||VM response object||
-||404||VM Not Found. VM does not exist or VM does not belong to the specified owner||Error object||
-||409||Missing parameter||Error object||
-||409||Invalid parameter||Error object||
+| Code | Description                                                                  | Response           |
+| ---- | ---------------------------------------------------------------------------- | ------------------ |
+| 202  | New job created                                                              | VM response object |
+| 404  | VM Not Found. VM does not exist or VM does not belong to the specified owner | Error object       |
+| 409  | Missing parameter                                                            | Error object       |
+| 409  | Invalid parameter                                                            | Error object       |
 
 ## StartVm (POST /vms/:uuid?action=start)
 
@@ -880,8 +903,9 @@ No additional inputs are needed for this action.
 
 Image UUID is a required input for reprovisioning a VM.
 
-||**Param**||**Type**||**Description**||
-||image_uuid||UUID||Image UUID to reprovision the VM with||
+| Param      | Type | Description                           |
+| ---------- | ---- | ------------------------------------- |
+| image_uuid | UUID | Image UUID to reprovision the VM with |
 
 ### Example with a JSON payload
 
@@ -900,42 +924,45 @@ Similar to CreateVm, this endpoint allows udpating a VM to a new SDC Package. In
 
 ### Updating VM to an SDC Package
 
-||**Param**||**Type**||**Description**||
-||billing_id||UUID||SDC Package UUID||
-||force||Boolean||Force the update even if the Compute Node that hosts the VM doesn't have enough capacity||
+| Param      | Type    | Description                                                                              |
+| ---------- | ------- | ---------------------------------------------------------------------------------------- |
+| billing_id | UUID    | SDC Package UUID                                                                         |
+| force      | Boolean | Force the update even if the Compute Node that hosts the VM doesn't have enough capacity |
 
 The UpdateVm payload would automatically retrieve the following values from the provided SDC Package:
 
-||**Param**||**Type**||
-||cpu_cap||Number||
-||max_lwps||Number||
-||max_physical_memory||Number (MiB)||
-||max_swap||Number (MiB)||
-||quota||Number (GiB)||
-||zfs_io_priority||Number||
-||vcpus||Number||
+| Param               | Type         |
+| ------------------- | ------------ |
+| cpu_cap             | Number       |
+| max_lwps            | Number       |
+| max_physical_memory | Number (MiB) |
+| max_swap            | Number (MiB) |
+| quota               | Number (GiB) |
+| zfs_io_priority     | Number       |
+| vcpus               | Number       |
 
 ### Updating a VM With Individual VM Values
 
 In addition to 'billing_id', the following values can be specified to update additional attributes of the VM.
 
-||**Param**||**Type**||**Description**||
-||force||Boolean||Force the udpate even if the Compute Node that hosts the VM doesn't have enough capacity||
-||alias||String||VM alias||
-||new_owner_uuid||UUID||UUID of the new VM Owner||
-||ram||Number||VM RAM||
-||max_physical_memory (MiB)||Number||Same as RAM||
-||max_swap (MiB)||Number||Defaults to 2 x RAM if not specified||
-||zfs_io_priority||Number||ZFS IO Priority||
-||cpu_cap||Number||CPU Cap||
-||max_lwps||Number||Max. Lightweight Processes||
-||quota (GiB)||Number||VM quota (disk)||
-||tags||Object||VM tags||
-||customer_metadata||Object||VM metadata||
-||internal_metadata||Object||VM metadata||
-||resolvers||Array||New set of resolvers for the VM||
-||limit_priv||String||List of priviledges to the VM||
-||fs_allowed||String (Comma separated list)||Filesystem types that the VM is allowed to mount||
+| Param                     | Type                          | Description                                                                              |
+| ------------------------- | ----------------------------- | ---------------------------------------------------------------------------------------- |
+| force                     | Boolean                       | Force the udpate even if the Compute Node that hosts the VM doesn't have enough capacity |
+| alias                     | String                        | VM alias                                                                                 |
+| new_owner_uuid            | UUID                          | UUID of the new VM Owner                                                                 |
+| ram                       | Number                        | VM RAM                                                                                   |
+| max_physical_memory (MiB) | Number                        | Same as RAM                                                                              |
+| max_swap (MiB)            | Number                        | Defaults to 2 x RAM if not specified                                                     |
+| zfs_io_priority           | Number                        | ZFS IO Priority                                                                          |
+| cpu_cap                   | Number                        | CPU Cap                                                                                  |
+| max_lwps                  | Number                        | Max. Lightweight Processes                                                               |
+| quota (GiB)               | Number                        | VM quota (disk)                                                                          |
+| tags                      | Object                        | VM tags                                                                                  |
+| customer_metadata         | Object                        | VM metadata                                                                              |
+| internal_metadata         | Object                        | VM metadata                                                                              |
+| resolvers                 | Array                         | New set of resolvers for the VM                                                          |
+| limit_priv                | String                        | List of priviledges to the VM                                                            |
+| fs_allowed                | String (Comma separated list) | Filesystem types that the VM is allowed to mount                                         |
 
 ### Advanced Update Inputs
 
@@ -967,9 +994,10 @@ NAPI.
 For more information about the format of `networks`, see 'Specifying Networks
 for a VM' in the CreateVM documentation.
 
-||**Param**||**Type**||**Description**||
-||networks||Array||List of networks. Same format as CreateVm||
-||macs||Array||List of MAC addresses of NICs already created in NAPI||
+| Param    | Type  | Description                                           |
+| -------- | ----- | ----------------------------------------------------- |
+| networks | Array | List of networks. Same format as CreateVm             |
+| macs     | Array | List of MAC addresses of NICs already created in NAPI |
 
 ### Example with a JSON payload
 
@@ -986,18 +1014,20 @@ for a VM' in the CreateVM documentation.
 
 Updates NICs for a VM. Currently, this action serves three purposes: setting a new primary NIC for a VM, setting antispoof flags for a nic, or reordering its NICs. Each NIC object can only contain the following properties:
 
-||**Attribute**||**Type**||**Description**||
-||mac||MAC Address||NIC MAC Address||
-||interface||String||NIC interface/order identifier||
-||primary||Boolean||Primary NIC flag||
-||allow_ip_spoofing||Boolean||Allow IP spoofing||
-||allow_mac_spoofing||Boolean||Allow MAC spoofing||
-||allow_restricted_traffic||Boolean||Allow unrestricted traffic||
+| Attribute                | Type        | Description                    |
+| ------------------------ | ----------- | ------------------------------ |
+| mac                      | MAC Address | NIC MAC Address                |
+| interface                | String      | NIC interface/order identifier |
+| primary                  | Boolean     | Primary NIC flag               |
+| allow_ip_spoofing        | Boolean     | Allow IP spoofing              |
+| allow_mac_spoofing       | Boolean     | Allow MAC spoofing             |
+| allow_restricted_traffic | Boolean     | Allow unrestricted traffic     |
 
 For the UpdateNics action, a list of at least one NIC object must be specified. If the purpose of the request is to set a new primary NIC, then only one NIC object can have the `primary` attribute set. If the purpose of the request is to reorder the VM NICs, then every NIC object must have its `interface` attribute set and the number of NICs in the array must be the same as the number of NICs the VM currently has. The following table describes the only allowed input for UpdateNics:
 
-||**Param**||**Type**||**Description**||
-||nics||Array||List of NIC objects. See above||
+| Param | Type  | Description                    |
+| ----- | ----- | ------------------------------ |
+| nics  | Array | List of NIC objects. See above |
 
 ### Example: setting a new primary NIC
 
@@ -1025,8 +1055,9 @@ For the UpdateNics action, a list of at least one NIC object must be specified. 
 
 For removing NICs from a VM, a macs list parameter must be specified. This parameter can be an array of MAC addresses or a comma separated string of MAC addresses.
 
-||**Param**||**Type**||**Description**||
-||macs||Array||List of MAC addresses||
+| Param | Type  | Description           |
+| ----- | ----- | --------------------- |
+| macs  | Array | List of MAC addresses |
 
 ### Example with a JSON payload
 
@@ -1050,8 +1081,9 @@ If a name for the snapshot is not specified, VMAPI will generate a timestamp for
 
     20121018T222506Z
 
-||**Param**||**Type**||**Description**||
-||snapshot_name||String||Snapshot name or generated timestamp if not present||
+| Param         | Type   | Description                                         |
+| ------------- | ------ | --------------------------------------------------- |
+| snapshot_name | String | Snapshot name or generated timestamp if not present |
 
 ### Example with a JSON payload
 
@@ -1066,8 +1098,9 @@ If a name for the snapshot is not specified, VMAPI will generate a timestamp for
 
 ## DeleteSnapshot (POST /vms/:uuid?action=delete_snapshot)
 
-||**Param**||**Type**||**Description**||
-||snapshot_name||String||Snapshot name||
+| Param         | Type   | Description   |
+| ------------- | ------ | ------------- |
+| snapshot_name | String | Snapshot name |
 
 ### Example with a JSON payload
 
@@ -1086,8 +1119,9 @@ If the VM is running at the moment of the request, it will be
 shutdown before executing the rollback and be booted again after the rollback
 has succeeded.
 
-||**Param**||**Type**||**Description**||
-||snapshot_name||String||Snapshot name||
+| Param         | Type   | Description   |
+| ------------- | ------ | ------------- |
+| snapshot_name | String | Snapshot name |
 
 ### Example with a JSON payload
 
@@ -1108,17 +1142,19 @@ in the cache database.
 
 ### Inputs
 
-||**Param**||**Type**||**Description**||**Required?**||
-||uuid||UUID||VM UUID||Yes||
-||uuid||UUID||VM UUID||Yes||
-||owner_uuid||UUID||VM Owner. If specified, the VM object will be checked for ownership against this owner_uuid. If vm.owner_uuid does not match the provided value the call will result in a 404 VM Not Found error||No||
+| Param      | Type | Description                                                                                                                                                                                      | Required? |
+| ---------- | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------- |
+| uuid       | UUID | VM UUID                                                                                                                                                                                          | Yes       |
+| uuid       | UUID | VM UUID                                                                                                                                                                                          | Yes       |
+| owner_uuid | UUID | VM Owner. If specified, the VM object will be checked for ownership against this owner_uuid. If vm.owner_uuid does not match the provided value the call will result in a 404 VM Not Found error | No        |
 
 ### Responses
 
-||**Code**||**Description**||**Response**||
-||202||New job created||VM response object||
-||404||VM Not Found. VM does not exist or VM does not belong to the specified owner||Error object||
-||409||VM not allocated to a server yet||Error object||
+| Code | Description                                                                  | Response           |
+| ---- | ---------------------------------------------------------------------------- | ------------------ |
+| 202  | New job created                                                              | VM response object |
+| 404  | VM Not Found. VM does not exist or VM does not belong to the specified owner | Error object       |
+| 409  | VM not allocated to a server yet                                             | Error object       |
 
 
 ### Example
@@ -1150,15 +1186,17 @@ Returns metadata assigned to a VM.
 
 ### Inputs
 
-||**Param**||**Type**||**Description**||**Required?**||
-||uuid||UUID||VM UUID||Yes||
-||owner_uuid||UUID||VM Owner||No||
+| Param      | Type | Description | Required? |
+| ---------- | ---- | ----------- | --------- |
+| uuid       | UUID | VM UUID     | Yes       |
+| owner_uuid | UUID | VM Owner    | No        |
 
 ### Responses
 
-||**Code**||**Description**||**Response**||
-||200||||Metadata object||
-||404||VM Not Found. VM does not exist or VM does not belong to the specified owner||Error object||
+| Code | Description                                                                  | Response        |
+| ---- | ---------------------------------------------------------------------------- | --------------- |
+| 200  |                                                                              | Metadata object |
+| 404  | VM Not Found. VM does not exist or VM does not belong to the specified owner | Error object    |
 
 ### Example
 
@@ -1176,16 +1214,18 @@ Returns the value of a metadata key.
 
 ### Inputs
 
-||**Param**||**Type**||**Description**||**Required?**||
-||uuid||UUID||VM UUID||Yes||
-||owner_uuid||UUID||VM Owner||No||
-||key||String||Metadata Key||Yes||
+| Param      | Type   | Description  | Required? |
+| ---------- | ------ | ------------ | --------- |
+| uuid       | UUID   | VM UUID      | Yes       |
+| owner_uuid | UUID   | VM Owner     | No        |
+| key        | String | Metadata Key | Yes       |
 
 ### Responses
 
-||**Code**||**Description**||**Response**||
-||200||||String value of the metadata key||
-||404||VM Not Found. VM does not exist or VM does not belong to the specified owner||Error object||
+| Code | Description                                                                  | Response                         |
+| ---- | ---------------------------------------------------------------------------- | -------------------------------- |
+| 200  |                                                                              | String value of the metadata key |
+| 404  | VM Not Found. VM does not exist or VM does not belong to the specified owner | Error object                     |
 
 ### Example
 
@@ -1200,16 +1240,18 @@ Adds a new metadata to a VM. Keep in mind that metadata gets appended, not overw
 
 ### Inputs
 
-||**Param**||**Type**||**Description**||**Required?**||
-||uuid||UUID||VM UUID||Yes||
-||owner_uuid||UUID||VM Owner||No||
-||metadata||key-value/object||Metadata||Yes||
+| Param      | Type             | Description | Required? |
+| ---------- | ---------------- | ----------- | --------- |
+| uuid       | UUID             | VM UUID     | Yes       |
+| owner_uuid | UUID             | VM Owner    | No        |
+| metadata   | key-value/object | Metadata    | Yes       |
 
 ### Responses
 
-||**Code**||**Description**||**Response**||
-||202||New job created||VM response object||
-||404||VM Not Found. VM does not exist or VM does not belong to the specified owner||Error object||
+| Code | Description                                                                  | Response           |
+| ---- | ---------------------------------------------------------------------------- | ------------------ |
+| 202  | New job created                                                              | VM response object |
+| 404  | VM Not Found. VM does not exist or VM does not belong to the specified owner | Error object       |
 
 ### Example
 
@@ -1226,16 +1268,18 @@ one present in the VM.
 
 ### Inputs
 
-||**Param**||**Type**||**Description**||**Required?**||
-||uuid||UUID||VM UUID||Yes||
-||owner_uuid||UUID||VM Owner||No||
-||metadata||key-value/object||Metadata||Yes||
+| Param      | Type             | Description | Required? |
+| ---------- | ---------------- | ----------- | --------- |
+| uuid       | UUID             | VM UUID     | Yes       |
+| owner_uuid | UUID             | VM Owner    | No        |
+| metadata   | key-value/object | Metadata    | Yes       |
 
 ### Responses
 
-||**Code**||**Description**||**Response**||
-||202||New job created||VM response object||
-||404||VM Not Found. VM does not exist or VM does not belong to the specified owner||Error object||
+| Code | Description                                                                  | Response           |
+| ---- | ---------------------------------------------------------------------------- | ------------------ |
+| 202  | New job created                                                              | VM response object |
+| 404  | VM Not Found. VM does not exist or VM does not belong to the specified owner | Error object       |
 
 ### Example
 
@@ -1251,16 +1295,18 @@ Deletes a metadata key from a VM.
 
 ### Inputs
 
-||**Param**||**Type**||**Description**||**Required?**||
-||uuid||UUID||VM UUID||Yes||
-||owner_uuid||UUID||VM Owner||No||
-||key||String||Metadata Key||Yes||
+| Param      | Type   | Description  | Required? |
+| ---------- | ------ | ------------ | --------- |
+| uuid       | UUID   | VM UUID      | Yes       |
+| owner_uuid | UUID   | VM Owner     | No        |
+| key        | String | Metadata Key | Yes       |
 
 ### Responses
 
-||**Code**||**Description**||**Response**||
-||202||New job created||VM response object||
-||404||VM Not Found. VM does not exist or VM does not belong to the specified owner||Error object||
+| Code | Description                                                                  | Response           |
+| ---- | ---------------------------------------------------------------------------- | ------------------ |
+| 202  | New job created                                                              | VM response object |
+| 404  | VM Not Found. VM does not exist or VM does not belong to the specified owner | Error object       |
 
 ### Example
 
@@ -1273,15 +1319,17 @@ Deletes all metadata keys from a VM.
 
 ### Inputs
 
-||**Param**||**Type**||**Description**||**Required?**||
-||uuid||UUID||VM UUID||Yes||
-||owner_uuid||UUID||VM Owner||No||
+| Param      | Type | Description | Required? |
+| ---------- | ---- | ----------- | --------- |
+| uuid       | UUID | VM UUID     | Yes       |
+| owner_uuid | UUID | VM Owner    | No        |
 
 ### Responses
 
-||**Code**||**Description**||**Response**||
-||202||New job created||VM response object||
-||404||VM Not Found. VM does not exist or VM does not belong to the specified owner||Error object||
+| Code | Description                                                                  | Response           |
+| ---- | ---------------------------------------------------------------------------- | ------------------ |
+| 202  | New job created                                                              | VM response object |
+| 404  | VM Not Found. VM does not exist or VM does not belong to the specified owner | Error object       |
 
 ### Example
 
@@ -1310,8 +1358,9 @@ the same way as other allowed parameters.
 
 ### Inputs
 
-||**Param**||**Type**||**Description**||
-||role_tags||String (comma-separated list of UUIDs)||Role Tags||
+| Param     | Type                                   | Description |
+| --------- | -------------------------------------- | ----------- |
+| role_tags | String (comma-separated list of UUIDs) | Role Tags   |
 
 ### Example CreateVm Call with Role Tags
 
@@ -1335,15 +1384,17 @@ addition to their default properties.
 
 ### Inputs
 
-||**Param**||**Type**||**Description**||
-||role_tags||String (comma-separated list of UUIDs)||Role Tags||
-||fields||String (comma-separated values)||Specify which VM fields to return||
+| Param     | Type                                   | Description                       |
+| --------- | -------------------------------------- | --------------------------------- |
+| role_tags | String (comma-separated list of UUIDs) | Role Tags                         |
+| fields    | String (comma-separated values)        | Specify which VM fields to return |
 
 ### Responses
 
-||**Code**||**Description**||**Response**||
-||200||Response OK||Array of VM objects||
-||409||Invalid Role Tags||Error object||
+| Code | Description       | Response            |
+| ---- | ----------------- | ------------------- |
+| 200  | Response OK       | Array of VM objects |
+| 409  | Invalid Role Tags | Error object        |
 
 ### Examples
 
@@ -1440,14 +1491,16 @@ parameter.
 
 ### Inputs
 
-||**Param**||**Type**||**Description**||
-||fields||String (comma-separated values)||Specify which VM fields to return||
+| Param  | Type                            | Description                       |
+| ------ | ------------------------------- | --------------------------------- |
+| fields | String (comma-separated values) | Specify which VM fields to return |
 
 ### Responses
 
-||**Code**||**Description**||**Response**||
-||200||Response OK||VM object||
-||409||Invalid Role Tags||Error object||
+| Code | Description       | Response     |
+| ---- | ----------------- | ------------ |
+| 200  | Response OK       | VM object    |
+| 409  | Invalid Role Tags | Error object |
 
 ### Example
 
@@ -1491,17 +1544,19 @@ Appends one or more role tags to a VM.
 
 ### Inputs
 
-||**Param**||**Type**||**Description**||**Required?**||
-||uuid||UUID||VM UUID||Yes||
-||owner_uuid||UUID||VM Owner||No||
-||role_tags||Array of UUID||Role Tags||Yes||
+| Param      | Type          | Description | Required? |
+| ---------- | ------------- | ----------- | --------- |
+| uuid       | UUID          | VM UUID     | Yes       |
+| owner_uuid | UUID          | VM Owner    | No        |
+| role_tags  | Array of UUID | Role Tags   | Yes       |
 
 ### Responses
 
-||**Code**||**Description**||**Response**||
-||200||Response OK. Role Tags Added||VM Role Tags. Array of UUID||
-||404||VM Not Found. VM does not exist or VM does not belong to the specified owner||Error object||
-||409||Invalid Role Tags||Error object||
+| Code | Description                                                                  | Response                    |
+| ---- | ---------------------------------------------------------------------------- | --------------------------- |
+| 200  | Response OK. Role Tags Added                                                 | VM Role Tags. Array of UUID |
+| 404  | VM Not Found. VM does not exist or VM does not belong to the specified owner | Error object                |
+| 409  | Invalid Role Tags                                                            | Error object                |
 
 ### Example
 
@@ -1520,17 +1575,19 @@ Sets new role tags for a VM.
 
 ### Inputs
 
-||**Param**||**Type**||**Description**||**Required?**||
-||uuid||UUID||VM UUID||Yes||
-||owner_uuid||UUID||VM Owner||No||
-||role_tags||Array of UUID||Role Tags||Yes||
+| Param      | Type          | Description | Required? |
+| ---------- | ------------- | ----------- | --------- |
+| uuid       | UUID          | VM UUID     | Yes       |
+| owner_uuid | UUID          | VM Owner    | No        |
+| role_tags  | Array of UUID | Role Tags   | Yes       |
 
 ### Responses
 
-||**Code**||**Description**||**Response**||
-||200||Response OK. Role Tags Replaced||New VM Role Tags. Array of UUID||
-||404||VM Not Found. VM does not exist or VM does not belong to the specified owner||Error object||
-||409||Invalid Role Tags||Error object||
+| Code | Description                                                                  | Response                        |
+| ---- | ---------------------------------------------------------------------------- | ------------------------------- |
+| 200  | Response OK. Role Tags Replaced                                              | New VM Role Tags. Array of UUID |
+| 404  | VM Not Found. VM does not exist or VM does not belong to the specified owner | Error object                    |
+| 409  | Invalid Role Tags                                                            | Error object                    |
 
 
 ### Example
@@ -1549,16 +1606,18 @@ Deletes a role tag from a VM.
 
 ### Inputs
 
-||**Param**||**Type**||**Description**||**Required?**||
-||uuid||UUID||VM UUID||Yes||
-||owner_uuid||UUID||VM Owner||No||
-||role_tag||UUID||Role Tag||Yes||
+| Param      | Type | Description | Required? |
+| ---------- | ---- | ----------- | --------- |
+| uuid       | UUID | VM UUID     | Yes       |
+| owner_uuid | UUID | VM Owner    | No        |
+| role_tag   | UUID | Role Tag    | Yes       |
 
 ### Responses
 
-||**Code**||**Description**||**Response**||
-||200||Response OK. Role Tag removed||New VM Role Tags. Array of UUID||
-||404||VM or Role Tag Not Found. VM or Role Tag do not exist or VM does not belong to the specified owner||Error object||
+| Code | Description                                                                                        | Response                        |
+| ---- | -------------------------------------------------------------------------------------------------- | ------------------------------- |
+| 200  | Response OK. Role Tag removed                                                                      | New VM Role Tags. Array of UUID |
+| 404  | VM or Role Tag Not Found. VM or Role Tag do not exist or VM does not belong to the specified owner | Error object                    |
 
 ### Example
 
@@ -1575,15 +1634,17 @@ Deletes all role tags from a VM.
 
 ### Inputs
 
-||**Param**||**Type**||**Description**||**Required?**||
-||uuid||UUID||VM UUID||Yes||
-||owner_uuid||UUID||VM Owner||No||
+| Param      | Type | Description | Required? |
+| ---------- | ---- | ----------- | --------- |
+| uuid       | UUID | VM UUID     | Yes       |
+| owner_uuid | UUID | VM Owner    | No        |
 
 ### Responses
 
-||**Code**||**Description**||**Response**||
-||200||Response OK. Role Tags removed||No response body||
-||404||VM Not Found. VM does not exist or VM does not belong to the specified owner||Error object||
+| Code | Description                                                                  | Response         |
+| ---- | ---------------------------------------------------------------------------- | ---------------- |
+| 200  | Response OK. Role Tags removed                                               | No response body |
+| 404  | VM Not Found. VM does not exist or VM does not belong to the specified owner | Error object     |
 
 ### Example
 
@@ -1601,29 +1662,32 @@ Returns all jobs matching the specified search filters.
 
 ### Inputs
 
-|| **Param** || **Type** || **Description** || **Required?** ||
-|| vm_uuid || UUID || Return all jobs for this VM UUID || No ||
-|| execution || String || Job state. See below || No ||
-|| task || String || Type of job. See below || No ||
+| Param     | Type   | Description                      | Required? |
+| --------- | ------ | -------------------------------- | --------- |
+| vm_uuid   | UUID   | Return all jobs for this VM UUID | No        |
+| execution | String | Job state. See below             | No        |
+| task      | String | Type of job. See below           | No        |
 
 ### Job 'execution' State Inputs
 
-|| **Execution** ||
-|| running ||
-|| succeeded ||
-|| failed ||
+| Execution |
+| --------- |
+| running   |
+| succeeded |
+| failed    |
 
 ### Job 'task' Type Inputs
 
 **NOTE** Any metadata endpoint that returns a Job response object is an 'update'
 job for the backend system.
 
-|| **Task** ||
-|| provision ||
-|| start ||
-|| stop ||
-|| reboot ||
-|| update ||
+| Task      |
+| --------- |
+| provision |
+| start     |
+| stop      |
+| reboot    |
+| update    |
 
 ### Example
 
@@ -1639,10 +1703,11 @@ the VM UUID is known.
 
 ### Inputs
 
-|| **Param** || **Type** || **Description** || **Required?** ||
-|| uuid || UUID || Return all jobs for this VM UUID || No ||
-|| execution || String || Job state. See above || No ||
-|| task || String || Type of job. See above || No ||
+| Param     | Type   | Description                      | Required? |
+| --------- | ------ | -------------------------------- | --------- |
+| uuid      | UUID   | Return all jobs for this VM UUID | No        |
+| execution | String | Job state. See above             | No        |
+| task      | String | Type of job. See above           | No        |
 
 ### Example
 
@@ -1656,8 +1721,9 @@ Returns a job with the specified UUID.
 
 ### Inputs
 
-||**Param**||**Type**||**Description**||**Required?**||
-||uuid||UUID||Job UUID||Yes||
+| Param | Type | Description | Required? |
+| ----- | ---- | ----------- | --------- |
+| uuid  | UUID | Job UUID    | Yes       |
 
 ### Example
 
@@ -1723,8 +1789,9 @@ Returns the running status for all of the VM UUIDs specified in the request para
 
 ### Inputs
 
-|| **Param** || **Type** || **Description** || **Required?** ||
-|| uuids || Array of UUIDs || Comma separated list of UUIDs || Yes ||
+| Param | Type           | Description                   | Required? |
+| ----- | -------------- | ----------------------------- | --------- |
+| uuids | Array of UUIDs | Comma separated list of UUIDs | Yes       |
 
 ### Note
 
@@ -1760,35 +1827,36 @@ in the table below that has a default value can be overrided in the configuratio
 file. Note that this file should only be modified if any other service depending
 on VMAPI is updated as well.
 
-||**var**||**type**||**default**||**description**||
-||port||Number||80||Port number on which to listen.||
-||logLevel||String or Number||debug||Level at which to log. One of the supported Bunyan log levels.||
-||heartbeatQueueSize||Number||50||Maximum number of heartbeats to process in parallel.||
-||maxSockets||Number||100||Maximum number of sockets for external API calls||
-||api||Object||-||VMAPI configuration||
-||api||Number||-||VMAPI port||
-||amqp.host||String||-||RabbitMQ hostname||
-||amqp||Object||-||RabbitMQ credentials||
-||amqp.host||String||-||RabbitMQ hostname||
-||amqp.queue||String||heartbeat.vmapi||Heartbeater AMQP queue||
-||cache||Object||-||Cache client definition||
-||cache.type||String||-||Cache type, can be 'redis' or 'moray'||
-||cache.host||String||-||Hostname for cache type 'redis'||
-||wfapi||Object||-||WFAPI configuration||
-||wfapi.url||String||-||WFAPI URL||
-||wfapi.forceReplace||Boolean||false||Replace workflows every time VMAPI restarts||
-||wfapi.workflows||Array||-||List of workflows to load on start||
-||cnapi||Object||-||CNAPI configuration||
-||cnapi.url||String||-||CNAPI URL||
-||napi||Object||-||NAPI configuration||
-||napi.url||String||-||NAPI URL||
-||moray||Object||-||Moray configuration||
-||moray.host||String||-||Moray hostname||
-||moray.port||Number||-||Moray port||
-||moray.connectTimeout||Number||-||Moray connection timeout||
-||moray.retry||Object||-||Moray retry object||
-||moray.retry.minTimeout||Number||-||Moray minimum retry timeout||
-||moray.retry.maxTimeout||Number||-||Moray maximum retry timeout||
+| var                    | type             | default         | description                                                    |
+| ---------------------- | ---------------- | --------------- | -------------------------------------------------------------- |
+| port                   | Number           | 80              | Port number on which to listen.                                |
+| logLevel               | String or Number | debug           | Level at which to log. One of the supported Bunyan log levels. |
+| heartbeatQueueSize     | Number           | 50              | Maximum number of heartbeats to process in parallel.           |
+| maxSockets             | Number           | 100             | Maximum number of sockets for external API calls               |
+| api                    | Object           | -               | VMAPI configuration                                            |
+| api                    | Number           | -               | VMAPI port                                                     |
+| amqp.host              | String           | -               | RabbitMQ hostname                                              |
+| amqp                   | Object           | -               | RabbitMQ credentials                                           |
+| amqp.host              | String           | -               | RabbitMQ hostname                                              |
+| amqp.queue             | String           | heartbeat.vmapi | Heartbeater AMQP queue                                         |
+| cache                  | Object           | -               | Cache client definition                                        |
+| cache.type             | String           | -               | Cache type, can be 'redis' or 'moray'                          |
+| cache.host             | String           | -               | Hostname for cache type 'redis'                                |
+| wfapi                  | Object           | -               | WFAPI configuration                                            |
+| wfapi.url              | String           | -               | WFAPI URL                                                      |
+| wfapi.forceReplace     | Boolean          | false           | Replace workflows every time VMAPI restarts                    |
+| wfapi.workflows        | Array            | -               | List of workflows to load on start                             |
+| cnapi                  | Object           | -               | CNAPI configuration                                            |
+| cnapi.url              | String           | -               | CNAPI URL                                                      |
+| napi                   | Object           | -               | NAPI configuration                                             |
+| napi.url               | String           | -               | NAPI URL                                                       |
+| moray                  | Object           | -               | Moray configuration                                            |
+| moray.host             | String           | -               | Moray hostname                                                 |
+| moray.port             | Number           | -               | Moray port                                                     |
+| moray.connectTimeout   | Number           | -               | Moray connection timeout                                       |
+| moray.retry            | Object           | -               | Moray retry object                                             |
+| moray.retry.minTimeout | Number           | -               | Moray minimum retry timeout                                    |
+| moray.retry.maxTimeout | Number           | -               | Moray maximum retry timeout                                    |
 
 
 ## Health
@@ -1813,8 +1881,9 @@ TODO: how to dynamically change log levels
 VMAPI is a single SMF service that operates on a SmartOS VM. The following is the
 location/command for accessing the log file written by the VMAPI service:
 
-||**service/path**||**where**||**format**||**tail -f**||
-||vmapi||in each "vmapi" zone||[Bunyan](https://github.com/trentm/node-bunyan)||`` sdc-login vmapi; tail -f `svcs -L vmapi` | bunyan ``||
+| service/path | where | format | tail -f |
+| ------------ | ----- | ------ | ------- |
+| vmapi | in each "vmapi" zone | [Bunyan](https://github.com/trentm/node-bunyan) | `` sdc-login vmapi; tail -f `svcs -L vmapi` | bunyan `` |
 
 Note that the logs for the VMAPI service are rotated, so one might need the
 directory where these files are being written in case older log files contain the
@@ -1833,14 +1902,15 @@ be filtered by component, API action, VM UUID and Server UUID when using the
 The following are the components that describe each of the pieces in the VMAPI
 application and allow for more specific log filtering:
 
-|| **Component Name** || **Description** ||
-|| api || API requests/responses ||
-|| heartbeater || Heartbeater processing activity ||
-|| napi || NIC add/removal activity ||
-|| cnapi || machine_load requests/responses (used to process heartbeats) ||
-|| wfapi || WFAPI requests/responses (for queueing VM jobs) ||
-|| moray || Moray database operations (read/write VM data) ||
-|| cache || Heartbeat cache client ||
+| Component Name | Description                                                  |
+| -------------- | ------------------------------------------------------------ |
+| api            | API requests/responses                                       |
+| heartbeater    | Heartbeater processing activity                              |
+| napi           | NIC add/removal activity                                     |
+| cnapi          | machine_load requests/responses (used to process heartbeats) |
+| wfapi          | WFAPI requests/responses (for queueing VM jobs)              |
+| moray          | Moray database operations (read/write VM data)               |
+| cache          | Heartbeat cache client                                       |
 
 In order to filter a VMAPI log file by component we make use of Bunyan's '-c'
 option:
@@ -1934,26 +2004,27 @@ utility is just the lower case version of the API action that can be found on
 this documentation. Note that some routes accept a vm_uuid parameter when they
 are actions specific to a single VM and not a collection of VMs.
 
-|| **API Action** || **Route Name** || **Accepts vm_uuid?**||
-|| ListVms || listvms || No ||
-|| CreateVm || createvm || No ||
-|| GetVm || getvm || Yes ||
-|| StartVm || startvm || Yes ||
-|| StopVm || stopvm || Yes ||
-|| RebootVm || rebootvm || Yes ||
-|| ChangeVm || changevm || Yes ||
-|| DeleteVm || deletevm || Yes ||
-|| AddNics || addnics || Yes ||
-|| RemoveNics || removenics || Yes ||
-|| CreateSnapshot || createsnapshot || Yes ||
-|| RollbackSnapshot || rollbacksnapshot || Yes ||
-|| DeleteSnapshot || deletesnapshot || Yes ||
-|| ListMetadata || listmetadata || Yes ||
-|| GetMetadata || getmetadata || Yes ||
-|| AddMetadata || addmetadata || Yes ||
-|| SetMetadata || setmetadata || Yes ||
-|| DeleteMetadata || deletemetadata || Yes ||
-|| DeleteMetadata || deleteallmetadata || Yes ||
+| API Action       | Route Name        | Accepts vm_uuid? |
+| ---------------- | ----------------- | ---------------- |
+| ListVms          | listvms           | No               |
+| CreateVm         | createvm          | No               |
+| GetVm            | getvm             | Yes              |
+| StartVm          | startvm           | Yes              |
+| StopVm           | stopvm            | Yes              |
+| RebootVm         | rebootvm          | Yes              |
+| ChangeVm         | changevm          | Yes              |
+| DeleteVm         | deletevm          | Yes              |
+| AddNics          | addnics           | Yes              |
+| RemoveNics       | removenics        | Yes              |
+| CreateSnapshot   | createsnapshot    | Yes              |
+| RollbackSnapshot | rollbacksnapshot  | Yes              |
+| DeleteSnapshot   | deletesnapshot    | Yes              |
+| ListMetadata     | listmetadata      | Yes              |
+| GetMetadata      | getmetadata       | Yes              |
+| AddMetadata      | addmetadata       | Yes              |
+| SetMetadata      | setmetadata       | Yes              |
+| DeleteMetadata   | deletemetadata    | Yes              |
+| DeleteMetadata   | deleteallmetadata | Yes              |
 
 As an example, we can run this command to get the logs of all the GetVm calls to
 VMAPI:
