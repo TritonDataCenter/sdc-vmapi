@@ -1,0 +1,39 @@
+#!/bin/bash
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+
+#
+# Copyright (c) 2014, Joyent, Inc.
+#
+
+#
+# Rsync the master in this working copy to the install on the given HN.
+#
+
+#set -o xtrace
+set -o errexit
+
+TOP=$(cd $(dirname $0)/../; pwd)
+NODE=$1
+
+extraOpts=
+if [[ $(uname -s) != "SunOS" ]]; then
+    extraOpts="--exclude *.node --exclude build"
+fi
+
+ssh $NODE mkdir -p /opt/smartdc/vmapi
+
+rsync -av ${TOP}/ \
+    $NODE:/opt/smartdc/vmapi/ \
+    $extraOpts \
+    --exclude .git/ \
+    --exclude /config.json \
+    --exclude /deps/ \
+    --exclude /doc/ \
+    --exclude /node_modules/ \
+    --exclude /tools/ \
+    --exclude /tmp/
+
