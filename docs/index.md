@@ -860,11 +860,12 @@ operations is documented below.
 
 ### General Inputs
 
-| Param      | Type   | Description                                                                                                                                                                                      | Required? |
-| ---------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------- |
-| uuid       | UUID   | VM UUID                                                                                                                                                                                          | Yes       |
-| owner_uuid | UUID   | VM Owner. If specified, the VM object will be checked for ownership against this owner_uuid. If vm.owner_uuid does not match the provided value the call will result in a 404 VM Not Found error | No        |
-| action     | String | start, stop, reboot, reprovision, update, add_nics, remove_nics, create_snapshot, delete_snapshot, rollback_snapshot                                                                             | Yes       |
+| Param      | Type    | Description                                                                                                                                                                                      | Required? |
+| ---------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------- |
+| uuid       | UUID    | VM UUID                                                                                                                                                                                          | Yes       |
+| owner_uuid | UUID    | VM Owner. If specified, the VM object will be checked for ownership against this owner_uuid. If vm.owner_uuid does not match the provided value the call will result in a 404 VM Not Found error | No        |
+| action     | String  | start, stop, reboot, reprovision, update, add_nics, remove_nics, create_snapshot, delete_snapshot, rollback_snapshot                                                                             | Yes       |
+| sync       | Boolean | Wait for workflow to complete before returning                                                                                                                                                   | No        |
 
 ### Response Codes
 
