@@ -30,6 +30,11 @@ var IMAGE = 'fd2cc906-8938-11e3-beab-4359c665ac99';
 var CUSTOMER = common.config.ufdsAdminUuid;
 var NETWORKS = null;
 var SERVER = null;
+var CALLER = {
+    type: 'signature',
+    ip: '127.0.0.68',
+    keyId: '/foo@joyent.com/keys/id_rsa'
+};
 
 // In seconds
 var TIMEOUT = 120;
@@ -162,6 +167,19 @@ function waitForNicState(query, state, waitCallback) {
         waitCallback);
 }
 
+
+function createOpts(path, params) {
+    return {
+        path: path,
+        headers: {
+            'x-request-id': uuid.create(),
+            'x-context': JSON.stringify({
+                caller: CALLER,
+                params: params || {}
+            })
+        }
+    };
+}
 
 
 
@@ -356,13 +374,13 @@ exports.create_vm = function (t) {
         ram: 64,
         quota: 10,
         customer_metadata: md,
-        context: 'foobar',
         creator_uuid: CUSTOMER,
         origin: 'cloudapi',
         role_tags: ['fd48177c-d7c3-11e3-9330-28cfe91a33c9']
     };
 
-    var opts = { path: '/vms', headers: { 'x-request-id': uuid.create() } };
+    var opts = createOpts('/vms', vm);
+
     client.post(opts, vm, function (err, req, res, body) {
         t.ifError(err);
         t.equal(res.statusCode, 202);
@@ -425,8 +443,13 @@ exports.check_create_vm_nics_running = function (t) {
 
 
 exports.stop_vm = function (t) {
-    client.post(vmLocation, { action: 'stop', context: 'foobar' },
-      function (err, req, res, body) {
+    var params = {
+        action: 'stop'
+    };
+
+    var opts = createOpts(vmLocation, params);
+
+    client.post(opts, params, function (err, req, res, body) {
         t.ifError(err);
         t.equal(res.statusCode, 202);
         common.checkHeaders(t, res.headers);
@@ -459,8 +482,13 @@ exports.check_stop_vm_nics_stopped = function (t) {
 
 
 exports.start_vm = function (t) {
-    client.post(vmLocation, { action: 'start', context: 'foobar' },
-      function (err, req, res, body) {
+    var params = {
+        action: 'start'
+    };
+
+    var opts = createOpts(vmLocation, params);
+
+    client.post(opts, params, function (err, req, res, body) {
         t.ifError(err);
         t.equal(res.statusCode, 202);
         common.checkHeaders(t, res.headers);
@@ -493,8 +521,13 @@ exports.check_start_vm_nics_running = function (t) {
 
 
 exports.reboot_vm = function (t) {
-    client.post(vmLocation, { action: 'reboot', context: 'foobar' },
-      function (err, req, res, body) {
+    var params = {
+        action: 'reboot'
+    };
+
+    var opts = createOpts(vmLocation, params);
+
+    client.post(opts, params, function (err, req, res, body) {
         t.ifError(err);
         t.equal(res.statusCode, 202);
         common.checkHeaders(t, res.headers);
@@ -529,11 +562,12 @@ exports.check_reboot_vm_nics_running = function (t) {
 exports.add_nics_with_networks = function (t) {
     var params = {
         action: 'add_nics',
-        networks: [ { uuid: NETWORKS[1].uuid } ],
-        context: 'foobar'
+        networks: [ { uuid: NETWORKS[1].uuid } ]
     };
 
-    client.post(vmLocation, params, function (err, req, res, body) {
+    var opts = createOpts(vmLocation, params);
+
+    client.post(opts, params, function (err, req, res, body) {
         t.ifError(err);
         t.equal(res.statusCode, 202);
         common.checkHeaders(t, res.headers);
@@ -576,16 +610,19 @@ exports.add_nics_with_macs = function (t) {
         status: 'provisioning'
     };
 
-    client.napi.post('/nics', params, function (err, req, res, nic) {
+    var opts = createOpts('/nics', params);
+
+    client.napi.post(opts, params, function (err, req, res, nic) {
         t.ifError(err);
 
         var params2 = {
             action: 'add_nics',
-            macs: [ nic.mac ],
-            context: 'foobar'
+            macs: [ nic.mac ]
         };
 
-        client.post(vmLocation, params2, function (err2, req2, res2, body2) {
+        var opts2 = createOpts(vmLocation, params2);
+
+        client.post(opts2, params2, function (err2, req2, res2, body2) {
             t.ifError(err2);
             t.equal(res2.statusCode, 202);
             common.checkHeaders(t, res2.headers);
@@ -640,11 +677,12 @@ exports.remove_nics = function (t) {
 
         var params = {
             action: 'remove_nics',
-            macs: macs,
-            context: 'foobar'
+            macs: macs
         };
 
-        client.post(vmLocation, params, function (err2, req2, res2, body2) {
+        var opts = createOpts(vmLocation, params);
+
+        client.post(opts, params, function (err2, req2, res2, body2) {
             t.ifError(err2);
             t.equal(res2.statusCode, 202);
             common.checkHeaders(t, res2.headers);
@@ -683,9 +721,14 @@ exports.check_remove_nics_removed = function (t) {
 // Adding this test due to JPC-1045 bug, where a change to owner_uuid was
 // requested with an empty owner_uuid value:
 exports.change_owner_without_uuid = function (t) {
-    client.post(vmLocation,
-    { action: 'update', owner_uuid: '', context: 'foobar' },
-      function (err, req, res, body) {
+    var params = {
+        action: 'update',
+        owner_uuid: ''
+    };
+
+    var opts = createOpts(vmLocation, params);
+
+    client.post(opts, params, function (err, req, res, body) {
           t.equal(res.statusCode, 409);
           t.done();
     });
@@ -709,12 +752,15 @@ exports.list_tags = function (t) {
 
 exports.add_tags = function (t) {
     var path = '/vms/' + newUuid + '/tags?owner_uuid=' + CUSTOMER;
+
     var query = {
         role: 'database',
         group: 'deployment'
     };
 
-    client.post(path, query, function (err, req, res, body) {
+    var opts = createOpts(path, query);
+
+    client.post(opts, query, function (err, req, res, body) {
         t.ifError(err);
         t.equal(res.statusCode, 202);
         common.checkHeaders(t, res.headers);
@@ -763,7 +809,9 @@ exports.get_tag = function (t) {
 exports.delete_tag = function (t) {
     var path = '/vms/' + newUuid + '/tags/role?owner_uuid=' + CUSTOMER;
 
-    client.del(path, function (err, req, res, body) {
+    var opts = createOpts(path, { owner_uuid: CUSTOMER });
+
+    client.del(opts, function (err, req, res, body) {
         t.ifError(err);
         t.equal(res.statusCode, 202);
         common.checkHeaders(t, res.headers);
@@ -797,7 +845,9 @@ exports.wait_delete_tag = function (t) {
 exports.delete_tags = function (t) {
     var path = '/vms/' + newUuid + '/tags?owner_uuid=' + CUSTOMER;
 
-    client.del(path, function (err, req, res, body) {
+    var opts = createOpts(path, { owner_uuid: CUSTOMER });
+
+    client.del(opts, function (err, req, res, body) {
         t.ifError(err);
         t.equal(res.statusCode, 202);
         common.checkHeaders(t, res.headers);
@@ -826,12 +876,15 @@ exports.wait_delete_tags = function (t) {
 
 exports.set_tags = function (t) {
     var path = '/vms/' + newUuid + '/tags?owner_uuid=' + CUSTOMER;
+
     var query = {
         role: 'database',
         group: 'deployment'
     };
 
-    client.put(path, query, function (err, req, res, body) {
+    var opts = createOpts(path, query);
+
+    client.put(opts, query, function (err, req, res, body) {
         t.ifError(err);
         t.equal(res.statusCode, 202);
         common.checkHeaders(t, res.headers);
@@ -864,9 +917,14 @@ exports.wait_set_tags = function (t) {
 
 
 exports.snapshot_vm = function (t) {
-    client.post(vmLocation,
-    { action: 'create_snapshot', snapshot_name: 'backup', context: 'foobar' },
-    function (err, req, res, body) {
+    var params = {
+        action: 'create_snapshot',
+        snapshot_name: 'backup'
+    };
+
+    var opts = createOpts(vmLocation, params);
+
+    client.post(opts, params, function (err, req, res, body) {
         t.ifError(err);
         t.equal(res.statusCode, 202);
         common.checkHeaders(t, res.headers);
@@ -886,9 +944,14 @@ exports.wait_snapshot_job = function (t) {
 
 
 exports.rollback_vm = function (t) {
-    client.post(vmLocation,
-    { action: 'rollback_snapshot', snapshot_name: 'backup', context: 'foobar' },
-    function (err, req, res, body) {
+    var params = {
+        action: 'rollback_snapshot',
+        snapshot_name: 'backup'
+    };
+
+    var opts = createOpts(vmLocation, params);
+
+    client.post(opts, params, function (err, req, res, body) {
         t.ifError(err);
         t.equal(res.statusCode, 202);
         common.checkHeaders(t, res.headers);
@@ -908,9 +971,14 @@ exports.wait_rollback_job = function (t) {
 
 
 exports.delete_snapshot = function (t) {
-    client.post(vmLocation,
-    { action: 'delete_snapshot', snapshot_name: 'backup', context: 'foobar' },
-    function (err, req, res, body) {
+    var params = {
+        action: 'delete_snapshot',
+        snapshot_name: 'backup'
+    };
+
+    var opts = createOpts(vmLocation, params);
+
+    client.post(opts, params, function (err, req, res, body) {
         t.ifError(err);
         t.equal(res.statusCode, 202);
         common.checkHeaders(t, res.headers);
@@ -932,10 +1000,12 @@ exports.wait_delete_snapshot_job = function (t) {
 exports.reprovision_vm = function (t) {
     var repdata = {
         action: 'reprovision',
-        context: 'foobar',
         image_uuid: IMAGE
     };
-    client.post(vmLocation, repdata, function (err, req, res, body) {
+
+    var opts = createOpts(vmLocation, repdata);
+
+    client.post(opts, repdata, function (err, req, res, body) {
         t.ifError(err);
         t.equal(res.statusCode, 202);
         common.checkHeaders(t, res.headers);
@@ -955,7 +1025,9 @@ exports.wait_reprovision_job = function (t) {
 
 
 exports.destroy_vm = function (t) {
-    client.del(vmLocation, function (err, req, res, body) {
+    var opts = createOpts(vmLocation);
+
+    client.del(opts, function (err, req, res, body) {
         t.ifError(err);
         t.equal(res.statusCode, 202);
         common.checkHeaders(t, res.headers);
@@ -1003,6 +1075,32 @@ exports.filter_vm_jobs_ok = function (t) {
     });
 };
 
+
+exports.get_audit = function (t) {
+    client.get('/jobs?vm_uuid=' + newUuid, function (err, req, res, jobs) {
+        t.ifError(err);
+
+        var expectedNames = [
+            'destroy', 'reprovision', 'delete-snapshot', 'rollback', 'snapshot',
+            'update', 'update', 'update', 'update', 'remove-nic', 'add-nics',
+            'add-nics', 'reboot', 'start', 'stop', 'provision'
+        ];
+
+        for (var i = 0; i !== expectedNames.length; i++) {
+            var expectedName = expectedNames[i];
+            var job = jobs[i];
+            var context = job.params.context;
+
+            t.ok(job.name.indexOf(expectedName) !== -1);
+            t.ok(typeof (context.params) === 'object');
+            t.deepEqual(context.caller, CALLER);
+        }
+
+        t.done();
+    });
+};
+
+
 exports.create_nonautoboot_vm = function (t) {
     var vm = {
         owner_uuid: CUSTOMER,
@@ -1018,8 +1116,9 @@ exports.create_nonautoboot_vm = function (t) {
         autoboot: false
     };
 
-    client.post('/vms', vm,
-      function (err, req, res, body) {
+    var opts = createOpts('/vms', vm);
+
+    client.post(opts, vm, function (err, req, res, body) {
           t.ifError(err);
           t.equal(res.statusCode, 202);
           common.checkHeaders(t, res.headers);
@@ -1053,8 +1152,14 @@ exports.wait_nonautoboot_provisioned_job = function (t) {
 
 
 exports.change_autoboot = function (t) {
-    client.post(vmLocation, { action: 'update', autoboot: true },
-      function (err, req, res, body) {
+    var params = {
+        action: 'update',
+        autoboot: true
+    };
+
+    var opts = createOpts(vmLocation, params);
+
+    client.post(opts, params, function (err, req, res, body) {
         t.ifError(err);
         t.equal(res.statusCode, 202);
         jobLocation = '/jobs/' + body.job_uuid;
@@ -1087,7 +1192,9 @@ exports.get_nonautoboot_vm_ok = function (t) {
 
 
 exports.destroy_nonautoboot_vm = function (t) {
-    client.del(vmLocation, function (err, req, res, body) {
+    var opts = createOpts(vmLocation);
+
+    client.del(opts, function (err, req, res, body) {
         t.ifError(err);
         t.equal(res.statusCode, 202);
         common.checkHeaders(t, res.headers);
@@ -1116,7 +1223,8 @@ exports.create_vm_with_package = function (t) {
         billing_id: pkgId
     };
 
-    var opts = { path: '/vms' };
+    var opts = createOpts('/vms', vm);
+
     client.post(opts, vm, function (err, req, res, body) {
           t.ifError(err);
           t.equal(res.statusCode, 202);
@@ -1164,8 +1272,10 @@ exports.find_new_package_ok = function (t) {
 
 exports.resize_package = function (t) {
     var params = { action: 'update', billing_id: pkgId };
-    client.post(vmLocation + '?force=true', params,
-      function (err, req, res, body) {
+
+    var opts = createOpts(vmLocation + '?force=true', params);
+
+    client.post(opts, params, function (err, req, res, body) {
         t.ifError(err);
         t.equal(res.statusCode, 202);
         jobLocation = '/jobs/' + body.job_uuid;
@@ -1183,7 +1293,9 @@ exports.wait_resize_package_job = function (t) {
 
 
 exports.destroy_vm_with_package = function (t) {
-    client.del(vmLocation, function (err, req, res, body) {
+    var opts = createOpts(vmLocation);
+
+    client.del(opts, function (err, req, res, body) {
         t.ifError(err);
         t.equal(res.statusCode, 202);
         common.checkHeaders(t, res.headers);
