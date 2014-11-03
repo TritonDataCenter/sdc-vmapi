@@ -25,6 +25,7 @@
             "provision",
             "start",
             "stop",
+            "kill",
             "reboot",
             "reprovision",
             "update",
