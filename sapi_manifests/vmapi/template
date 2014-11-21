@@ -1,7 +1,7 @@
 {
     "logLevel": "debug",
     "maxSockets": 100,
-    "useVmAgent": {{#USE_VM_AGENT}}true{{/USE_VM_AGENT}}{{^USE_VM_AGENT}}false{{/USE_VM_AGENT}},
+    "useVmAgent": true,
     "ufdsAdminUuid": "{{{ufds_admin_uuid}}}",
     "api": {
         "port": 80
