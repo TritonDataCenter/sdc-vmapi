@@ -22,8 +22,8 @@ var common = require('./common');
 var client;
 var muuid;
 var newUuid;
-var jobLocation, jobLocation2;
-var vmLocation, vmLocation2;
+var jobLocation;
+var vmLocation;
 var pkgId;
 
 var IMAGE = 'fd2cc906-8938-11e3-beab-4359c665ac99';
@@ -390,26 +390,18 @@ exports.create_vm = function (t) {
         newUuid = body.vm_uuid;
         vmLocation = '/vms/' + newUuid;
 
-        client.post(opts, vm, function (err2, req2, res2, body2) {
+        // GetVm should not fail after provision has been queued
+        client.get(vmLocation, function (err2, req2, res2, body2) {
             t.ifError(err2);
-            t.equal(res2.statusCode, 202);
-            jobLocation2 = '/jobs/' + body2.job_uuid;
-            vmLocation2  = '/vms/'  + body2.vm_uuid;
+            t.equal(res2.statusCode, 200, '200 OK');
+            common.checkHeaders(t, res2.headers);
+            t.ok(body2, 'provisioning vm ok');
 
-            // GetVm should not fail after provision has been queued
-            client.get(vmLocation, function (err3, req3, res3, body3) {
-                t.ifError(err3);
-                t.equal(res3.statusCode, 200, '200 OK');
+            client.post(vmLocation, { action: 'stop' },
+              function (err3, req3, res3, body3) {
+                t.equal(res3.statusCode, 409, 'cannot stop unprovisioned VM');
                 common.checkHeaders(t, res3.headers);
-                t.ok(body3, 'provisioning vm ok');
-
-                client.post(vmLocation, { action: 'stop' },
-                  function (err4, req4, res4, body4) {
-                    var msg = 'cannot stop VM unfinished provisioning';
-                    t.equal(res4.statusCode, 409, msg);
-                    common.checkHeaders(t, res4.headers);
-                    t.done();
-                });
+                t.done();
             });
         });
     });
@@ -435,79 +427,6 @@ exports.wait_provisioned_job = function (t) {
     });
 };
 
-
-exports.wait_secondary_provisioned_job = function (t) {
-    var iter = 0;
-
-    var interval = setInterval(function () {
-        iter += 1;
-
-        if (iter > TIMEOUT) {
-            clearInterval(interval);
-            t.ok(false, 'secondary job took too long to complete');
-            t.done();
-        }
-
-        client.get(jobLocation2, function (err, req, res, body) {
-            t.ifError(err);
-            t.equal(res.statusCode, 200, 'GetJob 200 OK');
-
-            if (['succeeded', 'failed'].indexOf(body.execution) === -1) {
-                return; // loop again
-            }
-
-            clearInterval(interval);
-            t.done();
-        });
-    }, 1000);
-};
-
-
-exports.check_mutual_exclusion = function (t) {
-    client.get(jobLocation, function (err, req, res, body) {
-        t.ifError(err);
-        t.equal(res.statusCode, 200, 'GetJob 200 OK');
-
-        var acquire = body.chain_results.filter(function (section) {
-            return section.name === 'cnapi.acquire_vm_ticket';
-        });
-
-        t.equal(acquire.length, 1);
-
-        client.get(jobLocation2, function (err2, req2, res2, body2) {
-            t.ifError(err);
-            t.equal(res.statusCode, 200, 'GetJob 200 OK');
-
-            var wait = body2.chain_results.filter(function (section) {
-                return section.name === 'wfapi.wait_critical_section';
-            });
-
-            t.equal(wait.length, 1);
-
-            t.ok(acquire[0].finished_at <= wait[0].finished_at);
-
-            t.done();
-        });
-    });
-};
-
-
-exports.cleanup_secondary_vm = function (t) {
-    client.get(jobLocation2, function (err, req, res, body) {
-        t.ifError(err);
-        t.equal(res.statusCode, 200, 'GetJob 200 OK');
-
-        if (body.execution === 'failed') {
-            return t.done();  // nothing to do, continue on
-        }
-
-        client.del(vmLocation2, function (err2, req2, res2, body2) {
-            t.ifError(err2);
-            t.equal(res.statusCode, 200);
-            t.done();
-        });
-    });
-};
 
 
 exports.check_create_vm_nics_running = function (t) {
