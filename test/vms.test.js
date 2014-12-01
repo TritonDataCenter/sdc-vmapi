@@ -358,6 +358,38 @@ exports.create_vm_not_ok = function (t) {
 };
 
 
+exports.create_vm_locality_not_ok = function (t) {
+    var vm = {
+        owner_uuid: CUSTOMER,
+        image_uuid: IMAGE,
+        server_uuid: SERVER.uuid,
+        networks: [ { uuid: NETWORKS[0].uuid } ],
+        brand: 'joyent-minimal',
+        billing_id: '00000000-0000-0000-0000-000000000000',
+        ram: 64,
+        quota: 10,
+        creator_uuid: CUSTOMER,
+        locality: { 'near': 'asdasd' }
+    };
+
+    var opts = createOpts('/vms', vm);
+
+    client.post(opts, vm, function (err, req, res, body) {
+        t.equal(res.statusCode, 409);
+        t.deepEqual(body, {
+            code: 'ValidationFailed',
+            message: 'Invalid VM parameters',
+            errors: [ {
+                field: 'locality',
+                code: 'Invalid',
+                message: 'locality contains malformed UUID'
+            } ]
+        });
+        t.done();
+    });
+};
+
+
 exports.create_vm = function (t) {
     var md = {
         foo: 'bar',
