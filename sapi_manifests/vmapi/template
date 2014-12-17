@@ -3,6 +3,7 @@
     "maxSockets": 100,
     "useVmAgent": true,
     "ufdsAdminUuid": "{{{ufds_admin_uuid}}}",
+    "reserveKvmStorage": "{{reserveKvmStorage}}",
     "api": {
         "port": 80
     },
