@@ -418,6 +418,7 @@ All inputs are optional.
 | alias            | String                                           | VM Alias                                        |
 | state            | String                                           | running, stopped, active or destroyed           |
 | ram              | Number                                           | Amount of memory of the VM                      |
+| uuids            | String (comma-separated UUID values)             | List of VM UUIDs to match                       |
 | create_timestamp | Unix Time in milliseconds or UTC ISO Date String | VM creation timestamp                           |
 | package_name     | String                                           | Package name with which the VM was created      |
 | package_version  | String                                           | Package version with which the VM was created   |
