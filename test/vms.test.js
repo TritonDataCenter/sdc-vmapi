@@ -417,7 +417,9 @@ exports.create_vm = function (t) {
         t.ifError(err);
         t.equal(res.statusCode, 202);
         common.checkHeaders(t, res.headers);
+        t.ok(res.headers['workflow-api'], 'workflow-api header');
         t.ok(body, 'vm ok');
+
         jobLocation = '/jobs/' + body.job_uuid;
         newUuid = body.vm_uuid;
         vmLocation = '/vms/' + newUuid;
@@ -485,6 +487,7 @@ exports.stop_vm = function (t) {
         t.ifError(err);
         t.equal(res.statusCode, 202);
         common.checkHeaders(t, res.headers);
+        t.ok(res.headers['workflow-api'], 'workflow-api header');
         t.ok(body);
         jobLocation = '/jobs/' + body.job_uuid;
         t.done();
@@ -524,6 +527,7 @@ exports.start_vm = function (t) {
         t.ifError(err);
         t.equal(res.statusCode, 202);
         common.checkHeaders(t, res.headers);
+        t.ok(res.headers['workflow-api'], 'workflow-api header');
         t.ok(body);
         jobLocation = '/jobs/' + body.job_uuid;
         t.done();
