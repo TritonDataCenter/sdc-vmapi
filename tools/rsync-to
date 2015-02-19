@@ -6,7 +6,7 @@
 #
 
 #
-# Copyright (c) 2015, Joyent, Inc.
+# Copyright (c) 2014, Joyent, Inc.
 #
 
 #
@@ -17,7 +17,7 @@
 set -o errexit
 
 TOP=$(cd $(dirname $0)/../; pwd)
-NODE="root@$1"
+NODE=$1
 
 if [[ -z "$VMAPI_ZONE" ]]; then
     VMAPI_ZONE=$(ssh $NODE "/opt/smartdc/bin/sdc-vmapi /vms" 2>/dev/null \

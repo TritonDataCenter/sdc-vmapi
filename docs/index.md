@@ -10,7 +10,7 @@ markdown2extras: tables, code-friendly
 -->
 
 <!--
-    Copyright (c) 2015, Joyent, Inc.
+    Copyright (c) 2014, Joyent, Inc.
 -->
 
 # Introduction to VMs API
@@ -694,46 +694,25 @@ CreateVm expects a list of `networks` for provisioning a new VM. In its legacy i
       '01b2c898-945f-11e1-a523-af1afbe22822
     ]
 
-This format is suboptimal because it does not allow to specify two additional properties available for each of the network interfaces of the VM. By passing a list of network objects and not a list of UUIDs (strings) for the `networks` parameter, it is possible to manually assign an IP address to any of the networks and/or to specify which is the `primary` network interface of the VM.
-
-Instead, the new form of provisioning is what we call 'Interface-centric provisioning'. The idea is that an interface allows to have both an IPv4 and IPv6 network associated with it, and it may have multiple addresses from those networks assigned to it. However, at this time, we only support a single IPv4 network and IP address. The format of this looks like:
-
-    [
-      { "ipv4_uuid": "72a9cd7d-2a0d-4f45-8fa5-f092a3654ce2", "ipv4_count": 1 },
-      { "ipv4_uuid": "01b2c898-945f-11e1-a523-af1afbe22822", "ipv4_ips": [ "10.99.99.11" ] },
-      ...
-    ]
-
-Each object refers to a NIC that will be created. The ipv4_uuid indicates that it is the UUID of an IPv4 network. From there, you can specify the number of IPs you'd like on the network and provide a list of specific IPs that you would like from the network. In the future, these will be able to be combined, but at this time you can only ask for a single IP address, whether specified or passed in with count. If neither of them is specified, or an older format is used, it is treated as though 'ipv4_count' was set to one in the payload.
-
-An older version of the API looked like:
-
-    [
-      { "uuid": "72a9cd7d-2a0d-4f45-8fa5-f092a3654ce2", ip: "10.99.99.11" },
-      ...
-    ]
-
-These are accepted and translated where 'uuid' becomes 'ipv4_uuid', and 'ip' becomes the 'ipv4_ips' array with a single entry. Note other keys that were specified, described below, are not modified. See the Future Directions section below for what will be coming for the future.
-
-The following are examples of what you can do:
+This format is suboptimal because it does not allow to specify two additional properties available for each of the network interfaces of the VM. By passing a list of network objects and not a list of UUIDs (strings) for the `networks` parameter, it is possible to manually assign an IP address to any of the networks and/or to specify which is the `primary` network interface of the VM. Let's take a look at some examples.
 
 * Regular provision with no customization for networks
 
-*Network objects only have an `ipv4_uuid` property:*
+*Network objects only have a `uuid` property:*
 
     [
-      { ipv4_uuid: '72a9cd7d-2a0d-4f45-8fa5-f092a3654ce2' },
-      { ipv4_uuid: '01b2c898-945f-11e1-a523-af1afbe22822' }
+      { uuid: '72a9cd7d-2a0d-4f45-8fa5-f092a3654ce2' },
+      { uuid: '01b2c898-945f-11e1-a523-af1afbe22822' }
     ]
 
 * Specifying a custom IP address for any of the networks
 
-*Network objects can have an `ipv4_ips` property. Be advised that manual IP addresses must not be specified without having knowledge of the IP in question
-being available for allocation. If the IP is not available for allocation, the provision will fail:*
+*Network objects can have an `ip` property. Be advised that manual IP addresses must not be specified without having knowledge of the IP in question
+being available for allocation:*
 
     [
-      { ipv4_uuid: '72a9cd7d-2a0d-4f45-8fa5-f092a3654ce2', ipv4_ips: [ '10.99.99.11' ] },
-      { ipv4_uuid: '01b2c898-945f-11e1-a523-af1afbe22822 }
+      { uuid: '72a9cd7d-2a0d-4f45-8fa5-f092a3654ce2', ip: '10.99.99.11' },
+      { uuid: '01b2c898-945f-11e1-a523-af1afbe22822 }
     ]
 
 * Specifying the primary network for a VM
@@ -741,8 +720,8 @@ being available for allocation. If the IP is not available for allocation, the p
 *Network objects can **only** have one `primary` network interface (NIC). When not specified, the first network in the `networks` list becomes the primary NIC for the VM. A VM will set its default gateway and nameservers to the values obtained from its primary NIC. In the following example we make the second NIC of the VM its primary NIC:*
 
     [
-      { ipv4_uuid: '72a9cd7d-2a0d-4f45-8fa5-f092a3654ce2' },
-      { ipv4_uuid: '01b2c898-945f-11e1-a523-af1afbe22822', 'primary': true }
+      { uuid: '72a9cd7d-2a0d-4f45-8fa5-f092a3654ce2' },
+      { uuid: '01b2c898-945f-11e1-a523-af1afbe22822', 'primary': true }
     ]
 
 * Specifying network names instead of network UUIDs
@@ -754,7 +733,7 @@ being available for allocation. If the IP is not available for allocation, the p
       { name: 'external', primary: true }
     ]
 
-It should be noted that the order of the network objects in the `networks` parameter is significant. The resolvers of a VM will be configured in the same order as the `networks` were specified in the provision payload. Note, at this time, this form will not be adopted for future revisions and will be limited to only allowing a single IPv4 address.
+It should be noted that the order of the network objects in the `networks` parameter is significant. The resolvers of a VM will be configured in the same order as the `networks` were specified in the provision payload.
 
 * Specifying antispoof options for a nic
 
@@ -762,30 +741,13 @@ It should be noted that the order of the network objects in the `networks` param
 
     [
       {
-        ipv4_uuid: '72a9cd7d-2a0d-4f45-8fa5-f092a3654ce2',
+        uuid: '72a9cd7d-2a0d-4f45-8fa5-f092a3654ce2',
         allow_dhcp_spoofing: true,
         allow_ip_spoofing: true,
         allow_mac_spoofing: true,
         allow_restricted_traffic: true
       }
     ]
-
-#### Future directions
-
-When support for IPv6 and assigning a single VM multiple IPs from the same network, the payload that we have today will be expanded. In this case it will look something like:
-
-    [
-      {
-        "ipv4_uuid": "72a9cd7d-2a0d-4f45-8fa5-f092a3654ce2",
-        "ipv4_count": 4,
-        "ipv4_ips": [ "10.99.99.11", "10.99.99.12" ],
-        "ipv6_uuid": "22786760-9e96-11e4-8ba2-5bab126f5cf6",
-        "ipv6_count": 2,
-      },
-      ...
-    ]
-
-This allows a consumer to say, for each NIC, they want the specified IPv4 network. They want us to provision four arbitrary IPs and they want an additional two IPs which are specified. They'll want the specified IPv6 netowrk and two IPs from that.
 
 ### Provisioning with an SDC Package
 
