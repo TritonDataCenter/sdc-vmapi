@@ -122,7 +122,7 @@ function waitForValue(url, key, value, callback) {
 }
 
 
-function waitForNicState(query, state, waitCallback) {
+function waitForNicState(t, query, state, waitCallback) {
     var stop = false;
     var count = 0;
     var maxSeconds = 30;
@@ -135,6 +135,8 @@ function waitForNicState(query, state, waitCallback) {
             if (err) {
                 return callback(err);
             } else if (!nics.length || !nics[0].state) {
+                // Log the state of the nics so that we know why we failed
+                t.deepEqual(nics, {}, 'nics - query: ' + JSON.stringify(query));
                 return callback(new Error('VM does not have valid NICs'));
             } else {
                 return callback(null, nics[0].state);
@@ -469,7 +471,7 @@ exports.check_create_vm_nics_running = function (t) {
         belongs_to_type: 'zone'
     };
 
-    waitForNicState(query, 'running', function (err) {
+    waitForNicState(t, query, 'running', function (err) {
         t.ifError(err);
         t.done();
     });
@@ -509,7 +511,7 @@ exports.check_stop_vm_nics_stopped = function (t) {
         belongs_to_type: 'zone'
     };
 
-    waitForNicState(query, 'stopped', function (err) {
+    waitForNicState(t, query, 'stopped', function (err) {
         t.ifError(err);
         t.done();
     });
@@ -549,7 +551,7 @@ exports.check_start_vm_nics_running = function (t) {
         belongs_to_type: 'zone'
     };
 
-    waitForNicState(query, 'running', function (err) {
+    waitForNicState(t, query, 'running', function (err) {
         t.ifError(err);
         t.done();
     });
@@ -588,7 +590,7 @@ exports.check_reboot_vm_nics_running = function (t) {
         belongs_to_type: 'zone'
     };
 
-    waitForNicState(query, 'running', function (err) {
+    waitForNicState(t, query, 'running', function (err) {
         t.ifError(err);
         t.done();
     });
@@ -608,6 +610,7 @@ exports.add_nics_with_networks = function (t) {
         t.equal(res.statusCode, 202);
         common.checkHeaders(t, res.headers);
         t.ok(body);
+        t.ok(body.job_uuid, 'job_uuid: ' + body.job_uuid);
         jobLocation = '/jobs/' + body.job_uuid;
         t.done();
     });
@@ -629,7 +632,7 @@ exports.check_add_nics_with_network_nics_running = function (t) {
         nic_tag: NETWORKS[1].nic_tag
     };
 
-    waitForNicState(query, 'running', function (err) {
+    waitForNicState(t, query, 'running', function (err) {
         t.ifError(err);
         t.done();
     });
@@ -685,7 +688,7 @@ exports.check_add_nics_with_macs_nics_running = function (t) {
         nic_tag: NETWORKS[1].nic_tag
     };
 
-    waitForNicState(query, 'running', function (err) {
+    waitForNicState(t, query, 'running', function (err) {
         t.ifError(err);
         t.done();
     });
@@ -1345,6 +1348,57 @@ exports.destroy_vm_with_package = function (t) {
 exports.wait_destroyed_with_package_job = function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
         t.ifError(err);
+        t.done();
+    });
+};
+
+
+exports.provision_network_names = function (t) {
+    var vm = {
+        owner_uuid: CUSTOMER,
+        image_uuid: IMAGE,
+        server_uuid: SERVER.uuid,
+        networks: [ { name: NETWORKS[0].name } ],
+        brand: 'joyent-minimal',
+        billing_id: '00000000-0000-0000-0000-000000000000',
+        ram: 64,
+        quota: 10,
+        creator_uuid: CUSTOMER,
+        origin: 'cloudapi'
+    };
+
+    var opts = createOpts('/vms', vm);
+
+    client.post(opts, vm, function (err, req, res, body) {
+        t.ifError(err);
+        t.equal(res.statusCode, 202);
+        common.checkHeaders(t, res.headers);
+        t.ok(body, 'vm ok');
+
+        jobLocation = '/jobs/' + body.job_uuid;
+        vmLocation = '/vms/' + body.vm_uuid;
+        t.done();
+    });
+};
+
+
+exports.wait_provision_network_names = function (t) {
+    waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
+        t.ifError(err);
+        t.done();
+    });
+};
+
+
+exports.destroy_provision_network_name_vm = function (t) {
+    var opts = createOpts(vmLocation);
+
+    client.del(opts, function (err, req, res, body) {
+        t.ifError(err);
+        t.equal(res.statusCode, 202);
+        common.checkHeaders(t, res.headers);
+        t.ok(body);
+        jobLocation = '/jobs/' + body.job_uuid;
         t.done();
     });
 };
