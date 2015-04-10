@@ -4,6 +4,9 @@
     "useVmAgent": true,
     "ufdsAdminUuid": "{{{ufds_admin_uuid}}}",
     "reserveKvmStorage": "{{reserveKvmStorage}}",
+{{#experimental_fluentd_host}}
+    "fluentd_host": "{{{experimental_fluentd_host}}}",
+{{/experimental_fluentd_host}}
     "api": {
         "port": 80
     },
