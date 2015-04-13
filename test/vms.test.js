@@ -1402,3 +1402,82 @@ exports.destroy_provision_network_name_vm = function (t) {
         t.done();
     });
 };
+
+
+exports.invalid_firewall_rules = function (t) {
+    var errs = {
+        enabled: 'Invalid rule: enabled must be a boolean',
+        global: 'Invalid rule: cannot specify global rules',
+        owner: 'Invalid rule: owner_uuid must be a UUID',
+        rule: 'Invalid rule: rule must be a string',
+        uuid: 'Invalid rule: uuid must be a UUID'
+    };
+
+    var owner = 'c5122cc9-5e58-4d99-bcb9-7ef8ccaaa46e';
+    var rule = 'FROM any TO all vms ALLOW tcp PORT 80';
+    var u = '4d71053b-8fd8-4042-88b2-fe10c7cc7055';
+
+    var invalid = [
+        [ 'asdf', 'Not an array' ],
+        [ {}, 'Not an array' ],
+        [ [ 'asdf' ], 'Must be an array of objects' ],
+
+        [ [ { } ], errs.uuid ],
+        [ [ { uuid: {} } ], errs.uuid ],
+        [ [ { uuid: 'asdf' } ], errs.uuid ],
+
+        [ [ { uuid: u } ], errs.rule ],
+        [ [ { uuid: u, rule: {} } ], errs.rule ],
+
+        [ [ { uuid: u, rule: rule, global: true } ], errs.global ],
+
+        [ [ { uuid: u, rule: rule, owner_uuid: 1 } ], errs.owner ],
+        [ [ { uuid: u, rule: rule, owner_uuid: {} } ], errs.owner ],
+        [ [ { uuid: u, rule: rule, owner_uuid: 'asdf' } ], errs.owner ],
+
+        [ [ { uuid: u, rule: rule, owner_uuid: owner } ], errs.enabled ],
+        [ [ { uuid: u, rule: rule, owner_uuid: owner, enabled: 1 } ],
+            errs.enabled ],
+        [ [ { uuid: u, rule: rule, owner_uuid: owner, enabled: 'asdf' } ],
+            errs.enabled ],
+        [ [ { uuid: u, rule: rule, owner_uuid: owner, enabled: {} } ],
+            errs.enabled ]
+    ];
+
+    async.forEachSeries(invalid, function (params, cb) {
+        var vm = {
+            owner_uuid: CUSTOMER,
+            image_uuid: IMAGE,
+            server_uuid: SERVER.uuid,
+            networks: [ { name: NETWORKS[0].uuid } ],
+            brand: 'joyent-minimal',
+            billing_id: '00000000-0000-0000-0000-000000000000',
+            ram: 64,
+            quota: 10,
+            creator_uuid: CUSTOMER,
+            origin: 'cloudapi',
+            firewall_rules: params[0]
+        };
+
+        var opts = createOpts('/vms', vm);
+
+        client.post(opts, vm, function (err, req, res, body) {
+            t.ok(err, 'error returned');
+            if (err) {
+                t.deepEqual(err.body, {
+                    code: 'ValidationFailed',
+                    message: 'Invalid VM parameters',
+                    errors: [ {
+                        field: 'firewall_rules',
+                        code: 'Invalid',
+                        message: params[1]
+                    } ]
+                }, 'error returned');
+            }
+
+            cb();
+        });
+    }, function () {
+        t.done();
+    });
+};
