@@ -1420,7 +1420,7 @@ exports.invalid_firewall_rules = function (t) {
     var invalid = [
         [ 'asdf', 'Not an array' ],
         [ {}, 'Not an array' ],
-        [ [ 'asdf' ], 'Must be an array of objects' ],
+        [ [ 'asdf' ], 'Not an array of objects' ],
 
         [ [ { } ], errs.uuid ],
         [ [ { uuid: {} } ], errs.uuid ],
