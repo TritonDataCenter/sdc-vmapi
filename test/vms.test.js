@@ -125,7 +125,7 @@ function waitForValue(url, key, value, callback) {
 function waitForNicState(t, query, state, waitCallback) {
     var stop = false;
     var count = 0;
-    var maxSeconds = 30;
+    var maxSeconds = 60;
 
     function getNicStatus(callback) {
         client.napi.get({
