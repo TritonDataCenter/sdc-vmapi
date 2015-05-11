@@ -1297,7 +1297,6 @@ exports.find_new_package_ok = function (t) {
         t.ok(Array.isArray(body));
         t.ok(body.length);
         body.forEach(function (m) {
-            checkMachine(t, m);
             // Any non-null package works
             if (m['billing_id'] &&
                 m['billing_id'] !== '00000000-0000-0000-0000-000000000000') {
