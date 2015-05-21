@@ -14,7 +14,7 @@
     "wf-client": "git+ssh://git@github.com:joyent/sdc-wf-client.git#469fc74",
     "restify": "2.7.0",
     "amqp": "git://github.com/postwait/node-amqp.git#2a5b1e9d2cd5838991ea378251f186c13ba79f97",
-    "nodeunit": "0.7.4",
+    "nodeunit": "0.9.1",
     "redis": "0.7.2",
     "assert-plus": "0.1.0",
     "async": "0.2.6",
