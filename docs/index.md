@@ -245,16 +245,25 @@ attributes present in the payload:
 
 # VM States
 
-The VM response object contains a state attribute that should be used as the high level representation of the machine state. There are three 'running state' values for a VM, two 'provisioning state' values and an additional 'active' state that is only available as a search filter when used in the ListVms API endpoint:
+The VM response object contains a state attribute that should be used as the
+high level representation of the machine state. There are three 'running state'
+values for a VM, two 'provisioning state' values and an additional 'active'
+state that is only available as a search filter when used in the ListVms API
+endpoint:
 
-| VM State     | Description                                                   |
-| ------------ | ------------------------------------------------------------- |
-| running      | Self-explanatory                                              |
-| stopped      | Self-explanatory                                              |
-| destroyed    | Self-explanatory                                              |
-| provisioning | VM is currently being provisioned in the system               |
-| failed       | VM provisioning has failed                                    |
-| active       | When used in ListVms, denotes machines that are not destroyed |
+| VM State     | Description |
+| ------------ | ----------- |
+| running      | Self-explanatory |
+| stopped      | Self-explanatory |
+| destroyed    | Self-explanatory |
+| provisioning | VM is currently being provisioned in the system |
+| incomplete   | |
+| failed       | VM provisioning has failed |
+| active       | When used in ListVms, denotes machines that are not 'destroyed' or 'failed' |
+
+<!-- TODO: validate this is the complete set. What is the translation from
+zone_state? -->
+
 
 In addition, there is a 'zone_state' property that represents the Solaris Zones state, since every VM is really a zone internally. The state property should be used in favor of zone_state at all times, but zone_state is provided in case it's needed for debugging purposes. The following is a table that shows all the possible zone_state values:
 
