@@ -926,7 +926,13 @@ operations is documented below.
 
 ## StartVm (POST /vms/:uuid?action=start)
 
-No additional inputs are needed for this action.
+See [General Inputs](#general-inputs)
+
+Also allows:
+
+| Param      | Type   | Description                                                                                            |
+| ---------- | ------ | ------------------------------------------------------------------------------------------------------ |
+| update     | Object | Optional data to update the vm with before it's started. Currently limited to 'set_internal_metadata'. |
 
 ### Example
 
@@ -942,7 +948,13 @@ No additional inputs are needed for this action.
 
 ## RebootVm (POST /vms/:uuid?action=reboot)
 
-No additional inputs are needed for this action.
+See [General Inputs](#general-inputs)
+
+Also allows:
+
+| Param      | Type   | Description                                                                                            |
+| ---------- | ------ | ------------------------------------------------------------------------------------------------------ |
+| update     | Object | Optional data to update the vm with before it's started. Currently limited to 'set_internal_metadata'. |
 
 ### Example
 
