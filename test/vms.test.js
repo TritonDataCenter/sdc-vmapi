@@ -24,6 +24,7 @@ var muuid;
 var newUuid;
 var jobLocation;
 var vmLocation;
+var vmCount;
 var pkgId;
 
 var IMAGE = 'fd2cc906-8938-11e3-beab-4359c665ac99';
@@ -375,6 +376,87 @@ exports.head_vms_ok = function (t) {
         t.equal(res.statusCode, 200);
         common.checkHeaders(t, res.headers);
         t.ok(res.headers['x-joyent-resource-count']);
+        vmCount = res.headers['x-joyent-resource-count'];
+        t.done();
+    });
+};
+
+
+exports.offset_vms_ok = function(t) {
+    var path = '/vms?ram=' + 128 + '&owner_uuid=' + CUSTOMER + '&offset=2';
+
+    client.get(path, function (err, req, res, body) {
+        t.ifError(err);
+        t.equal(res.statusCode, 200);
+        common.checkHeaders(t, res.headers);
+        t.ok(res.headers['x-joyent-resource-count']);
+        t.ok(body);
+        t.ok(Array.isArray(body));
+        t.equal(body.length, vmCount - 2);
+        t.done();
+    });
+};
+
+
+exports.offset_vms_at_end = function(t) {
+    var path = '/vms?ram=' + 128 + '&owner_uuid=' + CUSTOMER + '&offset=' + vmCount;
+
+    client.get(path, function (err, req, res, body) {
+        t.ifError(err);
+        t.equal(res.statusCode, 200);
+        common.checkHeaders(t, res.headers);
+        t.ok(body);
+        t.ok(Array.isArray(body));
+        t.equal(body.length, 0);
+        t.done();
+    });
+};
+
+
+exports.offset_vms_beyond = function(t) {
+    var path = '/vms?ram=' + 128 + '&owner_uuid=' + CUSTOMER + '&offset=' + vmCount + 5;
+
+    client.get(path, function (err, req, res, body) {
+        t.ifError(err);
+        t.equal(res.statusCode, 200);
+        common.checkHeaders(t, res.headers);
+        t.ok(body);
+        t.ok(Array.isArray(body));
+        t.equal(body.length, 0);
+        t.done();
+    });
+};
+
+
+exports.offset_fields_vms_ok = function(t) {
+    var path = '/vms?ram=' + 128 + '&owner_uuid=' + CUSTOMER + '&fields=uuid,alias&offset=2';
+
+    client.get(path, function (err, req, res, body) {
+        t.ifError(err);
+        t.equal(res.statusCode, 200);
+        common.checkHeaders(t, res.headers);
+        t.ok(res.headers['x-joyent-resource-count']);
+        t.ok(body);
+        t.ok(Array.isArray(body));
+        t.equal(body.length, vmCount - 2);
+        t.notStrictEqual(body[0].uuid, undefined);
+        t.notStrictEqual(body[0].alias, undefined);
+        t.strictEqual(body[0].ram, undefined);
+        t.done();
+    });
+};
+
+
+exports.offset_fields_vms_beyond = function(t) {
+    var path = '/vms?ram=' + 128 + '&owner_uuid=' + CUSTOMER + '&fields=uuid,alias&offset=' + vmCount + 5;
+
+    client.get(path, function (err, req, res, body) {
+        t.ifError(err);
+        t.equal(res.statusCode, 200);
+        common.checkHeaders(t, res.headers);
+        t.ok(body);
+        t.ok(Array.isArray(body));
+        t.equal(body.length, 0);
         t.done();
     });
 };
