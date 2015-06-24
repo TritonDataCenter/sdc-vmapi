@@ -407,7 +407,7 @@ going to be "OK".
 
 # VMs
 
-The Vms endpoint let us get information about VMs living on a SDC install, there is only one VMAPI instance per datacenter. VMAPI acts as an HTTP interface to VM data stored UFDS. VMAPI is used when need to obtain information about particular VMs or when we need perform actions on them such as start, reboot, resize, etc.
+The Vms endpoint let us get information about VMs living on a SDC install; there is only one VMAPI instance per datacenter. VMAPI acts as an HTTP interface to VM data stored in Moray. VMAPI is used to obtain information about particular VMs, or when we need perform actions on them -- such as start, reboot, resize, etc.
 
 ## ListVms (GET /vms)
 
@@ -526,10 +526,10 @@ predicates themselves.
 
 ### Executing Predicate Queries
 
-A predicate search can be performed by passing a "predicate" query parameter to
-the GET /vms endpoint. Keep in mind that predicate must be URL encoded, as it
+A predicate search can be performed by passing a `predicate` query parameter to
+the GET /vms endpoint. Keep in mind that the predicate must be URL encoded, as it
 contains characters like '[', '{' , '&', etc. that will not be parsed correctly
-by the HTTP server and will result in a request error.
+by the HTTP server, and will result in a request error.
 
 In order to make testing of predicates easy, use the following code snippet that
 creates a urlencode helper function that can be called to convert a predicate
@@ -577,19 +577,18 @@ Let's look at some usage examples of search predicates:
 
 ## ListVms With Search Query
 
-There is also an advanced feature in the VMs endpoint where you can execute an LDAP compatible search filter if you want a more precise object search. However you need to consider that the same rules regarding searchable attributes apply to this endpoint, so any search on an non-indexed column will return an error. All the searchable attributes listed in the Inputs table above for the ListVms endpoint can be used, with the exception of create_timestamp where only
-its Unix time form can be passed. Additionally, there is a very special format you need to respect if you want to search VMs by tags. More on this below.
+There is also an advanced feature in the VMs endpoint, where you can execute an LDAP-compatible search filter if you want a more precise object search. However, you need to consider that the same rules regarding searchable attributes apply to this endpoint, so any search on an non-indexed column will return an error. All the searchable attributes listed in the Inputs table above for the ListVms endpoint can be used, with the exception of create_timestamp, where only its Unix time form can be passed. Additionally, there is a very special format you need to respect if you want to search VMs by tags. More on this below.
 
 ### Executing LDAP Search Queries
 
-In order to execute a search query against the /vms endpoint, you need to pass a string parameter called query. The string must have the form of a valid LDAP search filter or else you will get an error. Here are some usage examples of this feature:
+In order to execute a search query against the /vms endpoint, you need to pass a string parameter called `query`. The string must have the form of a valid LDAP search filter, or you will get an error. Here are some usage examples of this feature:
 
     GET /vms?query=(alias=adminui*)
     GET /vms?query=(ram>=1024)
     GET /vms?query=(%26(ram<=256)(alias=adminui*)
     GET /vms?query=(%26(ram=512)(alias=adminui0))
 
-Note how the '&' character is escaped as '%26' since the query must be URL encoded. The only exception in the searchable attributes are tags. Since tags have a special format in the database, they have a different but straightforward format for the search filter. Below is an example of searching VMs with a specific tag by using a logical OR:
+Note how the '&' character is escaped as '%26', since the query must be URL encoded. The only exception in the searchable attributes are tags. Since tags have a special format in the database, they have a different but straightforward format for the search filter. Below is an example of searching VMs with a specific tag by using a logical OR:
 
     GET /vms?query=(|(tags=*-smartdc_type=core-*)(ram>=1024))
 
