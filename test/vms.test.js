@@ -285,6 +285,73 @@ exports.filter_vms_advanced = function (t) {
 };
 
 
+exports.filter_vms_predicate = function (t) {
+    var pred  = JSON.stringify({ eq: [ 'brand', 'joyent-minimal' ] });
+    var path = '/vms?predicate=' + pred;
+
+    client.get(path, function (err, req, res, body) {
+        t.ifError(err);
+
+        t.equal(res.statusCode, 200);
+        common.checkHeaders(t, res.headers);
+
+        t.ok(res.headers['x-joyent-resource-count']);
+        t.ok(body);
+        t.ok(Array.isArray(body));
+        t.ok(body.length);
+
+        body.forEach(function (m) {
+            t.equal(m.brand, 'joyent-minimal');
+        });
+
+        t.done();
+    });
+};
+
+
+exports.filter_vms_mixed = function (t) {
+    var query = qs.escape('(ram=128)');
+    var pred  = JSON.stringify({ eq: [ 'brand', 'joyent-minimal' ] });
+    var args  = 'owner_uuid=' + CUSTOMER;
+
+    var path = '/vms?query=' + query + '&predicate=' + pred + '&' + args;
+
+    client.get(path, function (err, req, res, body) {
+        t.ifError(err);
+
+        t.equal(res.statusCode, 200);
+        common.checkHeaders(t, res.headers);
+
+        t.ok(res.headers['x-joyent-resource-count']);
+        t.ok(body);
+        t.ok(Array.isArray(body));
+        t.ok(body.length);
+
+        body.forEach(function (m) {
+            checkMachine(t, m);
+            t.equal(m.owner_uuid, CUSTOMER);
+            t.equal(m.max_physical_memory, 128);
+            t.equal(m.brand, 'joyent-minimal');
+        });
+
+        // Being extra safe here; if owner_uuid is ignored, then we get
+        // vulnerabilities. Check with a non-existent owner_uuid:
+        var badArgs = 'owner_uuid=ba4c20e0-a732-4abe-a185-8f76101e6b90';
+        path = '/vms?query=' + query + '&predicate=' + pred + '&' + badArgs;
+
+        client.get(path, function (err2, req2, res2, body2) {
+            t.ifError(err2);
+
+            t.equal(res2.statusCode, 200);
+            t.ok(Array.isArray(body2));
+            t.equal(body2.length, 0);
+
+            t.done();
+        });
+    });
+};
+
+
 exports.limit_vms_ok = function (t) {
     var path = '/vms?limit=5';
 
