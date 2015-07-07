@@ -1352,6 +1352,49 @@ exports.wait_provisioned_with_package_job = function (t) {
 };
 
 
+// if there's not enough spare RAM on a server, and we're resizing upwards, we
+// want it to fail
+exports.resize_package_up_fail = function (t) {
+    if (SERVER.datacenter !== 'coal' || !SERVER.headnode)
+        return t.done();
+
+    var path = '/vms?ram=' + 1024 + '&owner_uuid=' + CUSTOMER;
+    var largerPkg;
+
+    client.get(path, function (err, req, res, body) {
+        t.ifError(err);
+        t.equal(res.statusCode, 200);
+        body.forEach(function (m) {
+            // Any non-null package works
+            if (m['billing_id'] &&
+                m['billing_id'] !== '00000000-0000-0000-0000-000000000000') {
+                largerPkg = m['billing_id'];
+            }
+        });
+
+        var params = { action: 'update', billing_id: largerPkg };
+
+        var opts = createOpts(vmLocation, params);
+
+        return client.post(opts, params, function (err2, req2, res2, body2) {
+            t.ok(err2);
+            t.equal(res2.statusCode, 409);
+
+            t.equal(body2.code, 'ValidationFailed');
+            t.equal(body2.message, 'Invalid VM update parameters');
+
+            var error = body2.errors[0];
+            t.equal(error.field, 'ram');
+            t.equal(error.code, 'InsufficientCapacity');
+            t.ok(error.message.match('Required additional RAM \\(896\\) ' +
+                'exceeds the server\'s available RAM \\(-\\d+\\)'));
+
+            t.done();
+        });
+    });
+};
+
+
 exports.find_new_package_ok = function (t) {
     var path = '/vms?ram=' + 256 + '&owner_uuid=' + CUSTOMER;
 
@@ -1390,6 +1433,44 @@ exports.resize_package = function (t) {
 
 
 exports.wait_resize_package_job = function (t) {
+    waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
+        t.ifError(err);
+        t.done();
+    });
+};
+
+
+// regardless of spare RAM on server, we always want resizing down to succeed
+exports.resize_package_down = function (t) {
+    var path = '/vms?ram=' + 128 + '&owner_uuid=' + CUSTOMER;
+    var smallerPkg;
+
+    client.get(path, function (err, req, res, body) {
+        t.ifError(err);
+        t.equal(res.statusCode, 200);
+        body.forEach(function (m) {
+            // Any non-null package works
+            if (m['billing_id'] &&
+                m['billing_id'] !== '00000000-0000-0000-0000-000000000000') {
+                smallerPkg = m['billing_id'];
+            }
+        });
+
+        var params = { action: 'update', billing_id: smallerPkg };
+
+        var opts = createOpts(vmLocation, params);
+
+        return client.post(opts, params, function (err2, req2, res2, body2) {
+            t.ifError(err2);
+            t.equal(res.statusCode, 200);
+            jobLocation = '/jobs/' + body2.job_uuid;
+            t.done();
+        });
+    });
+};
+
+
+exports.wait_resize_package_job_2 = function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
         t.ifError(err);
         t.done();
