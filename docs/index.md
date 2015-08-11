@@ -415,15 +415,18 @@ Returns a list of VMs according the specified search filter.
 
 ### Inputs
 
-All inputs are optional.
+All inputs are optional. Inputs that are not listed below are invalid, and
+will result in a request error.
 
 | Param            | Type                                             | Description                                     |
 | ---------------- | ------------------------------------------------ | ----------------------------------------------- |
+| uuid             | UUID                                             | VM uuid                                         |
 | owner_uuid       | UUID                                             | VM Owner                                        |
 | server_uuid      | UUID                                             | Server where the VM lives                       |
 | image_uuid       | UUID                                             | Image of the VM                                 |
-| billing_uuid     | UUID                                             | UUID of the package the VM was created with     |
+| billing_id       | UUID                                             | UUID of the package the VM was created with     |
 | brand            | String                                           | Brand of the VM (joyent, joyent-minimal or kvm) |
+| docker           | Boolean                                          | true if the VM is a docker VM, false otherwise  |
 | alias            | String                                           | VM Alias                                        |
 | state            | String                                           | running, stopped, active or destroyed           |
 | ram              | Number                                           | Amount of memory of the VM                      |
@@ -454,15 +457,16 @@ example requests that use the fields query parameter:
 ### Collection Size Control Inputs
 
 ListVms also allows controlling the size of the resulting collection with the
-use of the sort, limit and offset parameters. These three parameters can be used
-on either the regular or the LDAP query version of the ListVms endpoint.
+use of the sort, limit, and marker parameters. "sort" and "limit" and can be
+used on either the regular or the LDAP query version of the ListVms endpoint.
 
 | Param      | Type   | Description                                         |
 | ---------- | ------ | --------------------------------------------------- |
 | sort       | String | Sort by any of the ListVms inputs (except tags).    |
 | sort.order | String | Order direction. See below                          |
 | limit      | Number | Return only the given number of VMs                 |
-| offset     | Number | Limit the collection starting from the given offset |
+| marker     | UUID   | Limit the collection starting from the given VM     |
+|            |        | whose UUID is greater than "marker".                |
 
 The *sort* direction can be 'asc' (ascending) or 'desc' (descending), and it is
 'desc' by default. The following are some examples of valid values for the *sort*
@@ -471,6 +475,60 @@ parameter:
     sort=uuid (results in 'uuid DESC')
     sort=alias.desc (results in 'uuid DESC')
     sort=alias.asc (results in 'uuid ASC')
+
+__Since version 8.0.0, the default and maximum limit on the size of the
+resulting collection is 1000.__ In order to paginate through the whole set of
+VMs, one should either use the "marker" parameter described above, or use the
+joyent/node-sdc-clients module.
+
+#### Using the "marker" parameter to paginate through results
+
+When listing VMs, the number of VMs returned in the response for one request
+is limited to 1000 entries. If there's more VMs to list for a given set of
+parameters/filters, more than one request will need to be sent with the same
+parameters to paginate through the results. Each request will fetch one page
+of results.
+
+When paginating through results, set the "marker" parameter for each page but
+the first one. Set the value of "marker" to the uuid of the latest entry of
+the previous page.
+
+For instance, here's an example of how to paginate through a list of 4 VMs
+while using a limit of 2 entries per response:
+
+  1. Send the `GET /vms?limit=2` request. The "marker" parameter is not used
+  because this request gets the first page of results.
+
+  2. The response for this request is for instance: `[{uuid: 1},{uuid: 2}]`
+
+  3. Send the same request, this time adding a "marker" parameter. Its value
+  is the uuid of the latest entry from the latest results: `GET
+  /vms?limit=2&marker=2`
+
+  4. The response to this request is for instance: `[{uuid: 3},{uuid: 4}]`
+
+  5. Now send the same request as the previous one, but set "marker" to be the
+  uuid of the latest entry from the latest results: `GET
+  /vms?limit=2&marker=4`.
+
+  6. The response to this request is an empty array (`[]`) because there's
+  only 4 VMs in the data set. We're done paginating through results.
+
+Please note that in reality, uuids are not simple numbers and they are not
+necessarily contiguous values.
+
+#### Deprecated parameters
+
+ListVms also supports parameter that have been deprecated and should not be
+used anymore.
+
+| Deprecated param | Type   | Description                                   |
+| ---------------- | ------ | --------------------------------------------- |
+| offset           | Number | Limit the collection starting from the given  |
+|                  |        | offset                                        |
+
+"offset" and "marker" cannot be used at the same time, and using them both will
+result in a request error.
 
 ### Tags
 

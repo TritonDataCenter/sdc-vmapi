@@ -53,6 +53,8 @@ function usage () {
     echo "Options:"
     echo "  -l          Start a local VMAPI using './config.json'"
     echo "              and test against that."
+    echo "  -f FILTER   Filter pattern (substring match) for test files to run."
+
 }
 
 function vmapi_is_running () {
@@ -91,6 +93,7 @@ opt_reporter=tap
 opt_mode=dc
 opt_local=
 opt_offline=
+opt_test_pattern=
 while getopts "hcqf:r:lpo" opt
 do
     case "$opt" in
@@ -104,12 +107,23 @@ do
         l)
             opt_local=yes
             ;;
+        f)
+            opt_test_pattern=$OPTARG
+            ;;
         *)
             usage
-            exit 1
+            exit 0
             ;;
     esac
 done
+
+# Unrecognized command line option
+shift $((OPTIND - 1))
+if [[ "x$@" != "x" ]]; then
+    usage
+    exit 0
+fi
+
 script_opts=""
 if [[ -n "$opt_local" ]]; then
     script_opts+=" -l"
@@ -185,6 +199,10 @@ fi
 # Gather tests to run.
 echo ""
 test_files=$(ls -1 test/*.test.js)
+if [[ -n "$opt_test_pattern" ]]; then
+    test_files=$(echo "$test_files" | grep "$opt_test_pattern" || true)
+    echo "# Running filtered set of test files: $test_files"
+fi
 
 # Run the tests.
 retval=0
