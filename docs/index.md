@@ -457,15 +457,24 @@ example requests that use the fields query parameter:
 ### Collection Size Control Inputs
 
 ListVms also allows controlling the size of the resulting collection with the
-use of the sort, limit and offset parameters. These three parameters can be used
-on either the regular or the LDAP query version of the ListVms endpoint.
+use of the sort, limit, and marker parameters. "sort" and "limit" can be
+used on either the regular or the LDAP query version of the ListVms endpoint.
 
 | Param      | Type   | Description                                         |
 | ---------- | ------ | --------------------------------------------------- |
 | sort       | String | Sort by any of the ListVms inputs (except tags).    |
 | sort.order | String | Order direction. See below                          |
 | limit      | Number | Return only the given number of VMs                 |
-| offset     | Number | Limit the collection starting from the given offset |
+| marker     | String | Limit the collection starting from the given VM represented by "marker". |
+
+#### Limit
+
+**Since version 8.0.0, the default and maximum limit on the size of the
+resulting collection is 1000.** In order to paginate through the whole set of
+VMs, one should either use the "marker" parameter described above, or use the
+joyent/node-sdc-clients module.
+
+#### Sorting
 
 The *sort* direction can be 'asc' (ascending) or 'desc' (descending), and it is
 'desc' by default. The following are some examples of valid values for the *sort*
@@ -474,6 +483,184 @@ parameter:
     sort=uuid (results in 'uuid DESC')
     sort=alias.desc (results in 'uuid DESC')
     sort=alias.asc (results in 'uuid ASC')
+
+By default, any response is sorted by `uuid` descending so that it can be
+used as the first page of subsequent paginated requests using the `marker`
+parameter.
+
+#### Using the "marker" parameter to paginate through results
+
+When listing VMs, the number of VMs returned in the response for one request
+is limited to 1000 entries. If there are more VMs to list for a given set of
+parameters/filters, more than one request will need to be sent with the same
+parameters to paginate through the results. Each request will fetch one page
+of results.
+
+When paginating through results, set the "marker" parameter for each page but
+the first one. Set the value of "marker" to a string that represents the
+latest entry of the previous page.
+
+How to represent the latest entry of the previous page depends on whether the
+"sort" parameter is used (more below in the sub-section entitled "Using
+markers when using the "sort" parameter").
+
+But for now let's consider the simple use case of not using the "sort"
+parameter and describe how to paginate through a list of 4 VMs while using a
+limit of 2 entries per response:
+
+  1. Send the `GET /vms?limit=2` request. The "marker" parameter is not used
+  because this request gets the first page of results.
+
+  2. The response for this request is for instance: `[{uuid: 1},{uuid: 2}]`
+
+  3. Send the same request, this time adding a "marker" parameter. Its value
+  is a JSON string that represents an object with the uuid of the latest entry
+  from the latest results: `GET /vms?limit=2&marker={"uuid": 2}`
+
+  4. The response to this request is for instance: `[{uuid: 3},{uuid: 4}]`
+
+  5. Now send the same request as the previous one, but set "marker" to include the
+  uuid of the latest entry from the latest results: `GET
+  /vms?limit=2&marker={"uuid": 4}`.
+
+  6. The response to this request is an empty array (`[]`) because there's
+  only 4 VMs in the data set. We're done paginating through results.
+
+Please note that in reality, uuids are not simple numbers and they are not
+necessarily contiguous values.
+
+##### Valid markers
+
+A valid marker is a string that satisfies the following constraints:
+
+1. It is a JSON string that represents a JavaScript object literal. JSON strings
+that represent strings, arrays or anything else that is not an object literal
+will result in a request error.
+
+2. It represents an object that has at most two properties: `uuid` and any
+property on which it is possible to sort the result set if a sort parameter is
+used.
+
+##### Using markers when using the "sort" parameter
+
+###### Always include one strict total order field in the marker
+
+Let's consider that we're listing VMs and sorting them by time of creation
+descending:
+
+`GET /vms?sort=create_timestamp.DESC`
+
+In this case, it may be tempting to use only the `create_timestamp` value of
+the latest VM object as the marker, and send the following request to get the
+second page of results:
+
+`GET /vms?sort=create_timestamp.DESC&marker={"create_timestamp": "some_timestamp"}`
+
+The problem with this request is that two or more VMs can have the same value
+for the `create_timestamp` property, and thus the server cannot determine
+which one(s) to include in the results.
+
+In fact, the server will respond to this request with the following error:
+
+```
+{
+  "code": "ValidationFailed",
+  "message": "Invalid Parameters",
+  "errors": [
+    {
+      "field": "marker",
+      "code": "Invalid",
+      "message": "Invalid marker: {\"create_timestamp\":\"some_timestamp\"}. A marker needs to have a uuid property from which a strict total order can be established"
+    }
+  ]
+}
+```
+
+The solution to this problem is to always include in the marker a property
+that allows to establish a strict total order over the results set so that it
+can represent a single object without any ambiguity. Currently, as the error
+message mentioned above indicates, the only property that provides this
+guarantee is `uuid`.
+
+Thus, a correct request to get the second page of results is:
+
+`GET /vms?sort=create_timestamp.DESC&marker={"create_timestamp": "some_timestamp", "uuid": "uuid-of-latest-vm"}`
+
+###### Always include the sort field in the marker
+
+When using both the `sort` and `marker` parameters, make sure the sort field is
+included in the marker. For instance, the following request:
+
+`GET /vms?sort=create_timestamp.DESC&maker={"uuid":"some-uuid"}`
+
+will result in the following error message being sent:
+
+```
+{
+  "code": "ValidationFailed",
+  "message": "Invalid Parameters",
+  "errors": [
+    {
+      "field": "marker",
+      "code": "Invalid",
+      "message": "Invalid marker: {\"uuid\":\"some-uuid\"}. All sort fields must be present in marker. Sort fields: create_timestamp."
+    }
+  ]
+}
+```
+
+To solve this problem, just include the `create_timestamp` value for the
+latest item in the current result set in the marker:
+
+`GET /vms?sort=create_timestamp.DESC&maker={"create_timestamp":"some-timestamp","uuid":"some-uuid"}`
+
+###### Always include marker fields in the sort parameter, except for the `uuid` field
+
+When using a marker with a field other than `uuid`, make sure to include this
+field in the sort parameter. It is not necessary to include the `uuid` field
+as a sort parameter when using a marker because responses are already sorted
+by uuid by default.
+
+For instance, the following request:
+
+`GET /vms?marker:{"uuid": "someuuid"}`
+
+will not result in an error, but this request:
+
+`GET /vms?marker:{"uuid": "someuuid", "create_timestamp": "some_timestamp"}`
+
+will result in the following error message being sent:
+
+```
+{
+  "code": "ValidationFailed",
+  "message": "Invalid Parameters",
+  "errors": [
+    {
+      "field": "marker",
+      "code": "Invalid",
+      "message": "Invalid marker: {\"uuid\":\"someuuid\",\"create_timestamp\":\"some_timestamp\"}. All marker keys except uuid must be present in the sort parameter. Sort fields: undefined."
+    }
+  ]
+}
+```
+
+To fix this problem, just add a `sort` parameter to the request, like following:
+
+`GET /vms?sort=create_timestamp&marker:{"uuid": "someuuid", "create_timestamp": "some_timestamp"}`
+
+#### Deprecated parameters
+
+ListVms also supports parameter that have been deprecated and should not be
+used anymore.
+
+| Deprecated param | Type   | Description                                   |
+| ---------------- | ------ | --------------------------------------------- |
+| offset           | Number | Limit the collection starting from the given  |
+|                  |        | offset                                        |
+
+"offset" and "marker" cannot be used at the same time, and using them both will
+result in a request error.
 
 ### Tags
 
