@@ -415,15 +415,18 @@ Returns a list of VMs according the specified search filter.
 
 ### Inputs
 
-All inputs are optional.
+All inputs are optional. Inputs that are not listed below are invalid, and
+will result in a request error.
 
 | Param            | Type                                             | Description                                     |
 | ---------------- | ------------------------------------------------ | ----------------------------------------------- |
+| uuid             | UUID                                             | VM uuid                                         |
 | owner_uuid       | UUID                                             | VM Owner                                        |
 | server_uuid      | UUID                                             | Server where the VM lives                       |
 | image_uuid       | UUID                                             | Image of the VM                                 |
-| billing_uuid     | UUID                                             | UUID of the package the VM was created with     |
+| billing_id       | UUID                                             | UUID of the package the VM was created with     |
 | brand            | String                                           | Brand of the VM (joyent, joyent-minimal or kvm) |
+| docker           | Boolean                                          | true if the VM is a docker VM, false otherwise  |
 | alias            | String                                           | VM Alias                                        |
 | state            | String                                           | running, stopped, active or destroyed           |
 | ram              | Number                                           | Amount of memory of the VM                      |
