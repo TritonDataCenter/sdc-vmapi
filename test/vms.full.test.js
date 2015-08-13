@@ -9,13 +9,14 @@
  */
 
 // var test = require('tap').test;
-var assert = require('assert');
+var assert = require('assert-plus');
 var uuid = require('libuuid');
 var qs = require('querystring');
 var async = require('async');
 
 var common = require('./common');
-
+var vmCommon = require('../lib/common/vm-common');
+var MORAY = require('../lib/apis/moray');
 
 // --- Globals
 
@@ -543,7 +544,6 @@ exports.create_vm_locality_not_ok = function (t) {
         t.done();
     });
 };
-
 
 exports.create_vm = function (t) {
     var md = {
