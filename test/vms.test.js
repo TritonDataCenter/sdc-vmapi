@@ -382,7 +382,7 @@ exports.head_vms_ok = function (t) {
 };
 
 
-exports.offset_vms_ok = function(t) {
+exports.offset_vms_ok = function (t) {
     var path = '/vms?ram=' + 128 + '&owner_uuid=' + CUSTOMER + '&offset=2';
 
     client.get(path, function (err, req, res, body) {
@@ -398,8 +398,9 @@ exports.offset_vms_ok = function(t) {
 };
 
 
-exports.offset_vms_at_end = function(t) {
-    var path = '/vms?ram=' + 128 + '&owner_uuid=' + CUSTOMER + '&offset=' + vmCount;
+exports.offset_vms_at_end = function (t) {
+    var path = '/vms?ram=' + 128 + '&owner_uuid=' + CUSTOMER +
+        '&offset=' + vmCount;
 
     client.get(path, function (err, req, res, body) {
         t.ifError(err);
@@ -413,8 +414,9 @@ exports.offset_vms_at_end = function(t) {
 };
 
 
-exports.offset_vms_beyond = function(t) {
-    var path = '/vms?ram=' + 128 + '&owner_uuid=' + CUSTOMER + '&offset=' + vmCount + 5;
+exports.offset_vms_beyond = function (t) {
+    var path = '/vms?ram=' + 128 + '&owner_uuid=' + CUSTOMER +
+        '&offset=' + vmCount + 5;
 
     client.get(path, function (err, req, res, body) {
         t.ifError(err);
@@ -428,8 +430,9 @@ exports.offset_vms_beyond = function(t) {
 };
 
 
-exports.offset_fields_vms_ok = function(t) {
-    var path = '/vms?ram=' + 128 + '&owner_uuid=' + CUSTOMER + '&fields=uuid,alias&offset=2';
+exports.offset_fields_vms_ok = function (t) {
+    var path = '/vms?ram=' + 128 + '&owner_uuid=' + CUSTOMER +
+        '&fields=uuid,alias&offset=2';
 
     client.get(path, function (err, req, res, body) {
         t.ifError(err);
@@ -447,8 +450,9 @@ exports.offset_fields_vms_ok = function(t) {
 };
 
 
-exports.offset_fields_vms_beyond = function(t) {
-    var path = '/vms?ram=' + 128 + '&owner_uuid=' + CUSTOMER + '&fields=uuid,alias&offset=' + vmCount + 5;
+exports.offset_fields_vms_beyond = function (t) {
+    var path = '/vms?ram=' + 128 + '&owner_uuid=' + CUSTOMER +
+        '&fields=uuid,alias&offset=' + vmCount + 5;
 
     client.get(path, function (err, req, res, body) {
         t.ifError(err);
