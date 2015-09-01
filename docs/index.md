@@ -1748,6 +1748,7 @@ job for the backend system.
 | stop      |
 | reboot    |
 | update    |
+| destroy   |
 
 ### Example
 
