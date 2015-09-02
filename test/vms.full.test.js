@@ -15,8 +15,6 @@ var qs = require('querystring');
 var async = require('async');
 
 var common = require('./common');
-var vmCommon = require('../lib/common/vm-common');
-var MORAY = require('../lib/apis/moray');
 
 // --- Globals
 
@@ -432,8 +430,10 @@ exports.offset_vms_beyond = function (t) {
 
 
 exports.offset_fields_vms_ok = function (t) {
+    // Currently we get lucky because the dhcpd0 and assets0 zones
+    // are 128MBs zones
     var path = '/vms?ram=' + 128 + '&owner_uuid=' + CUSTOMER +
-        '&fields=uuid,alias&offset=2';
+        '&fields=uuid,alias&offset=1';
 
     client.get(path, function (err, req, res, body) {
         t.ifError(err);
@@ -442,10 +442,16 @@ exports.offset_fields_vms_ok = function (t) {
         t.ok(res.headers['x-joyent-resource-count']);
         t.ok(body);
         t.ok(Array.isArray(body));
-        t.equal(body.length, vmCount - 2);
-        t.notStrictEqual(body[0].uuid, undefined);
-        t.notStrictEqual(body[0].alias, undefined);
-        t.strictEqual(body[0].ram, undefined);
+        t.equal(body.length, vmCount - 1);
+        // TODO: this should not depend on the number of VMs, instead
+        // we should create a known specific number of VMs as a setup step
+        // for this test. Thus we would know that we have at least one VM
+        // in the response
+        if (body.length > 0) {
+            t.notStrictEqual(body[0].uuid, undefined);
+            t.notStrictEqual(body[0].alias, undefined);
+            t.strictEqual(body[0].ram, undefined);
+        }
         t.done();
     });
 };
