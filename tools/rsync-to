@@ -38,9 +38,11 @@ rsync -av ${TOP}/ \
     $NODE:/zones/$VMAPI_ZONE/root/opt/smartdc/vmapi/ \
     $extraOpts \
     --exclude .git/ \
+    --exclude /node_modules/ \
     --exclude /config.json \
     --exclude /deps/ \
     --exclude /doc/ \
+    --exclude /smf/ \
     --exclude /tools/ \
     --exclude /tmp/
 
