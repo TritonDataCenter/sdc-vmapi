@@ -54,6 +54,12 @@ function checkMachine(t, vm) {
     t.ok(vm.state, 'state');
     t.ok(vm.zfs_io_priority, 'zfs io');
     t.ok(vm.owner_uuid, 'owner uuid');
+
+    // Question: why is quota null when the VM state is destroyed (unlike, say,
+    // ram). Shouldn't this be persisted into destruction?
+    if (vm.state && vm.state !== 'destroyed') {
+        t.ok(vm.quota, 'state');
+    }
 }
 
 
