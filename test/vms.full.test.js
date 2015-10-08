@@ -47,7 +47,6 @@ function checkMachine(t, vm) {
     t.ok(vm.brand, 'brand');
     t.ok(vm.ram, 'ram');
     t.ok(vm.max_swap, 'swap');
-    t.ok(vm.quota, 'disk');
     t.ok(vm.cpu_shares, 'cpu shares');
     t.ok(vm.max_lwps, 'lwps');
     t.ok(vm.create_timestamp, 'create timestamp');
@@ -58,7 +57,7 @@ function checkMachine(t, vm) {
     // Question: why is quota null when the VM state is destroyed (unlike, say,
     // ram). Shouldn't this be persisted into destruction?
     if (vm.state && vm.state !== 'destroyed') {
-        t.ok(vm.quota, 'state');
+        t.ok(vm.quota, 'disk');
     }
 }
 
