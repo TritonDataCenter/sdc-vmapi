@@ -556,6 +556,77 @@ exports.create_vm_locality_not_ok = function (t) {
     });
 };
 
+exports.create_vm_tags_not_ok = function (t) {
+    function callVmapi(tags, expectedErr, next) {
+        var vm = {
+            owner_uuid: CUSTOMER,
+            image_uuid: IMAGE,
+            server_uuid: SERVER.uuid,
+            networks: [ { uuid: NETWORKS[0].uuid } ],
+            brand: 'joyent-minimal',
+            billing_id: '00000000-0000-0000-0000-000000000000',
+            ram: 64,
+            quota: 10,
+            creator_uuid: CUSTOMER,
+            origin: 'cloudapi',
+            role_tags: ['fd48177c-d7c3-11e3-9330-28cfe91a33c9'],
+            tags: tags
+        };
+
+        var opts = createOpts('/vms', vm);
+        client.post(opts, vm, function (err, req, res, body) {
+            t.ok(err);
+            t.equal(err.restCode, 'ValidationFailed');
+            t.equal(err.message, 'Invalid VM parameters');
+            t.equal(res.statusCode, 409);
+
+            t.deepEqual(body, {
+                code: 'ValidationFailed',
+                message: 'Invalid VM parameters',
+                errors: [ {
+                    field: 'tags',
+                    code: 'Invalid',
+                    message: expectedErr
+                } ]
+            });
+
+            next();
+        });
+    }
+
+    function checkBadTritonTag(next) {
+        var msg = 'Unrecognized special triton tag "triton.foo"';
+        callVmapi({ 'triton.foo': true }, msg, next);
+    }
+
+    function checkBadTritonTagType1(next) {
+        var msg = '"triton.cns.services" must be a string';
+        callVmapi({ 'triton.cns.services': true }, msg, next);
+    }
+
+    function checkBadTritonTagType2(next) {
+        var msg = '"triton.cns.disable" must be a boolean';
+        callVmapi({ 'triton.cns.disable': 'true' }, msg, next);
+    }
+
+    function checkBadTritonDNS(next) {
+        var msg = '"_foo.bar" is not DNS safe';
+        callVmapi({ 'triton.cns.services': 'foo,_foo.bar' }, msg, next);
+    }
+
+    function checkBadReservedDockerTag(next) {
+        var msg = 'Special tag "docker:label:com.docker." not supported';
+        callVmapi({ 'docker:label:com.docker.': 'foo,_foo.bar' }, msg, next);
+    }
+
+    async.series([
+        checkBadTritonTag, checkBadTritonTagType1, checkBadTritonTagType2,
+        checkBadTritonDNS, checkBadReservedDockerTag
+    ], function () {
+        t.done();
+    });
+};
+
 exports.create_vm = function (t) {
     var md = {
         foo: 'bar',
@@ -937,6 +1008,138 @@ exports.change_owner_without_uuid = function (t) {
     });
 };
 
+
+exports.change_with_bad_tags = function (t) {
+    function action(tags, expectedErr, next) {
+        var params = {
+            action: 'update',
+            tags: tags
+        };
+
+        var opts = createOpts(vmLocation, params);
+
+        client.post(opts, params, function (err, req, res, body) {
+            t.ok(err);
+            t.equal(err.restCode, 'ValidationFailed');
+            t.equal(err.message, 'Invalid VM update parameters');
+            t.equal(res.statusCode, 409);
+
+            t.deepEqual(body, {
+                code: 'ValidationFailed',
+                message: 'Invalid VM update parameters',
+                errors: [ {
+                    field: 'tags',
+                    code: 'Invalid',
+                    message: expectedErr
+                } ]
+            });
+
+            next();
+        });
+    }
+
+    function call(method, tags, expectedErr, next) {
+        var path = '/vms/' + newUuid + '/tags';
+        var opts = createOpts(path, tags);
+
+        client[method](opts, tags, function (err, req, res, body) {
+            t.ok(err);
+            t.equal(err.restCode, 'ValidationFailed');
+            t.equal(err.message, 'Invalid Metadata parameters');
+            t.equal(res.statusCode, 409);
+
+            t.deepEqual(body, {
+                code: 'ValidationFailed',
+                message: 'Invalid Metadata parameters',
+                errors: [ {
+                    field: 'tags',
+                    code: 'Invalid',
+                    message: expectedErr
+                } ]
+            });
+
+            next();
+        });
+    }
+
+    var unrecognizedMsg = 'Unrecognized special triton tag "triton.foo"';
+    var stringMsg = '"triton.cns.services" must be a string';
+    var booleanMsg = '"triton.cns.disable" must be a boolean';
+    var dnsMsg = '"_foo.bar" is not DNS safe';
+    var dockerMsg = 'Special tag "docker:label:com.docker." not supported';
+
+    function actionBadTritonTag(next) {
+        action({ 'triton.foo': true }, unrecognizedMsg, next);
+    }
+
+    function actionBadTritonTagType1(next) {
+        action({ 'triton.cns.services': true }, stringMsg, next);
+    }
+
+    function actionBadTritonTagType2(next) {
+        action({ 'triton.cns.disable': 'true' }, booleanMsg, next);
+    }
+
+    function actionBadTritonDNS(next) {
+        action({ 'triton.cns.services': 'foo,_foo.bar' }, dnsMsg, next);
+    }
+
+    function actionBadReservedDockerTag(next) {
+        action({ 'docker:label:com.docker.': 'foo,_foo.bar' }, dockerMsg, next);
+    }
+
+    function postBadTritonTag(next) {
+        call('post', { 'triton.foo': true }, unrecognizedMsg, next);
+    }
+
+    function postBadTritonTagType1(next) {
+        call('post', { 'triton.cns.services': true }, stringMsg, next);
+    }
+
+    function postBadTritonTagType2(next) {
+        call('post', { 'triton.cns.disable': 'true' }, booleanMsg, next);
+    }
+
+    function postBadTritonDNS(next) {
+        call('post', { 'triton.cns.services': 'foo,_foo.bar' }, dnsMsg, next);
+    }
+
+    function postBadReservedDockerTag(next) {
+        call('post', { 'docker:label:com.docker.': 'foo,_foo.bar' }, dockerMsg,
+            next);
+    }
+
+    function putBadTritonTag(next) {
+        call('put', { 'triton.foo': true }, unrecognizedMsg, next);
+    }
+
+    function putBadTritonTagType1(next) {
+        call('put', { 'triton.cns.services': true }, stringMsg, next);
+    }
+
+    function putBadTritonTagType2(next) {
+        call('put', { 'triton.cns.disable': 'true' }, booleanMsg, next);
+    }
+
+    function putBadTritonDNS(next) {
+        call('put', { 'triton.cns.services': 'foo,_foo.bar' }, dnsMsg, next);
+    }
+
+    function putBadReservedDockerTag(next) {
+        call('put', { 'docker:label:com.docker.': 'foo,_foo.bar' }, dockerMsg,
+            next);
+    }
+
+    async.series([
+        actionBadTritonTag, actionBadTritonTagType1, actionBadTritonTagType2,
+        actionBadTritonDNS, actionBadReservedDockerTag, postBadTritonTag,
+        postBadTritonTagType1, postBadTritonTagType2, postBadTritonDNS,
+        postBadReservedDockerTag, putBadTritonTag, putBadTritonTagType1,
+        putBadTritonTagType2, putBadTritonDNS, putBadReservedDockerTag
+    ], function () {
+        t.done();
+    });
+};
 
 
 exports.list_tags = function (t) {
