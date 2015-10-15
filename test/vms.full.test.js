@@ -621,7 +621,7 @@ exports.create_vm_tags_not_ok = function (t) {
 
     async.series([
         checkBadTritonTag, checkBadTritonTagType1, checkBadTritonTagType2,
-        checkBadTritonDNS, checkBadReservedDockerTag
+        checkBadTritonDNS
     ], function () {
         t.done();
     });
@@ -1132,10 +1132,9 @@ exports.change_with_bad_tags = function (t) {
 
     async.series([
         actionBadTritonTag, actionBadTritonTagType1, actionBadTritonTagType2,
-        actionBadTritonDNS, actionBadReservedDockerTag, postBadTritonTag,
-        postBadTritonTagType1, postBadTritonTagType2, postBadTritonDNS,
-        postBadReservedDockerTag, putBadTritonTag, putBadTritonTagType1,
-        putBadTritonTagType2, putBadTritonDNS, putBadReservedDockerTag
+        actionBadTritonDNS, postBadTritonTag, postBadTritonTagType1,
+        postBadTritonTagType2, postBadTritonDNS, putBadTritonTag,
+        putBadTritonTagType1, putBadTritonTagType2, putBadTritonDNS
     ], function () {
         t.done();
     });
