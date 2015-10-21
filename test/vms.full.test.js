@@ -556,6 +556,7 @@ exports.create_vm_locality_not_ok = function (t) {
     });
 };
 
+
 exports.create_vm_tags_not_ok = function (t) {
     function callVmapi(tags, expectedErr, next) {
         var vm = {
@@ -614,11 +615,6 @@ exports.create_vm_tags_not_ok = function (t) {
         callVmapi({ 'triton.cns.services': 'foo,_foo.bar' }, msg, next);
     }
 
-    function checkBadReservedDockerTag(next) {
-        var msg = 'Special tag "docker:label:com.docker." not supported';
-        callVmapi({ 'docker:label:com.docker.': 'foo,_foo.bar' }, msg, next);
-    }
-
     async.series([
         checkBadTritonTag, checkBadTritonTagType1, checkBadTritonTagType2,
         checkBadTritonDNS
@@ -626,6 +622,7 @@ exports.create_vm_tags_not_ok = function (t) {
         t.done();
     });
 };
+
 
 exports.create_vm = function (t) {
     var md = {
@@ -1134,7 +1131,9 @@ exports.change_with_bad_tags = function (t) {
         actionBadTritonTag, actionBadTritonTagType1, actionBadTritonTagType2,
         actionBadTritonDNS, postBadTritonTag, postBadTritonTagType1,
         postBadTritonTagType2, postBadTritonDNS, putBadTritonTag,
-        putBadTritonTagType1, putBadTritonTagType2, putBadTritonDNS
+        putBadTritonTagType1, putBadTritonTagType2, putBadTritonDNS,
+        actionBadReservedDockerTag, postBadReservedDockerTag,
+        putBadReservedDockerTag
     ], function () {
         t.done();
     });
@@ -1924,6 +1923,235 @@ exports.invalid_firewall_rules = function (t) {
             cb();
         });
     }, function () {
+        t.done();
+    });
+};
+
+
+exports.create_docker_vm = function (t) {
+    var vm = {
+        owner_uuid: CUSTOMER,
+        image_uuid: IMAGE,
+        server_uuid: SERVER.uuid,
+        networks: [ { uuid: NETWORKS[0].uuid } ],
+        brand: 'joyent-minimal',
+        billing_id: '00000000-0000-0000-0000-000000000000',
+        ram: 64,
+        quota: 10,
+        creator_uuid: CUSTOMER,
+        origin: 'cloudapi',
+        tags: {
+           'docker:label:com.docker.blah': 'quux'
+        }
+    };
+
+    var opts = createOpts('/vms', vm);
+
+    client.post(opts, vm, function (err, req, res, body) {
+        t.ifError(err);
+        t.equal(res.statusCode, 202);
+
+        jobLocation = '/jobs/' + body.job_uuid;
+        newUuid = body.vm_uuid;
+        vmLocation = '/vms/' + newUuid;
+
+        t.done();
+    });
+};
+
+
+exports.wait_provisioned_docker_job = function (t) {
+    waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
+        t.ifError(err);
+        t.done();
+    });
+};
+
+
+exports.add_docker_tag = function (t) {
+    var path = '/vms/' + newUuid + '/tags?owner_uuid=' + CUSTOMER;
+
+    var query = {
+        'foo': 'bar',
+        'docker:label:com.docker.blah': 'baz'
+    };
+
+    var opts = createOpts(path, query);
+
+    client.post(opts, query, function (err, req, res, body) {
+        t.ok(err);
+        t.equal(res.statusCode, 409);
+        t.equal(err.restCode, 'ValidationFailed');
+        t.deepEqual(body, {
+            code: 'ValidationFailed',
+            message: 'Invalid Metadata parameters',
+            errors: [ {
+                field: 'tags',
+                code: 'Invalid',
+                message: 'Special tag "docker:label:com.docker.blah" ' +
+                    'not supported'
+            } ]
+        });
+
+        t.done();
+    });
+};
+
+
+exports.set_docker_tag_1 = function (t) {
+    var path = '/vms/' + newUuid + '/tags?owner_uuid=' + CUSTOMER;
+
+    var query = {
+        'foo': 'bar',
+        'docker:label:com.docker.blah': 'baz'
+    };
+
+    var opts = createOpts(path, query);
+
+    client.put(opts, query, function (err, req, res, body) {
+        t.ok(err);
+        t.equal(res.statusCode, 409);
+        t.equal(err.restCode, 'ValidationFailed');
+
+        t.deepEqual(body, {
+            code: 'ValidationFailed',
+            message: 'Invalid Metadata parameters',
+            errors: [ {
+                field: 'tags',
+                code: 'Invalid',
+                message: 'Special tag "docker:label:com.docker.blah" not ' +
+                    'supported'
+            } ]
+        });
+
+        t.done();
+    });
+};
+
+
+exports.set_docker_tag_2 = function (t) {
+    var path = '/vms/' + newUuid + '/tags?owner_uuid=' + CUSTOMER;
+
+    var query = {
+       foo: 'bar'
+    };
+
+    var opts = createOpts(path, query);
+
+    client.put(opts, query, function (err, req, res, body) {
+        t.ok(err);
+        t.equal(res.statusCode, 409);
+        t.equal(err.restCode, 'ValidationFailed');
+
+        t.deepEqual(body, {
+            code: 'ValidationFailed',
+            message: 'Invalid Metadata parameters',
+            errors: [ {
+                field: 'tags',
+                code: 'Invalid',
+                message: 'Special tag "docker:label:com.docker.blah" may ' +
+                    'not be deleted'
+            } ]
+        });
+
+        t.done();
+    });
+};
+
+
+exports.update_docker_vm = function (t) {
+    var params = {
+        action: 'update',
+        tags: {
+            foo: 'bar'
+        }
+    };
+
+    var opts = createOpts(vmLocation, params);
+
+    client.post(opts, params, function (err, req, res, body) {
+        t.ok(err);
+        t.equal(res.statusCode, 409);
+        t.equal(err.restCode, 'ValidationFailed');
+
+        t.deepEqual(body, {
+            code: 'ValidationFailed',
+            message: 'Invalid VM update parameters',
+            errors: [ {
+                field: 'tags',
+                code: 'Invalid',
+                message: 'Special tag "docker:label:com.docker.blah" may ' +
+                    'not be deleted'
+            } ]
+        });
+
+        t.done();
+    });
+};
+
+
+exports.delete_docker_tag = function (t) {
+    var path = '/vms/' + newUuid + '/tags/docker%3Alabel%3Acom.docker.blah' +
+        '?owner_uuid=' + CUSTOMER;
+
+    var opts = createOpts(path, { owner_uuid: CUSTOMER });
+
+    client.del(opts, function (err, req, res, body) {
+        t.ok(err);
+        t.equal(res.statusCode, 409);
+        t.equal(err.restCode, 'ValidationFailed');
+
+        t.deepEqual(body, {
+            code: 'ValidationFailed',
+            message: 'Invalid Metadata parameters',
+            errors: [ {
+                field: 'tags',
+                code: 'Invalid',
+                message: 'Special tag "docker:label:com.docker.blah" may ' +
+                    'not be deleted'
+            } ]
+        });
+
+        t.done();
+    });
+};
+
+
+exports.delete_docker_all_tags = function (t) {
+    var path = '/vms/' + newUuid + '/tags?owner_uuid=' + CUSTOMER;
+
+    var opts = createOpts(path, { owner_uuid: CUSTOMER });
+
+    client.del(opts, function (err, req, res, body) {
+        t.ok(err);
+        t.equal(res.statusCode, 409);
+        t.equal(err.restCode, 'ValidationFailed');
+
+        t.deepEqual(body, {
+            code: 'ValidationFailed',
+            message: 'Invalid Metadata parameters',
+            errors: [ {
+                field: 'tags',
+                code: 'Invalid',
+                message: 'Special tag "docker:label:com.docker.blah" may ' +
+                    'not be deleted'
+            } ]
+        });
+
+        t.done();
+    });
+};
+
+
+exports.destroy_docker_vm = function (t) {
+    var opts = createOpts(vmLocation);
+
+    client.del(opts, function (err, req, res, body) {
+        t.ifError(err);
+        t.equal(res.statusCode, 202);
+        common.checkHeaders(t, res.headers);
+        t.ok(body);
+        jobLocation = '/jobs/' + body.job_uuid;
         t.done();
     });
 };
