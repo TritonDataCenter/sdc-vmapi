@@ -20,7 +20,7 @@ var config = configLoader.loadConfig();
 console.log(config);
 
 log = new bunyan({
-    name: 'add-docker-index',
+    name: 'add-transitive-state-index',
     level: config.logLevel || 'debug',
     serializers: restify.bunyan.serializers
 });
@@ -29,7 +29,7 @@ var moray = new MORAY(config.moray);
 moray.connect();
 
 moray.once('moray-ready', function onConnectedToMoray() {
-    moray.addVmIndex({name: 'docker', type: 'string'},
+    moray.addVmIndex({name: 'transitive_state', type: 'string'},
         function (err) {
         if (err) {
             console.error(err);
@@ -37,7 +37,9 @@ moray.once('moray-ready', function onConnectedToMoray() {
             return;
         }
 
-        log.info('"docker" index has been successfully added');
+        log.info('"transitive_state" index has been successfully added');
          moray.connection.close();
     });
 });
+
+

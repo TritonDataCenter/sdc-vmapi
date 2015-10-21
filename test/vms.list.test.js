@@ -422,3 +422,41 @@ exports.list_param_invalid_offset = function (t) {
         t.done();
     });
 };
+
+exports.list_param_valid_transitive_state = function (t) {
+    async.each(validation.VALID_TRANSITIVE_STATES,
+        function (validTransitiveState, next) {
+            testValidParam('transitive_state', validTransitiveState, t, next);
+        },
+        function allDone(err) {
+            t.ifError(err);
+            t.done();
+        });
+};
+
+exports.list_param_invalid_transitive_offset = function (t) {
+    var INVALID_TRANSITIVE_STATES = [
+        'foo',
+        '',
+        4
+    ];
+
+    async.each(INVALID_TRANSITIVE_STATES,
+        function (invalidTransitiveState, next) {
+            var expectedError = {
+                code: 'ValidationFailed',
+                message: 'Invalid Parameters',
+                errors: [ {
+                    field: 'transitive_state',
+                    code: 'Invalid',
+                    message: 'Must be one of: ' +
+                        validation.VALID_TRANSITIVE_STATES.join(', ')
+                } ]
+            };
+            testInvalidParam('transitive_state', invalidTransitiveState,
+                expectedError, t, next);
+        }, function allDone(err) {
+            t.ifError(err);
+            t.done();
+        });
+};
