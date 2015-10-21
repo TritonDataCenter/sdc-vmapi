@@ -15,39 +15,26 @@
  * You can specify the trace log level, the number of VMs to create and the
  * number of VMs created concurrently on the command line like following:
  *
- * $ LOG_LEVEL=trace node tools/add-test-vms.js [nb_test_vms_to_create]
- * [concurrency]
+ * Run node add-test-vms.js -h for usage.
  */
 
 var path = require('path');
 var fs = require('fs');
 
+var dashdash = require('dashdash');
 var libuuid = require('libuuid');
 var bunyan = require('bunyan');
 var restify = require('restify');
 var assert = require('assert-plus');
 
-var testCommon = require('../test/lib/vm');
-
+var testVm = require('../test/lib/vm');
+var configFileLoader = require('../lib/config-loader');
 var MORAY = require('../lib/apis/moray');
 
 var DEFAULT_NB_TEST_VMS_TO_CREATE = 60;
 var DEFAULT_CONCURRENCY = 10;
 
-function loadConfig() {
-    var configPath = path.join(__dirname, '..', 'config.json');
-
-    if (!fs.existsSync(configPath)) {
-        console.error('Config file not found: ' + configPath +
-          ' does not exist. Aborting.');
-        process.exit(1);
-    }
-
-    var theConfig = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-    return theConfig;
-}
-
-var config = loadConfig();
+var config = configFileLoader.loadConfig();
 
 log = this.log = new bunyan({
     name: 'add-test-vms',
@@ -55,32 +42,109 @@ log = this.log = new bunyan({
     serializers: restify.bunyan.serializers
 });
 
+config.moray.reconnect = true;
 var moray = new MORAY(config.moray);
 
-moray.connect();
-moray.once('moray-ready', function () {
-    log.debug('Morary ready!');
+var cmdlineOptions = [
+    {
+        names: ['help', 'h'],
+        type: 'bool',
+        help: 'Print this help and exit'
+    },
+    {
+        names: ['n'],
+        type: 'positiveInteger',
+        help: 'Number of test VMs to create'
+    },
+    {
+        names: ['d'],
+        type: 'string',
+        help: 'The data used to create every test VMs'
+    },
+    {
+        names: ['c'],
+        type: 'positiveInteger',
+        help: 'The number of VMs added concurrently'
+    },
+    {
+        names: ['f'],
+        type: 'string',
+        help: 'The path to a file containing a JSON representation of the ' +
+            'data to use to create every test VMs'
+    }
+];
 
-    var nbTestVmsToCreate = Number(process.argv[2]) ||
-        DEFAULT_NB_TEST_VMS_TO_CREATE;
-    log.debug('Number of test VMs to create:', nbTestVmsToCreate);
-    assert.number(nbTestVmsToCreate);
+function printUsage(cmdLineOptionsParser) {
+    var help = cmdlineOptionsParser.help({includeEnv: true}).trimRight();
+    console.log('usage: node add-test-vms.js [OPTIONS]\n' +
+        'options:\n' + help);
+}
 
-    var concurrency = Number(process.argv[3]) || DEFAULT_CONCURRENCY;
-    log.debug('concurrency:', concurrency);
-    assert.number(concurrency);
+function addTestVms(nbVms, concurrency, data) {
+    assert.number(nbVms, 'nbVms must be a number');
+    assert.ok(nbVms > 0, 'nbVms must be a positive number');
 
-    testCommon.createTestVMs(nbTestVmsToCreate, moray, {
-        concurrency: concurrency,
-        log: log
-    }, {}, function allVmsCreated(err) {
-        if (err) {
-            log.error({err: err}, 'Error when creating test VMs');
-        } else {
-            log.info('All VMs created successfully');
+    assert.number(concurrency, 'concurrency must be a number');
+    assert.ok(concurrency > 0, 'concurrency must be a positive number');
+
+    assert.optionalObject(data, 'data must be an optional object');
+    data = data || {};
+
+    moray.connect();
+    moray.once('moray-ready', function () {
+        log.debug('Morary ready!');
+
+        log.debug('Number of test VMs to create:', nbTestVmsToCreate);
+        assert.number(nbTestVmsToCreate);
+
+        log.debug('concurrency:', concurrency);
+        assert.number(concurrency);
+
+        testVm.createTestVMs(nbTestVmsToCreate, moray, {
+            concurrency: concurrency,
+            log: log
+        }, data, function allVmsCreated(err) {
+            if (err) {
+                log.error({err: err}, 'Error when creating test VMs');
+            } else {
+                log.info('All VMs created successfully');
+            }
+
+            log.debug('Closing moray connection');
+            moray.connection.close();
+        });
+    });
+}
+
+var cmdlineOptionsParser = dashdash.createParser({options: cmdlineOptions});
+
+try {
+    var parsedCmdlineOpts = cmdlineOptionsParser.parse(process.argv);
+
+    if (parsedCmdlineOpts.help) {
+        printUsage(cmdlineOptionsParser);
+        process.exitCode = 1;
+    } else if (parsedCmdlineOpts.d && parsedCmdlineOpts.f) {
+        console.error('Only one of -f and -d options can be specified at ' +
+            'the same time');
+        printUsage(cmdlineOptionsParser);
+        process.exitCode = 1;
+    } else {
+        console.log(parsedCmdlineOpts);
+        var nbTestVmsToCreate = Number(parsedCmdlineOpts.n) ||
+            DEFAULT_NB_TEST_VMS_TO_CREATE;
+        var concurrency = Number(parsedCmdlineOpts.c) ||
+            DEFAULT_CONCURRENCY;
+
+        var data;
+        if (parsedCmdlineOpts.d) {
+            data = JSON.parse(parsedCmdlineOpts.d);
         }
 
-        log.debug('Closing moray connection');
-        moray.connection.close();
-    });
-});
+        addTestVms(nbTestVmsToCreate, concurrency, data);
+    }
+} catch (err) {
+    console.error('Could not parse command line options, reason:', err);
+    printUsage(cmdlineOptionsParser);
+    process.exitCode = 1;
+}
