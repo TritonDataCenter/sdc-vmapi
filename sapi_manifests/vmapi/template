@@ -7,6 +7,12 @@
 {{#experimental_fluentd_host}}
     "fluentd_host": "{{{experimental_fluentd_host}}}",
 {{/experimental_fluentd_host}}
+{{#triton_tag_re}}
+    "triton_tag_re": "{{triton_tag_re}}",
+{{/triton_tag_re}}
+{{#docker_tag_re}}
+    "docker_tag_re": "{{docker_tag_re}}",
+{{/docker_tag_re}}
     "api": {
         "port": 80
     },
