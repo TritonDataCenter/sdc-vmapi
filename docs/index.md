@@ -1898,8 +1898,7 @@ on VMAPI is updated as well.
 | heartbeatQueueSize     | Number           | 50              | Maximum number of heartbeats to process in parallel.           |
 | maxSockets             | Number           | 100             | Maximum number of sockets for external API calls               |
 | api                    | Object           | -               | VMAPI configuration                                            |
-| api                    | Number           | -               | VMAPI port                                                     |
-| amqp.host              | String           | -               | RabbitMQ hostname                                              |
+| api.port               | Number           | -               | VMAPI port                                                     |
 | amqp                   | Object           | -               | RabbitMQ credentials                                           |
 | amqp.host              | String           | -               | RabbitMQ hostname                                              |
 | amqp.queue             | String           | heartbeat.vmapi | Heartbeater AMQP queue                                         |
@@ -1921,6 +1920,33 @@ on VMAPI is updated as well.
 | moray.retry            | Object           | -               | Moray retry object                                             |
 | moray.retry.minTimeout | Number           | -               | Moray minimum retry timeout                                    |
 | moray.retry.maxTimeout | Number           | -               | Moray maximum retry timeout                                    |
+| docker_tag_re          | String           | -               | Tags matching regex are treated with Docker tag semantics      |
+| triton_tag_re          | String           | -               | Tags matching regex are treated with Triton tag semantics      |
+
+
+## SAPI Configuration
+
+When using the config-agent service in a VMAPI zone, which draws metadata from
+SAPI, it's possible to change some of the defaults outlined in the
+`VMAPI Configuration File` section above.
+
+In the SAPI "vmapi" service, adding or changing the following keys in
+`metadata` can change some VMAPI behaviours for specialized circumstances in
+production.
+
+| Key                            | Type   | Description                                                                  |
+| ------------------------------ | ------ | ---------------------------------------------------------------------------- |
+| **experimental_fluentd_host**  | String |                                                                              |
+| **docker_tag_re**              | String | Tags matching regex are treated with Docker tag semantics                    |
+| **triton_tag_re**              | String | Tags matching regex are treated with Triton tag semantics                    |
+
+`docker_tag_re` and `triton_tag_re` must be valid regular expression strings --
+more concretely, what Javascript's RegExp() considers valid. Docker tags can be
+added during provisioning, but otherwise cannot later be altered or removed, and
+may have special significance to Docker. Triton tags may be used by various
+Triton services. It's recommende to not change either `docker_tag_re` or
+`triton_tag_re` unless you're aware of the semantics and effects of Docker and
+Triton tags.
 
 
 ## Health
