@@ -108,7 +108,7 @@ function testListValidParams(client, params, t, callback) {
         t.equal(res.statusCode, 200,
         'sending params ' + util.inspect(params) +
         ' should not result in an error status code');
-        return callback();
+        return callback(err, body);
     });
 }
 

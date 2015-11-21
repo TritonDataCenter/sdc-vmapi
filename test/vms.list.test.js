@@ -125,7 +125,22 @@ exports.list_param_invalid_brand = function (t) {
 
 exports.list_param_valid_docker = function (t) {
     async.each(['true', 'false'], function (dockerFlag, next) {
-        common.testListValidParams(client, {docker: dockerFlag}, t, next);
+        common.testListValidParams(client, {docker: dockerFlag}, t,
+            function (err, body) {
+                if (err) {
+                    return next(err);
+                }
+
+                body.forEach(function (vm) {
+                    if (dockerFlag === 'true') {
+                        t.ok(vm.docker);
+                    } else {
+                        t.ok(vm.docker === undefined || vm.docker === false);
+                    }
+                });
+
+                return next();
+            });
     },
     function allDone(err) {
         t.done();
