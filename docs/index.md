@@ -2161,7 +2161,7 @@ application and allow for more specific log filtering:
 | -------------- | ------------------------------------------------------------ |
 | api            | API requests/responses                                       |
 | napi           | NIC add/removal activity                                     |
-| cnapi          | machine_load requests/responses (used to process heartbeats) |
+| cnapi          | machine_load requests/responses                              |
 | wfapi          | WFAPI requests/responses (for queueing VM jobs)              |
 | moray          | Moray database operations (read/write VM data)               |
 
