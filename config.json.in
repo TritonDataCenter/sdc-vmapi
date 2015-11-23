@@ -1,18 +1,9 @@
 {
   "logLevel": "debug",
   "maxSockets": 100,
-  "heartbeatQueueSize": 50,
   "ufdsAdminUuid": "UFDS_ADMIN_UUID",
-  "amqp": {
-    "host": "RABBIT_ADMIN_IP",
-    "queue": "heartbeat.vmapi",
-    "reconnect": 5
-  },
   "api": {
     "port": 80
-  },
-  "redis": {
-    "host": "REDIS_ADMIN_IPS"
   },
   "wfapi": {
     "workflows": [

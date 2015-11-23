@@ -21,19 +21,6 @@
         "natPool": "{{{sdc_nat_pool}}}"
 {{/fabric_cfg}}
     },
-    "heartbeater": {
-        "host": "{{{RABBITMQ_SERVICE}}}",
-        "queue": "heartbeat.vmapi",
-        "reconnect": 5,
-        "concurrency": 50,
-        "retry": {
-            "initialDelay": 4000
-        }
-    },
-    "cache": {
-        "type": "redis",
-        "host": "{{{REDIS_SERVICE}}}"
-    },
     "wfapi": {
         "forceMd5Check": true,
         "workflows": [

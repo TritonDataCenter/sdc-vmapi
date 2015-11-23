@@ -6,16 +6,16 @@
  */
 
 /*
- * Copyright (c) 2014, Joyent, Inc.
+ * Copyright (c) 2015, Joyent, Inc.
  */
 
 /*
- * vmapi_slower.d		Show VMAPI server requests slower than threshold.
+ * vmapi_slower.d               Show VMAPI server requests slower than threshold.
  *
  * USAGE: vmapi_slower.d [min_ms]
  *    eg,
- *        vmapi_slower.d 10 	# show requests slower than 10 ms
- *        vmapi_slower.d 		# show all requests
+ *        vmapi_slower.d 10     # show requests slower than 10 ms
+ *        vmapi_slower.d                # show all requests
  *
  * Requires the node DTrace provider, and a working version of the node
  * translator (/usr/lib/dtrace/node.d).
@@ -28,10 +28,10 @@
 
 dtrace:::BEGIN
 {
-	min_ns = $1 * 1000000;
-	printf("Tracing VMAPI server requests slower than %d ms\n", $1);
+    min_ns = $1 * 1000000;
+    printf("Tracing VMAPI server requests slower than %d ms\n", $1);
     printf("%-20s %-6s %8s %6s %6s %6s %s\n", "TIME", "PID", "SERVER", "METHOD",
-            "STATUS", "ms", "URL");
+        "STATUS", "ms", "URL");
 }
 
 /*
@@ -40,10 +40,10 @@ dtrace:::BEGIN
  */
 restify*:::route-start
 {
-	this->server = copyinstr(arg0);
+    this->server = copyinstr(arg0);
     this->method = copyinstr(arg3);
-	url[pid, this->server] = copyinstr(arg4);
-	ts[pid, this->server] = timestamp;
+    url[pid, this->server] = copyinstr(arg4);
+    ts[pid, this->server] = timestamp;
 }
 
 /*
@@ -52,23 +52,23 @@ restify*:::route-start
  */
 restify*:::route-done
 {
-	this->server = copyinstr(arg0);
+    this->server = copyinstr(arg0);
     this->status = arg3;
-	/* FALLTHRU */
+    /* FALLTHRU */
 }
 
 restify*:::route-done
 /(this->start = ts[pid, this->server]) &&
     (this->delta = timestamp - this->start) > min_ns/
 {
-        printf("%-20Y %-6d %8s %6s %6d %6d %s\n", walltimestamp, pid,
-        this->server, this->method, this->status,
-        this->delta / 1000000, url[pid, this->server]);
+    printf("%-20Y %-6d %8s %6s %6d %6d %s\n", walltimestamp, pid,
+    this->server, this->method, this->status,
+    this->delta / 1000000, url[pid, this->server]);
 }
 
 restify*:::route-done
 /this->start/
 {
-	ts[pid, this->server] = 0;
-	url[pid, this->server] = 0;
+    ts[pid, this->server] = 0;
+    url[pid, this->server] = 0;
 }

@@ -1,15 +1,15 @@
 #!/usr/sbin/dtrace -s
 /*
- * Copyright (c) 2013, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2015, Joyent, Inc. All rights reserved.
  *
  * Taken from git@github.com:brendangregg/dtrace-cloud-tools.git
  *
- * nodeslower.d		Show node.js HTTP server requests slower than threshold.
+ * nodeslower.d         Show node.js HTTP server requests slower than threshold.
  *
  * USAGE: nodeslower.d [min_ms]
  *    eg,
- *        nodeslower.d 10	# show requests slower than 10 ms
- *        nodeslower.d 		# show all requests
+ *        nodeslower.d 10       # show requests slower than 10 ms
+ *        nodeslower.d          # show all requests
  *
  * Requires the node DTrace provider, and a working version of the node
  * translator (/usr/lib/dtrace/node.d).
@@ -38,7 +38,7 @@
  *
  * CDDL HEADER END
  *
- * 26-Jun-2013	Brendan Gregg	Created this.
+ * 26-Jun-2013  Brendan Gregg   Created this.
  */
 
 #pragma D option quiet
@@ -48,22 +48,22 @@
 
 dtrace:::BEGIN
 {
-	min_ns = $1 * 1000000;
-	printf("Tracing node.js HTTP server ops slower than %d ms\n", $1);
+        min_ns = $1 * 1000000;
+        printf("Tracing node.js HTTP server ops slower than %d ms\n", $1);
         printf("%-20s %-6s %6s %s\n", "TIME", "PID", "ms", "URL");
 }
 
 node*:::http-server-request
 {
-	this->fd = args[1]->fd;
-	url[pid, this->fd] = args[0]->url;
-	ts[pid, this->fd] = timestamp;
+        this->fd = args[1]->fd;
+        url[pid, this->fd] = args[0]->url;
+        ts[pid, this->fd] = timestamp;
 }
 
 node*:::http-server-response
 {
-	this->fd = args[0]->fd;
-	/* FALLTHRU */
+        this->fd = args[0]->fd;
+        /* FALLTHRU */
 }
 
 node*:::http-server-response
@@ -71,12 +71,12 @@ node*:::http-server-response
     (this->delta = timestamp - this->start) > min_ns/
 {
         printf("%-20Y %-6d %6d %s\n", walltimestamp, pid,
-	    this->delta / 1000000, url[pid, this->fd]);
+            this->delta / 1000000, url[pid, this->fd]);
 }
 
 node*:::http-server-response
 /this->start/
 {
-	ts[pid, this->fd] = 0;
-	url[pid, this->fd] = 0;
+        ts[pid, this->fd] = 0;
+        url[pid, this->fd] = 0;
 }

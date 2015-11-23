@@ -365,7 +365,7 @@ Error responses will be returned when the response status code is one of 40X err
 
 # Ping VMAPI
 
-Use ping when you want a general status report from VMAPI. VMAPI makes HTTP connections to REST APIs and TCP connections to services like the heartbeat cache and moray. In addition to service status, one might need to know when was the last time that VMAPI saw an incoming heartbeat when debugging VM data propagation errors. The **ping**  endpoint provides a compact response object that lets clients know what is VMAPI's point of view of the backend services it is connected to. The following is the format of the ping response object. The pingErrors attribute is an object where each of its keys is the name of an API (cache, wfapi, moray, cnapi or napi) and the value of each key is the error response that was obtained after pinging the correspondent service.
+Use ping when you want a general status report from VMAPI. VMAPI makes HTTP connections to REST APIs and TCP connections to services like moray. The **ping**  endpoint provides a compact response object that lets clients know what is VMAPI's point of view of the backend services it is connected to. The following is the format of the ping response object. The pingErrors attribute is an object where each of its keys is the name of an API (wfapi, moray, cnapi or napi) and the value of each key is the error response that was obtained after pinging the correspondent service.
 
 ## Ping (GET /ping)
 
@@ -376,33 +376,18 @@ Use ping when you want a general status report from VMAPI. VMAPI makes HTTP conn
       "status": "OK",
       "healthy": true,
       "services": {
-        "cache": "online",
         "wfapi": "online",
         "moray": "online",
         "cnapi": "online",
         "napi": "online"
       },
-      "pingErrors": {},
-      "lastHeartbeatReceived": {
-        "timestamp": "2012-11-22T00:27:49.851Z",
-        "server": "564dcf02-3ed9-7459-bdfc-a2884558951f"
-      },
-      "lastHeartbeatProcessed": {
-        "timestamp": "2012-11-22T00:26:59.402Z",
-        "server": "564dcf02-3ed9-7459-bdfc-a2884558951f",
-        "uuid": "32389211-62c7-4e29-a44c-b24ece8b3946"
-      }
+      "pingErrors": {}
     }
 
 Of special note is the **status** attribute that lets us know if VMAPI is fully
-functional in terms of data and services initialized. Although a "healthy: true"
-value from the ping response means that VMAPI has not had HTTP or backend
-initialization errors, it doesn't specify if VMAPI is already processing heartbeats
-and populating its internal database correctly. This is mostly an application
-condition where VMAPI gets installed on a new SDC7 headnode and there is a
-window of time before data from active VMs in the datacenter starts to propagate.
-When VMAPI is corretly receving and processing heartbeats then its status is
-going to be "OK".
+functional in terms of data and services initialized. A "healthy: true" value
+from the ping response means that VMAPI has not had HTTP or backend
+initialization errors.
 
 
 # VMs
@@ -2082,16 +2067,9 @@ on VMAPI is updated as well.
 | ---------------------- | ---------------- | --------------- | -------------------------------------------------------------- |
 | port                   | Number           | 80              | Port number on which to listen.                                |
 | logLevel               | String or Number | debug           | Level at which to log. One of the supported Bunyan log levels. |
-| heartbeatQueueSize     | Number           | 50              | Maximum number of heartbeats to process in parallel.           |
 | maxSockets             | Number           | 100             | Maximum number of sockets for external API calls               |
 | api                    | Object           | -               | VMAPI configuration                                            |
 | api.port               | Number           | -               | VMAPI port                                                     |
-| amqp                   | Object           | -               | RabbitMQ credentials                                           |
-| amqp.host              | String           | -               | RabbitMQ hostname                                              |
-| amqp.queue             | String           | heartbeat.vmapi | Heartbeater AMQP queue                                         |
-| cache                  | Object           | -               | Cache client definition                                        |
-| cache.type             | String           | -               | Cache type, can be 'redis' or 'moray'                          |
-| cache.host             | String           | -               | Hostname for cache type 'redis'                                |
 | wfapi                  | Object           | -               | WFAPI configuration                                            |
 | wfapi.url              | String           | -               | WFAPI URL                                                      |
 | wfapi.forceReplace     | Boolean          | false           | Replace workflows every time VMAPI restarts                    |
@@ -2182,12 +2160,10 @@ application and allow for more specific log filtering:
 | Component Name | Description                                                  |
 | -------------- | ------------------------------------------------------------ |
 | api            | API requests/responses                                       |
-| heartbeater    | Heartbeater processing activity                              |
 | napi           | NIC add/removal activity                                     |
 | cnapi          | machine_load requests/responses (used to process heartbeats) |
 | wfapi          | WFAPI requests/responses (for queueing VM jobs)              |
 | moray          | Moray database operations (read/write VM data)               |
-| cache          | Heartbeat cache client                                       |
 
 In order to filter a VMAPI log file by component we make use of Bunyan's '-c'
 option:
@@ -2204,37 +2180,43 @@ option:
 
 The 'this' variable inside a condition refers to the JSON object that was logged
 by Bunyan at any given point in time. If we wanted to see all messages that have
-been produced by the heartbeater module we would issue the following command:
+been produced by the moray module we would issue the following command:
 
-    cat tmp/local.log | bunyan -c "this.component === 'heartbeater'"
-
-    [2013-03-12T16:46:21.601Z] DEBUG: vmapi/heartbeater/79487: VM object 0c81af15-d3b2-47f9-a75a-db7f16a65434 updated on moray (vm_uuid=0c81af15-d3b2-47f9-a75a-db7f16a65434)
-    [2013-03-12T16:46:21.612Z] DEBUG: vmapi/heartbeater/79487: NICs added for VM 0c81af15-d3b2-47f9-a75a-db7f16a65434 (vm_uuid=0c81af15-d3b2-47f9-a75a-db7f16a65434)
-    [2013-03-12T16:46:21.613Z] DEBUG: vmapi/heartbeater/79487: (vm_uuid=0c81af15-d3b2-47f9-a75a-db7f16a65434)
-        VM 0c81af15-d3b2-47f9-a75a-db7f16a65434 state cached { uuid: '0c81af15-d3b2-47f9-a75a-db7f16a65434',
-          owner_uuid: '00000000-0000-0000-0000-000000000000',
-          quota: 10240,
-          max_physical_memory: 64,
-          zone_state: 'installed',
-          state: 'stopped',
-          brand: 'joyent-minimal',
-          last_modified: '2013-03-12T16:46:14.000Z' }
+    cat /var/svc/log/smartdc-site-vmapi\:default.log | bunyan -c "this.component === 'wfapi'"
+    ...
+    [2015-11-23T19:28:00.755Z]  INFO: vmapi/wfapi/14012 on e1c43507-9923-47d2-926f-2bba86963cac: Connected to Workflow API
+    [2015-11-23T19:28:00.873Z] DEBUG: vmapi/wfapi/14012 on e1c43507-9923-47d2-926f-2bba86963cac: provision-7.2.6 workflow exists
+    [2015-11-23T19:28:00.895Z] DEBUG: vmapi/wfapi/14012 on e1c43507-9923-47d2-926f-2bba86963cac: start-7.0.6 workflow exists
+    [2015-11-23T19:28:00.918Z] DEBUG: vmapi/wfapi/14012 on e1c43507-9923-47d2-926f-2bba86963cac: stop-7.0.7 workflow exists
+    [2015-11-23T19:28:00.929Z] DEBUG: vmapi/wfapi/14012 on e1c43507-9923-47d2-926f-2bba86963cac: kill-7.0.1 workflow exists
+    ...
 
 Bunyan still allows us to filter logs by level, so in case we were looking for
-an exception produced while processing heartbeats we can do the following:
+an exception produced while starting up the workflow connection we can do the
+following:
 
-    cat tmp/local.log | bunyan -c "this.component === 'heartbeater'" -l error
+    cat /var/svc/log/smartdc-site-vmapi\:default.log | bunyan -c "this.component === 'wfapi'" -l error
+    ...
+    [2015-11-23T19:27:07.588Z] ERROR: vmapi/wfapi/14012 on e1c43507-9923-47d2-926f-2bba86963cac: Ping failed
+        error: {
+          "code": "ENOTFOUND",
+          "errno": "ENOTFOUND",
+          "syscall": "getaddrinfo"
+        }
+    [2015-11-23T19:27:07.589Z] ERROR: vmapi/wfapi/14012 on e1c43507-9923-47d2-926f-2bba86963cac: Ping failed
+        error: {
+          "code": "ENOTFOUND",
+          "errno": "ENOTFOUND",
+          "syscall": "getaddrinfo"
+        }
+    ...
 
-    [2013-03-12T19:01:37.103Z] ERROR: vmapi/heartbeater/70242: Cannot process heartbeats for Server 564d3d49-9bb1-3726-a1ea-b265db3a7f39 (server=564d3d49-9bb1-3726-a1ea-b265db3a7f39)
-        Error: connect ECONNREFUSED
-            at errnoException (net.js:770:11)
-            at Object.afterConnect [as oncomplete] (net.js:761:19)
 
 ### Filtering specific VM activity
 
 In addition to components, logs can be filtered by VM UUID and API action. This
 enables operators to better track all the API actions called for a VM of
-interest and see if its heartbeats have been processed correctly.
+interest.
 
 Again, by using the '-c' option in Bunyan, we use the vm_uuid attribute to find
 all log entries related to a single VM:
@@ -2253,24 +2235,10 @@ all log entries related to a single VM:
         ...
         ...
     [2013-03-12T16:46:23.105Z] TRACE: vmapi/api/79487: DeleteVm start (vm_uuid=0c81af15-d3b2-47f9-a75a-db7f16a65434)
-    [2013-03-12T16:46:30.039Z] TRACE: vmapi/heartbeater/79487: (server=564d3d49-9bb1-3726-a1ea-b265db3a7f39, vm_uuid=0c81af15-d3b2-47f9-a75a-db7f16a65434)
-        Heartbeat from 0c81af15-d3b2-47f9-a75a-db7f16a65434: { uuid: '0c81af15-d3b2-47f9-a75a-db7f16a65434',
-          owner_uuid: '00000000-0000-0000-0000-000000000000',
-          quota: 10240,
-          max_physical_memory: 64,
-          zone_state: 'installed',
-          state: 'stopped',
-          brand: 'joyent-minimal',
-          last_modified: '2013-03-12T16:46:14.000Z' }
-    [2013-03-12T16:46:30.042Z] TRACE: vmapi/heartbeater/79487: Timestamps for VM 0c81af15-d3b2-47f9-a75a-db7f16a65434, oldLastModified: Tue Mar 12 2013 11:46:14 GMT-0500 (COT), lastModified: Tue Mar 12 2013 11:46:14 GMT-0500 (COT) (vm_uuid=0c81af15-d3b2-47f9-a75a-db7f16a65434)
 
-From this example we can see that there are both API and Heartbeater log records
-for the VM in question. Going further we could filter this information by adding
-an additional component condition:
-
-    cat tmp/local.log | bunyan -c "this.vm_uuid === '0c81af15-d3b2-47f9-a75a-db7f16a65434' && this.component === 'heartbeater'"
-
-Or:
+If there were both API and other log records for the VM in question. Going
+further we could filter this information by adding an additional component
+condition like:
 
     cat tmp/local.log | bunyan -c "this.vm_uuid === '0c81af15-d3b2-47f9-a75a-db7f16a65434' && this.component === 'api'"
 
@@ -2320,40 +2288,6 @@ VMAPI:
         content-md5: Z+XMCqoiyRTX0Oy88MJA9Q==
     ...
     ...
-
-
-### Filtering Server heartbeats
-
-There is an additional filter condition that can be used to analyse VMAPI logs.
-A single heartbeat contains only VMs data for a single server. This means that
-there is a 1:1 correspondence between a heartbeat message and a server. In the
-event that VMAPI is receiving heartbeats for many servers, the `server` condition
-allows a further filtering in the heartbeater module when operators need to
-review the heartbeats coming from a specific server (and even as a way to check
-if the heartbeats are actually arriving).
-
-Similar to our previous examples, logs can be filtered by server with the
-`server` condition:
-
-    cat tmp/local.log | bunyan -c "this.server === '564d3d49-9bb1-3726-a1ea-b265db3a7f39'"
-
-    [2013-03-12T16:46:20.009Z] TRACE: vmapi/heartbeater/79487: Missing VMs list for server 564d3d49-9bb1-3726-a1ea-b265db3a7f39: [] (server=564d3d49-9bb1-3726-a1ea-b265db3a7f39)
-    [2013-03-12T16:46:30.019Z] DEBUG: vmapi/heartbeater/79487: (server=564d3d49-9bb1-3726-a1ea-b265db3a7f39)
-        Heartbeat received from 564d3d49-9bb1-3726-a1ea-b265db3a7f39 { headers: {},
-          deliveryInfo:
-           { contentType: 'application/json',
-             queue: 'heartbeat.vmapi',
-             deliveryTag: 29,
-             redelivered: false,
-             exchange: 'amq.topic',
-             routingKey: 'heartbeat.564d3d49-9bb1-3726-a1ea-b265db3a7f39',
-             consumerTag: 'node-amqp-79487-0.5261222147382796' } }
-    [2013-03-12T16:46:30.033Z] TRACE: vmapi/heartbeater/79487: (server=564d3d49-9bb1-3726-a1ea-b265db3a7f39)
-        Current VMs list for server 564d3d49-9bb1-3726-a1ea-b265db3a7f39: [ 'c995fa61-2754-4e6d-a00d-a78a8cdad9ac',
-          '5f6ae9c6-f817-48b0-9b48-03c5bcabd8d2',
-          '638bed60-d59d-4654-a5aa-e6702cb2eb21',
-          'ac3e34bc-cece-4134-a124-e035ad652093',
-          ...
 
 
 ## Use Cases and Examples
@@ -2444,26 +2378,18 @@ TODO: modifying vms
 
 ### VMAPI has no VMs, or VMs are not being updated
 
-This is almost always an issue with the heartbeater, since VMAPI should always
+This is almost always an issue with the vm-agent, since VMAPI should always
 have VMs. Even if VMs are not created from VMAPI they are discovered by the
-heartbeater.
+vm-agent.
 
 **What To Do?**
 
-* Make sure the heartbeater is having problems to process data. Check the VMAPI
-service log file and see if there are any errors being logged in it.
+* Make sure the vm-agents on your CNs are not having problem to process data.
+Check the vm-agent service logs on the CNs and then check the VMAPI service log
+file in the VMAPI zone and see if there are any errors being logged in it.
 
-* If there are no errors logged by VMAPI then check the heartbeater agent and
-confirm it is sending out heartbeats. If not, restart the agent with `svcadm restart heartbeater`
-
-* Optionally (if the heartbeater agent was working): force a heartbeat cache refresh when the cache client is configured to use redis
-
-Refresh the Redis cache with the following commands (starting from the global zone):
-
-    sdc-login redis
-    /opt/redis/bin/redis-cli
-    > select 4
-    > flushdb
+* If vm-agent is having problems, it is recommended that you take a gcore of the
+  vm-agent node process and then restart the vm-agent service.
 
 TODO: job failed
 
@@ -2473,6 +2399,10 @@ TODO: vm destroyed but still there
 
 
 # Changelog
+
+## Changes post 2014-07-31
+
+  * See: https://github.com/joyent/sdc-vmapi/commits/master
 
 ## 2014-07-31
 

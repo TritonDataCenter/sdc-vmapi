@@ -6,16 +6,16 @@
  */
 
 /*
- * Copyright (c) 2014, Joyent, Inc.
+ * Copyright (c) 2015, Joyent, Inc.
  */
 
 /*
- * vmapi_latency_aggregation.d		Show VMAPI server requests slower than threshold.
+ * vmapi_latency_aggregation.d      Show VMAPI server requests slower than threshold.
  *
  * USAGE: vmapi_latency_aggregation.d [min_ms]
  *    eg,
- *        vmapi_latency_aggregation.d 1 	# print aggregation every 5 secs
- *        vmapi_latency_aggregation.d 		# only print at the end
+ *        vmapi_latency_aggregation.d 1     # print aggregation every 5 secs
+ *        vmapi_latency_aggregation.d       # only print at the end
  *
  * Requires the node DTrace provider, and a working version of the node
  * translator (/usr/lib/dtrace/node.d).
@@ -28,7 +28,7 @@
 
 dtrace:::BEGIN
 {
-	printf("Tracing VMAPI server requests aggregation\n");
+    printf("Tracing VMAPI server requests aggregation\n");
 }
 
 /*
@@ -37,10 +37,10 @@ dtrace:::BEGIN
  */
 restify*:::route-start
 {
-	this->server = copyinstr(arg0);
+    this->server = copyinstr(arg0);
     this->method = copyinstr(arg3);
-	url[pid, this->server] = copyinstr(arg4);
-	ts[pid, this->server] = timestamp;
+    url[pid, this->server] = copyinstr(arg4);
+    ts[pid, this->server] = timestamp;
 }
 
 /*
@@ -49,47 +49,47 @@ restify*:::route-start
  */
 restify*:::route-done
 {
-	this->server = copyinstr(arg0);
+    this->server = copyinstr(arg0);
     this->status = arg3;
-	/* FALLTHRU */
+    /* FALLTHRU */
 }
 
 restify*:::route-done
 /(this->start = ts[pid, this->server]) &&
     (this->delta = timestamp - this->start)/
 {
-	this->route_name = strjoin(strjoin(this->method, " "),
-		url[pid, this->server]);
-	@latency[this->route_name] = avg(this->delta / 1000000);
-	@ntimes[this->route_name] = count();
+    this->route_name = strjoin(strjoin(this->method, " "),
+        url[pid, this->server]);
+    @latency[this->route_name] = avg(this->delta / 1000000);
+    @ntimes[this->route_name] = count();
 }
 
 restify*:::route-done
 /this->start/
 {
-	ts[pid, this->server] = 0;
-	url[pid, this->server] = 0;
+    ts[pid, this->server] = 0;
+    url[pid, this->server] = 0;
 }
 
 /* Is there a way to print these two aggregations together? */
 profile:::tick-5sec/$1 == 1/
 {
-	printf("\n  %6s %s\n", "ms", "ROUTE");
-	printa("  %@6d %s\n", @latency);
-	trunc(@latency);
+    printf("\n  %6s %s\n", "ms", "ROUTE");
+    printa("  %@6d %s\n", @latency);
+    trunc(@latency);
 
-	printf("\n  %6s %s\n", "NTIMES", "ROUTE");
-	printa("  %@6d %s\n", @ntimes);
-	trunc(@ntimes);
+    printf("\n  %6s %s\n", "NTIMES", "ROUTE");
+    printa("  %@6d %s\n", @ntimes);
+    trunc(@ntimes);
 }
 
 dtrace:::END
 {
-	printf("\n  %6s %s\n", "ms", "ROUTE");
-	printa("  %@6d %s\n", @latency);
-	trunc(@latency);
+    printf("\n  %6s %s\n", "ms", "ROUTE");
+    printa("  %@6d %s\n", @latency);
+    trunc(@latency);
 
-	printf("\n  %6s %s\n", "NTIMES", "ROUTE");
-	printa("  %@6d %s\n", @ntimes);
-	trunc(@ntimes);
+    printf("\n  %6s %s\n", "NTIMES", "ROUTE");
+    printa("  %@6d %s\n", @ntimes);
+    trunc(@ntimes);
 }
