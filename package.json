@@ -16,8 +16,6 @@
     "ldapjs": "^1.0.0",
     "libuuid": "0.1.2",
     "moray": "git+ssh://git@github.com:joyent/node-moray.git#441fd44",
-    "nodeunit": "0.9.1",
-    "posix-getopt": "1.0.0",
     "redis": "0.7.2",
     "restify": "2.7.0",
     "sdc-clients": "git+ssh://git@github.com:joyent/node-sdc-clients.git#c962959",
@@ -27,7 +25,8 @@
     "wf-client": "git+ssh://git@github.com:joyent/sdc-wf-client.git#469fc74"
   },
   "devDependencies": {
-    "tap": "*"
+    "tape": "4.2.2",
+    "faucet": "0.0.1"
   },
   "optionalDependencies": {
     "dtrace-provider": "0.2.8"

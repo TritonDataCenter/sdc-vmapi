@@ -9,8 +9,8 @@
  */
 
 var assert = require('assert-plus');
-
 var async = require('async');
+var tape = require('tape');
 
 var common = require('./common');
 
@@ -25,16 +25,18 @@ var INVALID_UUID = 'invalid_uuid';
 
 var MAX_LIMIT = 1000;
 
-exports.setUp = function (callback) {
-    common.setUp(function (err, _client) {
-        assert.ifError(err);
-        assert.ok(_client, 'restify client');
-        client = _client;
-        callback();
-    });
-};
+function test(name, setup) {
+        tape.test(name, function (t) {
+                common.setUp(function (err, _client) {
+                        t.ifError(err, 'test setup failed');
+                        t.ok(_client, 'test client missing');
+                        client = _client;
+                        setup(t);
+                });
+        });
+}
 
-exports.list_invalid_param = function (t) {
+test('list_invalid_param', function (t) {
     var expectedError = {
         code: 'ValidationFailed',
         message: 'Invalid Parameters',
@@ -46,13 +48,13 @@ exports.list_invalid_param = function (t) {
     };
     common.testListInvalidParams(client, {foo: 'bar'}, expectedError, t,
         function done() {
-            t.done();
+            t.end();
         });
-};
+});
 
 var UUID_PARAMS = ['uuid', 'owner_uuid', 'server_uuid', 'image_uuid'];
 
-exports.list_param_invalid_uuids = function (t) {
+test('list_param_invalid_uuids', function (t) {
     async.each(UUID_PARAMS,
     function (paramName, next) {
         var expectedError = {
@@ -68,15 +70,15 @@ exports.list_param_invalid_uuids = function (t) {
         var invalidParams = {};
         invalidParams[paramName] = INVALID_UUID;
 
-        common.testListInvalidParam(client, invalidParams, expectedError, t,
+        common.testListInvalidParams(client, invalidParams, expectedError, t,
             next);
     },
     function done(err) {
-        t.done();
+        t.end();
     });
-};
+});
 
-exports.list_param_valid_uuid = function (t) {
+test('list_param_valid_uuid', function (t) {
     async.each(UUID_PARAMS,
     function (paramName, next) {
         var params = {};
@@ -85,9 +87,9 @@ exports.list_param_valid_uuid = function (t) {
         common.testListValidParams(client, params, t, next);
     },
     function (err) {
-        t.done();
+        t.end();
     });
-};
+});
 
 var VALID_VM_BRANDS = [
     'joyent-minimal',
@@ -97,16 +99,16 @@ var VALID_VM_BRANDS = [
     'sngl'
 ];
 
-exports.list_param_valid_brands = function (t) {
+test('list_param_valid_brands', function (t) {
     async.each(VALID_VM_BRANDS, function (vmBrand, next) {
         common.testListValidParams(client, {brand: vmBrand}, t, next);
     },
     function allDone(err) {
-        t.done();
+        t.end();
     });
-};
+});
 
-exports.list_param_invalid_brand = function (t) {
+test('list_param_invalid_brand', function (t) {
     var expectedError = {
         code: 'ValidationFailed',
         message: 'Invalid Parameters',
@@ -119,11 +121,11 @@ exports.list_param_invalid_brand = function (t) {
 
     common.testListInvalidParams(client, {brand: 'foobar'}, expectedError, t,
         function testDone() {
-            t.done();
+            t.end();
         });
-};
+});
 
-exports.list_param_valid_docker = function (t) {
+test('list_param_valid_docker', function (t) {
     async.each(['true', 'false'], function (dockerFlag, next) {
         common.testListValidParams(client, {docker: dockerFlag}, t,
             function (err, body) {
@@ -143,11 +145,11 @@ exports.list_param_valid_docker = function (t) {
             });
     },
     function allDone(err) {
-        t.done();
+        t.end();
     });
-};
+});
 
-exports.list_param_invalid_docker = function (t) {
+test('list_param_invalid_docker', function (t) {
     var expectedError = {
         code: 'ValidationFailed',
         message: 'Invalid Parameters',
@@ -159,17 +161,17 @@ exports.list_param_invalid_docker = function (t) {
     };
     common.testListInvalidParams(client, {docker: 'foobar'}, expectedError, t,
         function testDone() {
-            t.done();
+            t.end();
         });
-};
+});
 
-exports.list_param_valid_alias = function (t) {
+test('list_param_valid_alias', function (t) {
     common.testListValidParams(client, {alias: 'foo'}, t, function () {
-        t.done();
+        t.end();
     });
-};
+});
 
-exports.list_param_invalid_alias = function (t) {
+test('list_param_invalid_alias', function (t) {
     var INVALID_ALIASES = ['', ','];
     async.each(INVALID_ALIASES,
     function (invalidAlias, next) {
@@ -187,9 +189,9 @@ exports.list_param_invalid_alias = function (t) {
             expectedError, t, next);
     },
     function done(err) {
-        t.done();
+        t.end();
     });
-};
+});
 
 var VALID_VM_STATES = [
     'running',
@@ -198,16 +200,16 @@ var VALID_VM_STATES = [
     'destroyed'
 ];
 
-exports.list_param_valid_state = function (t) {
+test('list_param_valid_state', function (t) {
     async.each(VALID_VM_STATES, function (vmState, next) {
         common.testListValidParams(client, {state: vmState}, t, next);
     },
     function allDone(err) {
-        t.done();
+        t.end();
     });
-};
+});
 
-exports.list_param_invalid_state = function (t) {
+test('list_param_invalid_state', function (t) {
     var expectedError = {
         code: 'ValidationFailed',
         message: 'Invalid Parameters',
@@ -219,20 +221,20 @@ exports.list_param_invalid_state = function (t) {
     };
     common.testListInvalidParams(client, {state: 'foobar'}, expectedError, t,
         function testDone() {
-            t.done();
+            t.end();
         });
-};
+});
 
-exports.list_param_valid_ram = function (t) {
+test('list_param_valid_ram', function (t) {
     async.each(['1', '128', '2048'], function (ram, next) {
         common.testListValidParams(client, {ram: ram}, t, next);
     },
     function allDone(err) {
-        t.done();
+        t.end();
     });
-};
+});
 
-exports.list_param_invalid_ram = function (t) {
+test('list_param_invalid_ram', function (t) {
     async.each(['abc', '128,5', '128.5'],
     function (invalidRam, next) {
         var expectedError = {
@@ -248,11 +250,11 @@ exports.list_param_invalid_ram = function (t) {
             t, next);
     },
     function done(err) {
-        t.done();
+        t.end();
     });
-};
+});
 
-exports.list_param_valid_uuids = function (t) {
+test('list_param_valid_uuids', function (t) {
     async.each([
         [VALID_UUID].join(','),
         [VALID_UUID, VALID_UUID].join(',')
@@ -260,11 +262,11 @@ exports.list_param_valid_uuids = function (t) {
         common.testListValidParams(client, {uuids: uuids}, t, next);
     },
     function allDone(err) {
-        t.done();
+        t.end();
     });
-};
+});
 
-exports.list_param_invalid_uuids = function (t) {
+test('list_param_invalid_uuids', function (t) {
     async.each([
         '',
         [INVALID_UUID].join(','),
@@ -283,9 +285,9 @@ exports.list_param_invalid_uuids = function (t) {
             expectedError, t, next);
     },
     function allDone(err) {
-        t.done();
+        t.end();
     });
-};
+});
 
 /*
  * This function creates a large number of "test" VMs
@@ -310,76 +312,77 @@ function testValidLimit(limit, t, callback) {
     }
 
     var moray = new MORAY(common.config.moray);
-    moray.connect();
+    async.series([
+        function connectMoray(next) {
+            moray.connect();
+            moray.once('moray-ready', function () {
+                next();
+            });
+        },
+        // Delete test VMs leftover from previous tests run
+        function deleteTestVms(next) {
+            vmTest.deleteTestVMs(moray, {}, function vmsDeleted(err) {
+                t.ifError(err, 'deleting test VMs should not error');
+                return next(err);
+            });
+        },
+        function createFakeVms(next) {
+            vmTest.createTestVMs(NB_TEST_VMS_TO_CREATE, moray,
+                {concurrency: 100}, {},
+                function fakeVmsCreated(err, vmsUuid) {
+                    moray.connection.close();
 
-    moray.once('moray-ready', function () {
-        async.series([
-            // Delete test VMs leftover from previous tests run
-            function deleteTestVms(next) {
-                vmTest.deleteTestVMs(moray, {}, function vmsDeleted(err) {
-                    t.ifError(err, 'deleting test VMs should not error');
+                    t.equal(vmsUuid.length, NB_TEST_VMS_TO_CREATE,
+                        NB_TEST_VMS_TO_CREATE
+                        + ' vms should have been created');
+
+                    t.ifError(err, NB_TEST_VMS_TO_CREATE
+                        + ' vms should be created successfully');
                     return next(err);
                 });
-            },
-            function createFakeVms(next) {
-                vmTest.createTestVMs(NB_TEST_VMS_TO_CREATE, moray,
-                    {concurrency: 100}, {},
-                    function fakeVmsCreated(err, vmsUuid) {
-                        moray.connection.close();
+        },
+        function listVmsWithLimit(next) {
+            var listVmsQuery = '/vms?limit=' + limit + '&alias='
+            + vmTest.TEST_VMS_ALIAS;
 
-                        t.equal(vmsUuid.length,
-                            NB_TEST_VMS_TO_CREATE,
-                            NB_TEST_VMS_TO_CREATE
-                            + ' vms should have been created');
+            client.get(listVmsQuery, function (err, req, res, body) {
+                t.ifError(err);
+                if (err)
+                    return next(err);
+                var num = parseInt(res.headers['x-joyent-resource-count'], 10);
 
-                        t.ifError(err, NB_TEST_VMS_TO_CREATE
-                            + ' vms should be created successfully');
-                        return next(err);
-                    });
-            },
-            function listVmsWithLimit(next) {
-                var listVmsQuery = '/vms?limit=' + limit + '&alias='
-                + vmTest.TEST_VMS_ALIAS;
+                t.equal(num, NB_TEST_VMS_TO_CREATE,
+                    'x-joyent-resource-count header should be equal to '
+                    + NB_TEST_VMS_TO_CREATE);
+                t.equal(body.length, EXPECTED_NB_VMS_RETURNED,
+                    EXPECTED_NB_VMS_RETURNED
+                    + ' vms should be returned from list vms');
 
-                client.get(listVmsQuery, function (err, req, res, body) {
-                    t.ifError(err);
-                    if (err)
-                        return next(err);
-
-                    t.equal(res.headers['x-joyent-resource-count'],
-                        NB_TEST_VMS_TO_CREATE,
-                        'x-joyent-resource-count header should be equal to '
-                        + NB_TEST_VMS_TO_CREATE);
-                    t.equal(body.length, EXPECTED_NB_VMS_RETURNED,
-                        EXPECTED_NB_VMS_RETURNED
-                        + ' vms should be returned from list vms');
-
-                    return next(null);
-                });
-            }
-        ], function allDone(err, results) {
-            t.ifError(err);
-            moray.connection.close();
-            return callback();
-        });
+                return next(null);
+            });
+        }
+    ], function allDone(err, results) {
+        t.ifError(err);
+        moray.connection.close();
+        return callback();
     });
 }
 
-exports.list_vms_valid_limit = function (t) {
+test('list_vms_valid_limit', function (t) {
     async.eachSeries([1, MAX_LIMIT / 2, MAX_LIMIT],
         function (validLimit, next) {
             testValidLimit(validLimit, t, next);
         },
         function allDone(err) {
-            t.done();
+            t.end();
         });
-};
+});
 
 /*
  * Cleanup test VMs created by the previous test
  * (list_vms_valid_limit).
  */
-exports.delete_list_vms_valid_limit = function (t) {
+test('delete_list_vms_valid_limit', function (t) {
     var moray = new MORAY(common.config.moray);
     moray.connect();
 
@@ -387,12 +390,12 @@ exports.delete_list_vms_valid_limit = function (t) {
         vmTest.deleteTestVMs(moray, {}, function testVmsDeleted(err) {
             moray.connection.close();
             t.ifError(err, 'deleting fake VMs should not error');
-            t.done();
+            t.end();
         });
     });
-};
+});
 
-exports.list_param_valid_create_timestamp = function (t) {
+test('list_param_valid_create_timestamp', function (t) {
     async.each([
         new Date().getTime(),
         new Date().toISOString()
@@ -400,11 +403,11 @@ exports.list_param_valid_create_timestamp = function (t) {
         common.testListValidParams(client, {create_timestamp: validTimestamp},
             t, next);
     }, function allDone(err) {
-        t.done();
+        t.end();
     });
-};
+});
 
-exports.list_param_invalid_create_timestamp = function (t) {
+test('list_param_invalid_create_timestamp', function (t) {
     async.each([
         'foo',
         new Date().getTime() + 'foo',
@@ -422,11 +425,11 @@ exports.list_param_invalid_create_timestamp = function (t) {
         common.testListInvalidParams(client,
             {create_timestamp: invalidTimestamp}, expectedError, t, next);
     }, function allDone(err) {
-        t.done();
+        t.end();
     });
-};
+});
 
-exports.list_param_valid_vm_fields = function (t) {
+test('list_param_valid_vm_fields', function (t) {
     var allVmFields = validation.VM_FIELDS.map(function (vmField) {
         return vmField.name;
     });
@@ -443,11 +446,11 @@ exports.list_param_valid_vm_fields = function (t) {
                 next);
         },
         function allDone(err) {
-            t.done();
+            t.end();
         });
-};
+});
 
-exports.list_param_invalid_vm_fields = function (t) {
+test('list_param_invalid_vm_fields', function (t) {
     async.each([
         'foo',
         '',
@@ -466,21 +469,21 @@ exports.list_param_invalid_vm_fields = function (t) {
         common.testListInvalidParams(client, {fields: invalidVmFields},
             expectedError, t, next);
     }, function allDone(err) {
-        t.done();
+        t.end();
     });
-};
+});
 
-exports.list_param_valid_limit = function (t) {
+test('list_param_valid_limit', function (t) {
     async.each([1, 500, MAX_LIMIT],
         function (validLimit, next) {
             common.testListValidParams(client, {limit: validLimit}, t, next);
         },
         function allDone(err) {
-            t.done();
+            t.end();
         });
-};
+});
 
-exports.list_param_invalid_limit = function (t) {
+test('list_param_invalid_limit', function (t) {
     async.each(['foo', -1, 0, MAX_LIMIT + 1], function (invalidLimit, next) {
         var expectedError = {
             code: 'ValidationFailed',
@@ -495,19 +498,19 @@ exports.list_param_invalid_limit = function (t) {
         common.testListInvalidParams(client, {limit: invalidLimit},
             expectedError, t, next);
     }, function allDone(err) {
-        t.done();
+        t.end();
     });
-};
+});
 
-exports.list_param_valid_offset = function (t) {
+test('list_param_valid_offset', function (t) {
     async.each([0, 1, 500], function (validOffset, next) {
         common.testListValidParams(client, {offset: validOffset}, t, next);
     }, function allDone(err) {
-        t.done();
+        t.end();
     });
-};
+});
 
-exports.list_param_invalid_offset = function (t) {
+test('list_param_invalid_offset', function (t) {
     async.each(['foo', -1], function (invalidOffset, next) {
         var expectedError = {
             code: 'ValidationFailed',
@@ -521,6 +524,6 @@ exports.list_param_invalid_offset = function (t) {
         common.testListInvalidParams(client, {offset: invalidOffset},
             expectedError, t, next);
     }, function allDone(err) {
-        t.done();
+        t.end();
     });
-};
+});

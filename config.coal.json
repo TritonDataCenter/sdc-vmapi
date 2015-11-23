@@ -1,49 +1,64 @@
 {
-  "logLevel": "debug",
-  "maxSockets": 100,
-  "heartbeatQueueSize": 50,
-  "ufdsAdminUuid": "930896af-bf8c-48d4-885c-6573a94b1853",
-  "amqp": {
-    "host": "10.99.99.20",
-    "queue": "heartbeat.vmapi",
-    "reconnect": 5
-  },
-  "api": {
-    "port": 80
-  },
-  "redis": {
-    "host": "10.99.99.23"
-  },
-  "wfapi": {
-    "workflows": [
-      "provision",
-      "start",
-      "stop",
-      "reboot",
-      "update",
-      "destroy",
-      "snapshot",
-      "rollback",
-      "delete-snapshot",
-      "add-nics",
-      "remove-nics"
-    ],
-    "url": "http://10.99.99.19"
-  },
-  "cnapi": {
-    "maxSockets": 10,
-    "url": "http://10.99.99.22"
-  },
-  "napi": {
-    "url": "http://10.99.99.10:80"
-  },
-  "moray": {
-    "host": "10.99.99.17",
-    "port": 2020,
-    "connectTimeout": 200,
-    "retry": {
-      "retries": 2,
-      "minTimeout": 500
+    "logLevel": "debug",
+    "maxSockets": 100,
+    "heartbeatQueueSize": 50,
+    "ufdsAdminUuid": "930896af-bf8c-48d4-885c-6573a94b1853",
+    "api": {
+        "port": 80
+    },
+    "heartbeater": {
+        "host": "10.99.99.20",
+        "queue": "heartbeat.vmapi",
+        "reconnect": 5,
+        "concurrency": 50,
+        "retry": {
+            "initialDelay": 4000
+        }
+    },
+    "cache": {
+        "type": "redis",
+        "host": "10.99.99.23"
+    },
+    "wfapi": {
+        "forceMd5Check": true,
+        "workflows": [
+            "provision",
+            "start",
+            "stop",
+            "kill",
+            "reboot",
+            "reprovision",
+            "update",
+            "destroy",
+            "snapshot",
+            "rollback",
+            "delete-snapshot",
+            "add-nics",
+            "update-nics",
+            "remove-nics"
+        ],
+        "url": "http://10.99.99.19"
+    },
+    "cnapi": {
+        "maxSockets": 10,
+        "url": "http://10.99.99.22"
+    },
+    "imgapi": {
+        "url": "http://10.99.99.21:80"
+    },
+    "napi": {
+        "url": "http://10.99.99.10:80"
+    },
+    "papi": {
+        "url": "http://10.99.99.29:80"
+    },
+    "moray": {
+        "host": "10.99.99.17",
+        "port": 2020,
+        "connectTimeout": 200,
+        "retry": {
+            "retries": 2,
+            "minTimeout": 500
+        }
     }
-  }
 }

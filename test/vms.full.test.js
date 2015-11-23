@@ -13,6 +13,7 @@ var assert = require('assert-plus');
 var uuid = require('libuuid');
 var qs = require('querystring');
 var async = require('async');
+var tape = require('tape');
 
 var common = require('./common');
 
@@ -192,17 +193,19 @@ function createOpts(path, params) {
 
 // --- Tests
 
-exports.setUp = function (callback) {
-    common.setUp(function (err, _client) {
-        assert.ifError(err);
-        assert.ok(_client, 'restify client');
-        client = _client;
-        callback();
-    });
-};
+function test(name, setup) {
+        tape.test(name, function (t) {
+                common.setUp(function (err, _client) {
+                        t.ifError(err, 'test setup failed');
+                        t.ok(_client, 'test client missing');
+                        client = _client;
+                        setup(t);
+                });
+        });
+}
 
 
-exports.find_headnode = function (t) {
+test('find_headnode', function (t) {
     client.cnapi.get('/servers', function (err, req, res, servers) {
         t.ifError(err);
         t.equal(res.statusCode, 200);
@@ -215,12 +218,12 @@ exports.find_headnode = function (t) {
             }
         }
         t.ok(SERVER);
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.napi_networks_ok = function (t) {
+test('napi_networks_ok', function (t) {
     client.napi.get('/networks', function (err, req, res, networks) {
         t.ifError(err);
         t.equal(res.statusCode, 200);
@@ -228,12 +231,12 @@ exports.napi_networks_ok = function (t) {
         t.ok(Array.isArray(networks));
         t.ok(networks.length > 1);
         NETWORKS = networks;
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.filter_vms_empty = function (t) {
+test('filter_vms_empty', function (t) {
     var path = '/vms?ram=32&owner_uuid=' + CUSTOMER;
 
     client.get(path, function (err, req, res, body) {
@@ -243,12 +246,12 @@ exports.filter_vms_empty = function (t) {
         t.ok(body);
         t.ok(Array.isArray(body));
         t.ok(!body.length);
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.filter_vms_ok = function (t) {
+test('filter_vms_ok', function (t) {
     var path = '/vms?ram=' + 128 + '&owner_uuid=' + CUSTOMER;
 
     client.get(path, function (err, req, res, body) {
@@ -268,12 +271,12 @@ exports.filter_vms_ok = function (t) {
                 pkgId = m['billing_id'];
             }
         });
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.filter_vms_advanced = function (t) {
+test('filter_vms_advanced', function (t) {
     var query = qs.escape('(&(ram>=128)(tags=*-smartdc_type=core-*))');
     var path = '/vms?query=' + query;
 
@@ -285,12 +288,12 @@ exports.filter_vms_advanced = function (t) {
         t.ok(body);
         t.ok(Array.isArray(body));
         t.ok(body.length);
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.filter_vms_predicate = function (t) {
+test('filter_vms_predicate', function (t) {
     var pred  = JSON.stringify({ eq: [ 'brand', 'joyent-minimal' ] });
     var path = '/vms?predicate=' + pred;
 
@@ -309,12 +312,12 @@ exports.filter_vms_predicate = function (t) {
             t.equal(m.brand, 'joyent-minimal');
         });
 
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.filter_vms_mixed = function (t) {
+test('filter_vms_mixed', function (t) {
     var query = qs.escape('(ram=128)');
     var pred  = JSON.stringify({ eq: [ 'brand', 'joyent-minimal' ] });
     var args  = 'owner_uuid=' + CUSTOMER;
@@ -351,13 +354,13 @@ exports.filter_vms_mixed = function (t) {
             t.ok(Array.isArray(body2));
             t.equal(body2.length, 0);
 
-            t.done();
+            t.end();
         });
     });
-};
+});
 
 
-exports.limit_vms_ok = function (t) {
+test('limit_vms_ok', function (t) {
     var path = '/vms?limit=5';
 
     client.get(path, function (err, req, res, body) {
@@ -368,12 +371,12 @@ exports.limit_vms_ok = function (t) {
         t.ok(body);
         t.ok(Array.isArray(body));
         t.equal(body.length, 5);
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.head_vms_ok = function (t) {
+test('head_vms_ok', function (t) {
     var path = '/vms?ram=' + 128 + '&owner_uuid=' + CUSTOMER;
     client.head(path, function (err, req, res) {
         t.ifError(err);
@@ -381,12 +384,12 @@ exports.head_vms_ok = function (t) {
         common.checkHeaders(t, res.headers);
         t.ok(res.headers['x-joyent-resource-count']);
         vmCount = res.headers['x-joyent-resource-count'];
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.offset_vms_ok = function (t) {
+test('offset_vms_ok', function (t) {
     var path = '/vms?ram=' + 128 + '&owner_uuid=' + CUSTOMER + '&offset=2';
 
     client.get(path, function (err, req, res, body) {
@@ -397,12 +400,12 @@ exports.offset_vms_ok = function (t) {
         t.ok(body);
         t.ok(Array.isArray(body));
         t.equal(body.length, vmCount - 2);
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.offset_vms_at_end = function (t) {
+test('offset_vms_at_end', function (t) {
     var path = '/vms?ram=' + 128 + '&owner_uuid=' + CUSTOMER +
         '&offset=' + vmCount;
 
@@ -413,12 +416,12 @@ exports.offset_vms_at_end = function (t) {
         t.ok(body);
         t.ok(Array.isArray(body));
         t.equal(body.length, 0);
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.offset_vms_beyond = function (t) {
+test('offset_vms_beyond', function (t) {
     var path = '/vms?ram=' + 128 + '&owner_uuid=' + CUSTOMER +
         '&offset=' + vmCount + 5;
 
@@ -429,12 +432,12 @@ exports.offset_vms_beyond = function (t) {
         t.ok(body);
         t.ok(Array.isArray(body));
         t.equal(body.length, 0);
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.offset_fields_vms_ok = function (t) {
+test('offset_fields_vms_ok', function (t) {
     // Currently we get lucky because the dhcpd0 and assets0 zones
     // are 128MBs zones
     var path = '/vms?ram=' + 128 + '&owner_uuid=' + CUSTOMER +
@@ -457,12 +460,12 @@ exports.offset_fields_vms_ok = function (t) {
             t.notStrictEqual(body[0].alias, undefined);
             t.strictEqual(body[0].ram, undefined);
         }
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.offset_fields_vms_beyond = function (t) {
+test('offset_fields_vms_beyond', function (t) {
     var path = '/vms?ram=' + 128 + '&owner_uuid=' + CUSTOMER +
         '&fields=uuid,alias&offset=' + vmCount + 5;
 
@@ -473,24 +476,24 @@ exports.offset_fields_vms_beyond = function (t) {
         t.ok(body);
         t.ok(Array.isArray(body));
         t.equal(body.length, 0);
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.get_vm_not_found = function (t) {
+test('get_vm_not_found', function (t) {
     var nouuid = uuid.create();
     var path = '/vms/' + nouuid + '?owner_uuid=' + CUSTOMER;
 
     client.get(path, function (err, req, res, body) {
         t.equal(res.statusCode, 404);
         common.checkHeaders(t, res.headers);
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.get_vm_ok = function (t) {
+test('get_vm_ok', function (t) {
     var path = '/vms/' + muuid + '?owner_uuid=' + CUSTOMER;
 
     client.get(path, function (err, req, res, body) {
@@ -499,33 +502,33 @@ exports.get_vm_ok = function (t) {
         common.checkHeaders(t, res.headers);
         t.ok(body, 'vm ok');
         checkMachine(t, body);
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.head_vm_ok = function (t) {
+test('head_vm_ok', function (t) {
     var path = '/vms/' + muuid + '?owner_uuid=' + CUSTOMER;
     client.head(path, function (err, req, res) {
         t.ifError(err);
         t.equal(res.statusCode, 200, '200 OK');
         common.checkHeaders(t, res.headers);
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.create_vm_not_ok = function (t) {
+test('create_vm_not_ok', function (t) {
     client.post('/vms', { owner_uuid: CUSTOMER },
       function (err, req, res, data) {
         t.equal(res.statusCode, 409);
         common.checkHeaders(t, res.headers);
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.create_vm_locality_not_ok = function (t) {
+test('create_vm_locality_not_ok', function (t) {
     var vm = {
         owner_uuid: CUSTOMER,
         image_uuid: IMAGE,
@@ -552,12 +555,12 @@ exports.create_vm_locality_not_ok = function (t) {
                 message: 'locality contains malformed UUID'
             } ]
         });
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.create_vm_tags_not_ok = function (t) {
+test('create_vm_tags_not_ok', function (t) {
     function callVmapi(tags, expectedErr, next) {
         var vm = {
             owner_uuid: CUSTOMER,
@@ -619,12 +622,12 @@ exports.create_vm_tags_not_ok = function (t) {
         checkBadTritonTag, checkBadTritonTagType1, checkBadTritonTagType2,
         checkBadTritonDNS
     ], function () {
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.create_vm = function (t) {
+test('create_vm', function (t) {
     var md = {
         foo: 'bar',
         credentials: JSON.stringify({ 'user_pw': '12345678' })
@@ -669,35 +672,35 @@ exports.create_vm = function (t) {
               function (err3, req3, res3, body3) {
                 t.equal(res3.statusCode, 409, 'cannot stop unprovisioned VM');
                 common.checkHeaders(t, res3.headers);
-                t.done();
+                t.end();
             });
         });
     });
-};
+});
 
 
-exports.get_job = function (t) {
+test('get_job', function (t) {
     client.get(jobLocation, function (err, req, res, body) {
         t.ifError(err);
         t.equal(res.statusCode, 200, 'GetJob 200 OK');
         common.checkHeaders(t, res.headers);
         t.ok(body, 'job ok');
         checkJob(t, body);
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.wait_provisioned_job = function (t) {
+test('wait_provisioned_job', function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
         t.ifError(err);
-        t.done();
+        t.end();
     });
-};
+});
 
 
 
-exports.check_create_vm_nics_running = function (t) {
+test('check_create_vm_nics_running', function (t) {
     var query = {
         belongs_to_uuid: newUuid,
         belongs_to_type: 'zone'
@@ -705,12 +708,12 @@ exports.check_create_vm_nics_running = function (t) {
 
     waitForNicState(t, query, 'running', function (err) {
         t.ifError(err);
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.stop_vm = function (t) {
+test('stop_vm', function (t) {
     var params = {
         action: 'stop'
     };
@@ -724,20 +727,20 @@ exports.stop_vm = function (t) {
         t.ok(res.headers['workflow-api'], 'workflow-api header');
         t.ok(body);
         jobLocation = '/jobs/' + body.job_uuid;
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.wait_stopped_job = function (t) {
+test('wait_stopped_job', function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
         t.ifError(err);
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.check_stop_vm_nics_stopped = function (t) {
+test('check_stop_vm_nics_stopped', function (t) {
     var query = {
         belongs_to_uuid: newUuid,
         belongs_to_type: 'zone'
@@ -745,12 +748,12 @@ exports.check_stop_vm_nics_stopped = function (t) {
 
     waitForNicState(t, query, 'stopped', function (err) {
         t.ifError(err);
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.start_vm = function (t) {
+test('start_vm', function (t) {
     var params = {
         action: 'start'
     };
@@ -764,20 +767,20 @@ exports.start_vm = function (t) {
         t.ok(res.headers['workflow-api'], 'workflow-api header');
         t.ok(body);
         jobLocation = '/jobs/' + body.job_uuid;
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.wait_started_job = function (t) {
+test('wait_started_job', function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
         t.ifError(err);
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.check_start_vm_nics_running = function (t) {
+test('check_start_vm_nics_running', function (t) {
     var query = {
         belongs_to_uuid: newUuid,
         belongs_to_type: 'zone'
@@ -785,12 +788,12 @@ exports.check_start_vm_nics_running = function (t) {
 
     waitForNicState(t, query, 'running', function (err) {
         t.ifError(err);
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.reboot_vm = function (t) {
+test('reboot_vm', function (t) {
     var params = {
         action: 'reboot'
     };
@@ -803,20 +806,20 @@ exports.reboot_vm = function (t) {
         common.checkHeaders(t, res.headers);
         t.ok(body);
         jobLocation = '/jobs/' + body.job_uuid;
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.wait_rebooted_job = function (t) {
+test('wait_rebooted_job', function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
         t.ifError(err);
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.check_reboot_vm_nics_running = function (t) {
+test('check_reboot_vm_nics_running', function (t) {
     var query = {
         belongs_to_uuid: newUuid,
         belongs_to_type: 'zone'
@@ -824,12 +827,12 @@ exports.check_reboot_vm_nics_running = function (t) {
 
     waitForNicState(t, query, 'running', function (err) {
         t.ifError(err);
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.add_nics_with_networks = function (t) {
+test('add_nics_with_networks', function (t) {
     var params = {
         action: 'add_nics',
         networks: [ { uuid: NETWORKS[1].uuid } ]
@@ -844,20 +847,20 @@ exports.add_nics_with_networks = function (t) {
         t.ok(body);
         t.ok(body.job_uuid, 'job_uuid: ' + body.job_uuid);
         jobLocation = '/jobs/' + body.job_uuid;
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.wait_add_nics_with_networks = function (t) {
+test('wait_add_nics_with_networks', function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
         t.ifError(err);
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.check_add_nics_with_network_nics_running = function (t) {
+test('check_add_nics_with_network_nics_running', function (t) {
     var query = {
         belongs_to_uuid: newUuid,
         belongs_to_type: 'zone',
@@ -866,12 +869,12 @@ exports.check_add_nics_with_network_nics_running = function (t) {
 
     waitForNicState(t, query, 'running', function (err) {
         t.ifError(err);
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.add_nics_with_macs = function (t) {
+test('add_nics_with_macs', function (t) {
     var params = {
         belongs_to_uuid: newUuid,
         belongs_to_type: 'zone',
@@ -899,21 +902,21 @@ exports.add_nics_with_macs = function (t) {
             common.checkHeaders(t, res2.headers);
             t.ok(body2);
             jobLocation = '/jobs/' + body2.job_uuid;
-            t.done();
+            t.end();
         });
     });
-};
+});
 
 
-exports.wait_add_nics_with_macs = function (t) {
+test('wait_add_nics_with_macs', function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
         t.ifError(err);
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.check_add_nics_with_macs_nics_running = function (t) {
+test('check_add_nics_with_macs_nics_running', function (t) {
     var query = {
         belongs_to_uuid: newUuid,
         belongs_to_type: 'zone',
@@ -922,12 +925,12 @@ exports.check_add_nics_with_macs_nics_running = function (t) {
 
     waitForNicState(t, query, 'running', function (err) {
         t.ifError(err);
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.remove_nics = function (t) {
+test('remove_nics', function (t) {
     // Get VM object to get its NICs
     client.get(vmLocation, function (err, req, res, body) {
         t.ifError(err);
@@ -959,21 +962,21 @@ exports.remove_nics = function (t) {
             common.checkHeaders(t, res2.headers);
             t.ok(body2);
             jobLocation = '/jobs/' + body2.job_uuid;
-            t.done();
+            t.end();
         });
     });
-};
+});
 
 
-exports.wait_remove_nics = function (t) {
+test('wait_remove_nics', function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
         t.ifError(err);
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.check_remove_nics_removed = function (t) {
+test('check_remove_nics_removed', function (t) {
     client.napi.get({
         path: '/nics',
         query: {
@@ -984,14 +987,14 @@ exports.check_remove_nics_removed = function (t) {
     }, function (err, req, res, nics) {
         t.ifError(err);
         t.equal(nics.length, 0);
-        t.done();
+        t.end();
     });
-};
+});
 
 
 // Adding this test due to JPC-1045 bug, where a change to owner_uuid was
 // requested with an empty owner_uuid value:
-exports.change_owner_without_uuid = function (t) {
+test('change_owner_without_uuid', function (t) {
     var params = {
         action: 'update',
         owner_uuid: ''
@@ -1001,12 +1004,12 @@ exports.change_owner_without_uuid = function (t) {
 
     client.post(opts, params, function (err, req, res, body) {
           t.equal(res.statusCode, 409);
-          t.done();
+          t.end();
     });
-};
+});
 
 
-exports.change_with_bad_tags = function (t) {
+test('change_with_bad_tags', function (t) {
     function action(tags, expectedErr, next) {
         var params = {
             action: 'update',
@@ -1135,12 +1138,12 @@ exports.change_with_bad_tags = function (t) {
         actionBadReservedDockerTag, postBadReservedDockerTag,
         putBadReservedDockerTag
     ], function () {
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.list_tags = function (t) {
+test('list_tags', function (t) {
     var path = '/vms/' + newUuid + '/tags?owner_uuid=' + CUSTOMER;
 
     client.get(path, function (err, req, res, body) {
@@ -1149,12 +1152,12 @@ exports.list_tags = function (t) {
         common.checkHeaders(t, res.headers);
         t.ok(body, 'body');
         t.ok(!Object.keys(body).length, 'empty body');
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.add_tags = function (t) {
+test('add_tags', function (t) {
     var path = '/vms/' + newUuid + '/tags?owner_uuid=' + CUSTOMER;
 
     var query = {
@@ -1170,20 +1173,20 @@ exports.add_tags = function (t) {
         common.checkHeaders(t, res.headers);
         t.ok(body);
         jobLocation = '/jobs/' + body.job_uuid;
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.wait_new_tag_job = function (t) {
+test('wait_new_tag_job', function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
         t.ifError(err);
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.wait_new_tag = function (t) {
+test('wait_new_tag', function (t) {
     var tags = {
         role: 'database',
         group: 'deployment'
@@ -1191,12 +1194,12 @@ exports.wait_new_tag = function (t) {
 
     waitForValue(vmLocation, 'tags', tags, function (err) {
         t.ifError(err);
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.get_tag = function (t) {
+test('get_tag', function (t) {
     var path = '/vms/' + newUuid + '/tags/role?owner_uuid=' + CUSTOMER;
 
     client.get(path, function (err, req, res, data) {
@@ -1205,12 +1208,12 @@ exports.get_tag = function (t) {
         common.checkHeaders(t, res.headers);
         t.ok(data);
         t.equal(data, 'database');
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.delete_tag = function (t) {
+test('delete_tag', function (t) {
     var path = '/vms/' + newUuid + '/tags/role?owner_uuid=' + CUSTOMER;
 
     var opts = createOpts(path, { owner_uuid: CUSTOMER });
@@ -1221,32 +1224,32 @@ exports.delete_tag = function (t) {
         common.checkHeaders(t, res.headers);
         t.ok(body);
         jobLocation = '/jobs/' + body.job_uuid;
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.wait_delete_tag_job = function (t) {
+test('wait_delete_tag_job', function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
         t.ifError(err);
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.wait_delete_tag = function (t) {
+test('wait_delete_tag', function (t) {
     var tags = {
         group: 'deployment'
     };
 
     waitForValue(vmLocation, 'tags', tags, function (err) {
         t.ifError(err);
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.delete_tags = function (t) {
+test('delete_tags', function (t) {
     var path = '/vms/' + newUuid + '/tags?owner_uuid=' + CUSTOMER;
 
     var opts = createOpts(path, { owner_uuid: CUSTOMER });
@@ -1257,28 +1260,28 @@ exports.delete_tags = function (t) {
         common.checkHeaders(t, res.headers);
         t.ok(body);
         jobLocation = '/jobs/' + body.job_uuid;
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.wait_delete_tags_job = function (t) {
+test('wait_delete_tags_job', function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
         t.ifError(err);
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.wait_delete_tags = function (t) {
+test('wait_delete_tags', function (t) {
     waitForValue(vmLocation, 'tags', {}, function (err) {
         t.ifError(err);
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.set_tags = function (t) {
+test('set_tags', function (t) {
     var path = '/vms/' + newUuid + '/tags?owner_uuid=' + CUSTOMER;
 
     var query = {
@@ -1294,20 +1297,20 @@ exports.set_tags = function (t) {
         common.checkHeaders(t, res.headers);
         t.ok(body);
         jobLocation = '/jobs/' + body.job_uuid;
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.wait_set_tags_job = function (t) {
+test('wait_set_tags_job', function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
         t.ifError(err);
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.wait_set_tags = function (t) {
+test('wait_set_tags', function (t) {
     var tags = {
         role: 'database',
         group: 'deployment'
@@ -1315,12 +1318,12 @@ exports.wait_set_tags = function (t) {
 
     waitForValue(vmLocation, 'tags', tags, function (err) {
         t.ifError(err);
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.snapshot_vm = function (t) {
+test('snapshot_vm', function (t) {
     var params = {
         action: 'create_snapshot',
         snapshot_name: 'backup'
@@ -1334,20 +1337,20 @@ exports.snapshot_vm = function (t) {
         common.checkHeaders(t, res.headers);
         t.ok(body);
         jobLocation = '/jobs/' + body.job_uuid;
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.wait_snapshot_job = function (t) {
+test('wait_snapshot_job', function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
         t.ifError(err);
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.rollback_vm = function (t) {
+test('rollback_vm', function (t) {
     var params = {
         action: 'rollback_snapshot',
         snapshot_name: 'backup'
@@ -1361,20 +1364,20 @@ exports.rollback_vm = function (t) {
         common.checkHeaders(t, res.headers);
         t.ok(body);
         jobLocation = '/jobs/' + body.job_uuid;
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.wait_rollback_job = function (t) {
+test('wait_rollback_job', function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
         t.ifError(err);
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.delete_snapshot = function (t) {
+test('delete_snapshot', function (t) {
     var params = {
         action: 'delete_snapshot',
         snapshot_name: 'backup'
@@ -1388,20 +1391,20 @@ exports.delete_snapshot = function (t) {
         common.checkHeaders(t, res.headers);
         t.ok(body);
         jobLocation = '/jobs/' + body.job_uuid;
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.wait_delete_snapshot_job = function (t) {
+test('wait_delete_snapshot_job', function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
         t.ifError(err);
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.reprovision_vm = function (t) {
+test('reprovision_vm', function (t) {
     var repdata = {
         action: 'reprovision',
         image_uuid: IMAGE
@@ -1415,20 +1418,20 @@ exports.reprovision_vm = function (t) {
         common.checkHeaders(t, res.headers);
         t.ok(body);
         jobLocation = '/jobs/' + body.job_uuid;
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.wait_reprovision_job = function (t) {
+test('wait_reprovision_job', function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
         t.ifError(err);
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.destroy_vm = function (t) {
+test('destroy_vm', function (t) {
     var opts = createOpts(vmLocation);
 
     client.del(opts, function (err, req, res, body) {
@@ -1437,20 +1440,20 @@ exports.destroy_vm = function (t) {
         common.checkHeaders(t, res.headers);
         t.ok(body);
         jobLocation = '/jobs/' + body.job_uuid;
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.wait_destroyed_job = function (t) {
+test('wait_destroyed_job', function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
         t.ifError(err);
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.filter_jobs_ok = function (t) {
+test('filter_jobs_ok', function (t) {
     var path = '/jobs?task=provision&vm_uuid=' + newUuid;
 
     client.get(path, function (err, req, res, body) {
@@ -1460,12 +1463,12 @@ exports.filter_jobs_ok = function (t) {
         t.ok(body);
         t.ok(Array.isArray(body));
         t.equal(body.length, 1);
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.filter_vm_jobs_ok = function (t) {
+test('filter_vm_jobs_ok', function (t) {
     var path = '/vms/' + newUuid + '/jobs?task=reboot';
 
     client.get(path, function (err, req, res, body) {
@@ -1475,12 +1478,12 @@ exports.filter_vm_jobs_ok = function (t) {
         t.ok(body);
         t.ok(Array.isArray(body));
         t.equal(body.length, 1);
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.get_audit = function (t) {
+test('get_audit', function (t) {
     client.get('/jobs?vm_uuid=' + newUuid, function (err, req, res, jobs) {
         t.ifError(err);
 
@@ -1500,12 +1503,12 @@ exports.get_audit = function (t) {
             t.deepEqual(context.caller, CALLER);
         }
 
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.create_nonautoboot_vm = function (t) {
+test('create_nonautoboot_vm', function (t) {
     var vm = {
         owner_uuid: CUSTOMER,
         image_uuid: IMAGE,
@@ -1530,32 +1533,32 @@ exports.create_nonautoboot_vm = function (t) {
           jobLocation = '/jobs/' + body.job_uuid;
           newUuid = body.vm_uuid;
           vmLocation = '/vms/' + newUuid;
-          t.done();
+          t.end();
     });
-};
+});
 
 
-exports.get_nonautoboot_job = function (t) {
+test('get_nonautoboot_job', function (t) {
     client.get(jobLocation, function (err, req, res, body) {
         t.ifError(err);
         t.equal(res.statusCode, 200, 'GetJob 200 OK');
         common.checkHeaders(t, res.headers);
         t.ok(body, 'job ok');
         checkJob(t, body);
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.wait_nonautoboot_provisioned_job = function (t) {
+test('wait_nonautoboot_provisioned_job', function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
         t.ifError(err);
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.change_autoboot = function (t) {
+test('change_autoboot', function (t) {
     var params = {
         action: 'update',
         autoboot: true
@@ -1567,20 +1570,20 @@ exports.change_autoboot = function (t) {
         t.ifError(err);
         t.equal(res.statusCode, 202);
         jobLocation = '/jobs/' + body.job_uuid;
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.wait_autoboot_update_job = function (t) {
+test('wait_autoboot_update_job', function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
         t.ifError(err);
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.get_nonautoboot_vm_ok = function (t) {
+test('get_nonautoboot_vm_ok', function (t) {
     var path = '/vms/' + newUuid + '?owner_uuid=' + CUSTOMER;
 
     client.get(path, function (err, req, res, body) {
@@ -1590,12 +1593,12 @@ exports.get_nonautoboot_vm_ok = function (t) {
         t.ok(body, 'vm ok');
         checkMachine(t, body);
         t.equal(body.state, 'stopped');
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.destroy_nonautoboot_vm = function (t) {
+test('destroy_nonautoboot_vm', function (t) {
     var opts = createOpts(vmLocation);
 
     client.del(opts, function (err, req, res, body) {
@@ -1604,20 +1607,20 @@ exports.destroy_nonautoboot_vm = function (t) {
         common.checkHeaders(t, res.headers);
         t.ok(body);
         jobLocation = '/jobs/' + body.job_uuid;
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.wait_nonautoboot_destroyed_job = function (t) {
+test('wait_nonautoboot_destroyed_job', function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
         t.ifError(err);
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.create_vm_with_package = function (t) {
+test('create_vm_with_package', function (t) {
     var vm = {
         owner_uuid: CUSTOMER,
         image_uuid: IMAGE,
@@ -1637,24 +1640,24 @@ exports.create_vm_with_package = function (t) {
           jobLocation = '/jobs/' + body.job_uuid;
           newUuid = body.vm_uuid;
           vmLocation = '/vms/' + newUuid;
-          t.done();
+          t.end();
     });
-};
+});
 
 
-exports.wait_provisioned_with_package_job = function (t) {
+test('wait_provisioned_with_package_job', function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
         t.ifError(err);
-        t.done();
+        t.end();
     });
-};
+});
 
 
 // if there's not enough spare RAM on a server, and we're resizing upwards, we
 // want it to fail
-exports.resize_package_up_fail = function (t) {
+test('resize_package_up_fail', function (t) {
     if (SERVER.datacenter !== 'coal' || !SERVER.headnode)
-        return t.done();
+        return t.end();
 
     var path = '/vms?ram=' + 1024 + '&owner_uuid=' + CUSTOMER;
     var largerPkg;
@@ -1687,13 +1690,13 @@ exports.resize_package_up_fail = function (t) {
             t.ok(error.message.match('Required additional RAM \\(896\\) ' +
                 'exceeds the server\'s available RAM \\(-\\d+\\)'));
 
-            t.done();
+            t.end();
         });
     });
-};
+});
 
 
-exports.find_new_package_ok = function (t) {
+test('find_new_package_ok', function (t) {
     var path = '/vms?ram=' + 256 + '&owner_uuid=' + CUSTOMER;
 
     client.get(path, function (err, req, res, body) {
@@ -1711,12 +1714,12 @@ exports.find_new_package_ok = function (t) {
                 pkgId = m['billing_id'];
             }
         });
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.resize_package = function (t) {
+test('resize_package', function (t) {
     var params = { action: 'update', billing_id: pkgId };
 
     var opts = createOpts(vmLocation + '?force=true', params);
@@ -1725,21 +1728,21 @@ exports.resize_package = function (t) {
         t.ifError(err);
         t.equal(res.statusCode, 202);
         jobLocation = '/jobs/' + body.job_uuid;
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.wait_resize_package_job = function (t) {
+test('wait_resize_package_job', function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
         t.ifError(err);
-        t.done();
+        t.end();
     });
-};
+});
 
 
 // regardless of spare RAM on server, we always want resizing down to succeed
-exports.resize_package_down = function (t) {
+test('resize_package_down', function (t) {
     var path = '/vms?ram=' + 128 + '&owner_uuid=' + CUSTOMER;
     var smallerPkg;
 
@@ -1762,21 +1765,21 @@ exports.resize_package_down = function (t) {
             t.ifError(err2);
             t.equal(res.statusCode, 200);
             jobLocation = '/jobs/' + body2.job_uuid;
-            t.done();
+            t.end();
         });
     });
-};
+});
 
 
-exports.wait_resize_package_job_2 = function (t) {
+test('wait_resize_package_job_2', function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
         t.ifError(err);
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.destroy_vm_with_package = function (t) {
+test('destroy_vm_with_package', function (t) {
     var opts = createOpts(vmLocation);
 
     client.del(opts, function (err, req, res, body) {
@@ -1785,20 +1788,20 @@ exports.destroy_vm_with_package = function (t) {
         common.checkHeaders(t, res.headers);
         t.ok(body);
         jobLocation = '/jobs/' + body.job_uuid;
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.wait_destroyed_with_package_job = function (t) {
+test('wait_destroyed_with_package_job', function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
         t.ifError(err);
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.provision_network_names = function (t) {
+test('provision_network_names', function (t) {
     var vm = {
         owner_uuid: CUSTOMER,
         image_uuid: IMAGE,
@@ -1822,20 +1825,20 @@ exports.provision_network_names = function (t) {
 
         jobLocation = '/jobs/' + body.job_uuid;
         vmLocation = '/vms/' + body.vm_uuid;
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.wait_provision_network_names = function (t) {
+test('wait_provision_network_names', function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
         t.ifError(err);
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.destroy_provision_network_name_vm = function (t) {
+test('destroy_provision_network_name_vm', function (t) {
     var opts = createOpts(vmLocation);
 
     client.del(opts, function (err, req, res, body) {
@@ -1844,12 +1847,12 @@ exports.destroy_provision_network_name_vm = function (t) {
         common.checkHeaders(t, res.headers);
         t.ok(body);
         jobLocation = '/jobs/' + body.job_uuid;
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.invalid_firewall_rules = function (t) {
+test('invalid_firewall_rules', function (t) {
     var errs = {
         enabled: 'Invalid rule: enabled must be a boolean',
         global: 'Invalid rule: cannot specify global rules',
@@ -1923,12 +1926,12 @@ exports.invalid_firewall_rules = function (t) {
             cb();
         });
     }, function () {
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.create_docker_vm = function (t) {
+test('create_docker_vm', function (t) {
     var vm = {
         owner_uuid: CUSTOMER,
         image_uuid: IMAGE,
@@ -1955,20 +1958,20 @@ exports.create_docker_vm = function (t) {
         newUuid = body.vm_uuid;
         vmLocation = '/vms/' + newUuid;
 
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.wait_provisioned_docker_job = function (t) {
+test('wait_provisioned_docker_job', function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
         t.ifError(err);
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.add_docker_tag = function (t) {
+test('add_docker_tag', function (t) {
     var path = '/vms/' + newUuid + '/tags?owner_uuid=' + CUSTOMER;
 
     var query = {
@@ -1993,12 +1996,12 @@ exports.add_docker_tag = function (t) {
             } ]
         });
 
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.set_docker_tag_1 = function (t) {
+test('set_docker_tag_1', function (t) {
     var path = '/vms/' + newUuid + '/tags?owner_uuid=' + CUSTOMER;
 
     var query = {
@@ -2024,12 +2027,12 @@ exports.set_docker_tag_1 = function (t) {
             } ]
         });
 
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.set_docker_tag_2 = function (t) {
+test('set_docker_tag_2', function (t) {
     var path = '/vms/' + newUuid + '/tags?owner_uuid=' + CUSTOMER;
 
     var query = {
@@ -2054,12 +2057,12 @@ exports.set_docker_tag_2 = function (t) {
             } ]
         });
 
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.update_docker_vm = function (t) {
+test('update_docker_vm', function (t) {
     var params = {
         action: 'update',
         tags: {
@@ -2085,12 +2088,12 @@ exports.update_docker_vm = function (t) {
             } ]
         });
 
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.delete_docker_tag = function (t) {
+test('delete_docker_tag', function (t) {
     var path = '/vms/' + newUuid + '/tags/docker%3Alabel%3Acom.docker.blah' +
         '?owner_uuid=' + CUSTOMER;
 
@@ -2112,12 +2115,12 @@ exports.delete_docker_tag = function (t) {
             } ]
         });
 
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.delete_docker_all_tags = function (t) {
+test('delete_docker_all_tags', function (t) {
     var path = '/vms/' + newUuid + '/tags?owner_uuid=' + CUSTOMER;
 
     var opts = createOpts(path, { owner_uuid: CUSTOMER });
@@ -2138,12 +2141,12 @@ exports.delete_docker_all_tags = function (t) {
             } ]
         });
 
-        t.done();
+        t.end();
     });
-};
+});
 
 
-exports.destroy_docker_vm = function (t) {
+test('destroy_docker_vm', function (t) {
     var opts = createOpts(vmLocation);
 
     client.del(opts, function (err, req, res, body) {
@@ -2152,6 +2155,6 @@ exports.destroy_docker_vm = function (t) {
         common.checkHeaders(t, res.headers);
         t.ok(body);
         jobLocation = '/jobs/' + body.job_uuid;
-        t.done();
+        t.end();
     });
-};
+});

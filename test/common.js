@@ -25,12 +25,12 @@ var USER = 'admin';
 var PASSWD = 'z3cr3t';
 
 var DEFAULT_CFG = path.join(__dirname, '..', '/config.json');
-var config = {};
+var config;
 try {
     config = JSON.parse(fs.readFileSync(DEFAULT_CFG, 'utf8'));
 } catch (e) {}
 
-var VMAPI_URL = process.env.VMAPI_URL || 'http://localhost';
+var VMAPI_URL = process.env.VMAPI_URL || 'http://localhost:8080';
 var NAPI_URL = config.napi.url || 'http://10.99.99.10';
 var CNAPI_URL = config.cnapi.url || 'http://10.99.99.22';
 
@@ -87,12 +87,8 @@ function testListInvalidParams(client, params, expectedError, t, callback) {
     var query = url.format({pathname: VMS_LIST_ENDPOINT, query: params});
 
     return client.get(query, function (err, req, res, body) {
-        t.equal(res.statusCode, 409,
-        'sending ' + util.inspect(params) +
-        ' parameters should result in an error status code');
-        t.deepEqual(body, expectedError,
-        'sending ' + util.inspect(params) + ' for parameters '
-        + ' should result in the proper error message being sent');
+        t.equal(res.statusCode, 409, 'unexpected error code');
+        t.deepEqual(body, expectedError, 'unexpected error message');
         return callback();
     });
 }
@@ -105,9 +101,7 @@ function testListValidParams(client, params, t, callback) {
     var query = url.format({pathname: VMS_LIST_ENDPOINT, query: params});
 
     return client.get(query, function (err, req, res, body) {
-        t.equal(res.statusCode, 200,
-        'sending params ' + util.inspect(params) +
-        ' should not result in an error status code');
+        t.equal(res.statusCode, 200);
         return callback(err, body);
     });
 }
