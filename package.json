@@ -1,7 +1,7 @@
 {
   "name": "vmapi",
   "description": "VMs API",
-  "version": "8.0.0",
+  "version": "9.0.0",
   "author": "Andres Rodriguez (joyent.com)",
   "private": true,
   "dependencies": {
