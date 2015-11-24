@@ -20,7 +20,7 @@
     "posix-getopt": "1.0.0",
     "redis": "0.7.2",
     "restify": "2.7.0",
-    "sdc-clients": "git+ssh://git@github.com:joyent/node-sdc-clients#a6d007bd110ebbf8369cf887047803416f911153",
+    "sdc-clients": "git+ssh://git@github.com:joyent/node-sdc-clients#a6d007bd",
     "sigyan": "0.2.0",
     "sprintf": "0.1.1",
     "trace-event": "1.3.0",
