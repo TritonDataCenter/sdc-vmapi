@@ -6,7 +6,7 @@
  */
 
 /*
- * Copyright (c) 2014, Joyent, Inc.
+ * Copyright (c) 2015, Joyent, Inc.
  */
 
 /*
@@ -17,7 +17,7 @@
 
 dtrace:::BEGIN
 {
-	trace("Tracing node.js GC... Ctrl-C for summary.\n");
+        trace("Tracing node.js GC... Ctrl-C for summary.\n");
 }
 
 node*:::gc-start
@@ -28,9 +28,9 @@ node*:::gc-start
 node*:::gc-done
 /self->ts/
 {
-	this->delta = (timestamp - self->ts) / 1000000;
+        this->delta = (timestamp - self->ts) / 1000000;
         printf("%Y PID %-5d GC %d ms\n", walltimestamp, pid, this->delta);
-	@["GC (ms) summary:"] = quantize(this->delta);
+        @["GC (ms) summary:"] = quantize(this->delta);
         self->ts = 0;
 }
 

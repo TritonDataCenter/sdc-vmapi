@@ -5,7 +5,7 @@
 #
 
 #
-# Copyright (c) 2014, Joyent, Inc.
+# Copyright (c) 2015, Joyent, Inc.
 #
 
 #
@@ -92,7 +92,6 @@ release: all deps docs $(SMF_MANIFESTS)
     $(ROOT)/Makefile \
     $(ROOT)/node_modules \
     $(ROOT)/package.json \
-    $(ROOT)/config.json.in \
     $(ROOT)/sapi_manifests \
     $(ROOT)/smf \
     $(ROOT)/test \

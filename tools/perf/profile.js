@@ -6,7 +6,7 @@
  */
 
 /*
- * Copyright (c) 2014, Joyent, Inc.
+ * Copyright (c) 2015, Joyent, Inc.
  */
 
 //
@@ -38,20 +38,20 @@ var requests = {};
 
 function parseLines(cb) {
     var lastLine = '';
-	var stream = fs.createReadStream(FILE);
+    var stream = fs.createReadStream(FILE);
 
-	stream.on('error', function (err) {
-		cb(err);
-	});
+    stream.on('error', function (err) {
+        cb(err);
+    });
 
-	stream.on('end', function (err) {
+    stream.on('end', function (err) {
         if (lastLine !== '') {
             processLine(lastLine);
             LINES.push(lastLine);
         }
 
-		cb();
-	});
+        cb();
+    });
 
     stream.on('data', function(chunk) {
         var lines, i;
@@ -132,11 +132,11 @@ function printSummary() {
 
 
 parseLines(function (err) {
-	if (err) {
-		console.error(err);
-		return;
-	}
+    if (err) {
+        console.error(err);
+        return;
+    }
 
-	// console.log('processed %d requests', LINES.length);
+    // console.log('processed %d requests', LINES.length);
     printSummary();
 });
