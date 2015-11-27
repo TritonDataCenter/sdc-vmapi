@@ -20,9 +20,7 @@ TOP=$(cd $(dirname $0)/../; pwd)
 NODE="root@$1"
 
 if [[ -z "$VMAPI_ZONE" ]]; then
-    VMAPI_ZONE=$(ssh $NODE "/opt/smartdc/bin/sdc-vmapi /vms" 2>/dev/null \
-        | json -H -c 'this.tags && this.tags.smartdc_role === "vmapi"' \
-            -c 'this.state === "running"' 0.uuid)
+    VMAPI_ZONE=$(ssh $NODE "vmadm lookup -1 alias=vmapi0" 2>/dev/null)
 fi
 echo "VMAPI_ZONE: $VMAPI_ZONE"
 
