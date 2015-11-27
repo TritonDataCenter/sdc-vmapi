@@ -62,35 +62,5 @@
             "retries": 2,
             "minTimeout": 500
         }
-    },
-    "changefeed": {
-        "resources": [
-            {
-                "resource": "vm",
-                "subResources": [
-                    "alias",
-                    "customer_metadata",
-                    "destroyed",
-                    "internal_metadata",
-                    "nics",
-                    "owner_uuid",
-                    "server_uuid",
-                    "state",
-                    "tags"
-                ],
-                "bootstrapRoute": "/vms"
-            }
-        ],
-        "moray": {
-            "bucketName": "vmapi_changefeed",
-            "host": "{{{MORAY_SERVICE}}}",
-            "port": 2020,
-            "connectTimeout": 200,
-            "retry": {
-                "retries": 2,
-                "minTimeout": 500
-            }
-        },
-        "maxAge": 120
     }
 }
