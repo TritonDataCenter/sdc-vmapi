@@ -79,7 +79,7 @@
                     "tags"
                 ],
                 "bootstrapRoute": "/vms"
-            },
+            }
         ],
         "moray": {
             "bucketName": "vmapi_changefeed",
