@@ -159,10 +159,12 @@ else
     CFG_FILE=$TOP/config.json
     [[ ! -f "$CFG_FILE" ]] && fatal "'$CFG_FILE' does not exist"
     if [[ $(zonename) == "global" ]]; then
-        export VMAPI_URL=http://$(/opt/smartdc/bin/sdc-vmapi /vms \
-            | json -H -c 'this.tags.smartdc_role=="vmapi"' -c 'this.state=="running"' 0.nics.0.ip)
+        export VMAPI_IP=$(/opt/smartdc/bin/sdc-vmapi /vms \
+            | json -H -c 'this.tags.smartdc_role=="vmapi"' -c 'this.state=="running"' 0.nics.0.ip);
+        export VMAPI_URL=http://$VMAPI_IP
     else
-        export VMAPI_URL=http://$(/usr/sbin/ifconfig net0 | grep inet | awk '{print $2}')
+        export VMAPI_IP=$(/usr/sbin/ifconfig net0 | grep inet | awk '{print $2}');
+        export VMAPI_URL=http://$VMAPI_IP
     fi
     export VMAPI_PORT=$(json port <$CFG_FILE)
     if [[ -n "$VMAPI_PORT" && "$VMAPI_PORT" != "80" ]]; then

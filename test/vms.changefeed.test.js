@@ -42,8 +42,8 @@ var listenerOpts = {
         level: process.env['LOG_LEVEL'] || 'error',
         stream: process.stderr
     }),
-    endpoint: '127.0.0.1',
-    port: 80,
+    endpoint: process.env.VMAPI_IP || '127.0.0.1',
+    port: process.env.VMAPI_PORT || 80,
     instance: 'uuid goes here',
     service: 'vmapi',
     changeKind: {
