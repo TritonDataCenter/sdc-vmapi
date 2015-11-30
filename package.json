@@ -15,7 +15,7 @@
     "effluent-logger": "git+https://github.com/joshwilsdon/effluent-logger.git#d662f161a07f94045ad2afb45442931511c40e51",
     "filed": "0.0.5",
     "libuuid": "0.1.2",
-    "moray": "git+ssh://git@github.com:joyent/node-moray.git#441fd44",
+    "moray": "git+ssh://git@github.com:joyent/node-moray.git#b84ef0e",
     "nodeunit": "0.9.1",
     "restify": "2.7.0",
     "sdc-clients": "git+ssh://git@github.com:joyent/node-sdc-clients.git#c962959",
