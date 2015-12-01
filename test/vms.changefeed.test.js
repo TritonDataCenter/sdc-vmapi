@@ -261,13 +261,16 @@ exports.create_vm = function (t) {
         });
     });
 
+    var noStateReceived = true;
     listener.on('readable', function () {
         var changeItem = listener.read();
         var changeKind = changeItem.changeKind;
-        if (changeItem.changedResourceId === VM.uuid &&
+        if (noStateReceived &&
+            changeItem.changedResourceId === VM.uuid &&
             changeKind.subResources &&
             changeKind.subResources.indexOf('state') !== -1) {
             t.ok(true, 'state received');
+            noStateReceived = false;
             listener._endSocket();
             t.done();
         }
@@ -444,13 +447,16 @@ exports.listen_for_nics = function (t) {
         });
     });
 
+    var noStateReceived = true;
     listener.on('readable', function () {
         var changeItem = listener.read();
         var changeKind = changeItem.changeKind;
-        if (changeItem.changedResourceId === VM.uuid &&
+        if (noStateReceived &&
+            changeItem.changedResourceId === VM.uuid &&
             changeKind.subResources &&
             changeKind.subResources.indexOf('nics') !== -1) {
             t.ok(true, 'nics received');
+            noStateReceived = false;
             listener._endSocket();
             t.done();
         }
@@ -521,8 +527,8 @@ exports.listen_for_start_state = function (t) {
             changeKind.subResources &&
             changeKind.subResources.indexOf('state') !== -1) {
             t.ok(true, 'state received');
-            listener._endSocket();
             noStateReceived = false;
+            listener._endSocket();
             t.done();
         }
     });
@@ -547,13 +553,16 @@ exports.listen_for_reboot_state = function (t) {
             t.ok(body.job_uuid, 'job_uuid: ' + body.job_uuid);
         });
     });
+    var noStateReceived = true;
     listener.on('readable', function () {
         var changeItem = listener.read();
         var changeKind = changeItem.changeKind;
-        if (changeItem.changedResourceId === VM.uuid &&
+        if (noStateReceived &&
+            changeItem.changedResourceId === VM.uuid &&
             changeKind.subResources &&
             changeKind.subResources.indexOf('state') !== -1) {
             t.ok(true, 'state received');
+            noStateReceived = false;
             listener._endSocket();
             t.done();
         }
@@ -575,13 +584,16 @@ exports.listen_for_destroy = function (t) {
         });
     });
 
+    var noStateReceived = true;
     listener.on('readable', function () {
         var changeItem = listener.read();
         var changeKind = changeItem.changeKind;
-        if (changeItem.changedResourceId === VM.uuid &&
+        if (noStateReceived &&
+            changeItem.changedResourceId === VM.uuid &&
             changeKind.subResources &&
             changeKind.subResources.indexOf('destroyed') !== -1) {
             t.ok(true, 'destroyed received');
+            noStateReceived = false;
             listener._endSocket();
             t.done();
         }
