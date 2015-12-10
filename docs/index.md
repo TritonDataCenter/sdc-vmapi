@@ -461,9 +461,13 @@ joyent/node-sdc-clients module.
 
 #### Sorting
 
-The *sort* direction can be 'asc' (ascending) or 'desc' (descending), and it is
-'desc' by default. The following are some examples of valid values for the *sort*
-parameter:
+The *sort* direction can be:
+
+* 'asc' or 'ASC' to sort by ascending order
+* 'desc' or 'DESC' to sort by descending order
+
+The sort direction is descending by default. The following are some examples
+of valid values for the *sort* parameter:
 
     sort=uuid (results in 'uuid DESC')
     sort=alias.desc (results in 'uuid DESC')
