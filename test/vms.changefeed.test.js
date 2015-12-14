@@ -17,6 +17,7 @@ var restify = require('restify');
 var uuid = require('libuuid');
 
 var common = require('./common');
+var vmTest = require('./lib/vm');
 
 var client;
 
@@ -231,7 +232,8 @@ exports.create_vm = function (t) {
         quota: 10,
         customer_metadata: md,
         creator_uuid: CUSTOMER,
-        role_tags: ['fd48177c-d7c3-11e3-9330-28cfe91a33c9']
+        role_tags: ['fd48177c-d7c3-11e3-9330-28cfe91a33c9'],
+        alias: vmTest.TEST_VMS_ALIAS
     };
 
     var opts = createOpts('/vms', vm);
@@ -603,7 +605,7 @@ exports.listen_for_destroy = function (t) {
 exports.put_new_vm = function (t) {
     t.expect(2);
     var vm = VM;
-    vm.alias = 'garbage' + uuid.create();
+    vm.alias = vmTest.TEST_VMS_ALIAS + uuid.create();
     vm.uuid = uuid.create();
     var opts = { path: '/vms/' + vm.uuid };
 
@@ -621,7 +623,7 @@ exports.put_new_vm = function (t) {
 exports.put_new_vms = function (t) {
     t.expect(2);
     var vm = VM;
-    vm.alias = 'garbage' + uuid.create();
+    vm.alias = vmTest.TEST_VMS_ALIAS + uuid.create();
     vm.uuid = uuid.create();
     var query = { server_uuid: SERVER.uuid };
     var opts = { path: '/vms', query: query };

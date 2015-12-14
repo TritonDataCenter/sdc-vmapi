@@ -17,7 +17,7 @@ var util = require('util');
 
 var Logger = require('bunyan');
 var restify = require('restify');
-
+var vmapiSdcClient = require('sdc-clients').VMAPI;
 
 // --- Globals
 
@@ -59,6 +59,16 @@ function setUp(callback) {
         agent: false
     });
 
+    var sdcClient = new vmapiSdcClient({
+        url: VMAPI_URL,
+        retry: {
+            retries: 1,
+            minTimeout: 1000
+        },
+        log: logger,
+        agent: false
+    });
+
     var napi = restify.createJsonClient({
         url: NAPI_URL,
         version: '*',
@@ -73,6 +83,7 @@ function setUp(callback) {
         agent: false
     });
 
+    client.sdcClient = sdcClient;
     client.napi = napi;
     client.cnapi = cnapi;
 
