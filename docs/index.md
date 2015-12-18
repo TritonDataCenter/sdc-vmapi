@@ -259,7 +259,24 @@ endpoint:
 | provisioning | VM is currently being provisioned in the system |
 | incomplete   | |
 | failed       | VM provisioning has failed |
-| active       | When used in ListVms, denotes machines that are not 'destroyed' or 'failed' |
+| active       | When used in ListVms, denotes machines that are not in state 'destroyed', 'failed' or 'manual_override' |
+| destroying   | When used in ListVms, denotes machines that have a 'destroyed' state but a zone_state that is not 'destroyed' |
+| manual_override | Used as an intermediary state to make a VM transition from 'destroyed' to another state that is not 'destroyed'. The direct transition from a non destroyed state to a destroyed state is otherwise not allowed. |
+
+## State `'manual_override'`
+
+The state `'manual_override'` is a special state that is used to transition a
+VM from the state `'destroyed'` to any other state that is not `'destroyed'`.
+Without going through this `'manual_override'` state, a transition from state
+`'destroyed'` to any other state that is not `'manual_override'` is not
+allowed and generates an error.
+
+Transitioning a VM to the `'manual_override'` state should be exceptional and
+not part of normal procedures and workflows. It should be used to fix
+exceptional issues such as bugs in SDC that would erroneously set VMs in a
+state `'destroyed'`.
+
+## `zone_state` property
 
 <!-- TODO: validate this is the complete set. What is the translation from
 zone_state? -->
@@ -275,6 +292,7 @@ In addition, there is a 'zone_state' property that represents the Solaris Zones 
 | ready         |
 | running       |
 | shutting down |
+| destroyed     |
 
 
 # VM Features
@@ -413,7 +431,7 @@ will result in a request error.
 | brand            | String                                           | Brand of the VM (joyent, joyent-minimal or kvm) |
 | docker           | Boolean                                          | true if the VM is a docker VM, false otherwise  |
 | alias            | String                                           | VM Alias                                        |
-| state            | String                                           | running, stopped, active or destroyed           |
+| state            | String                                           | running, stopped, active, destroying, destroyed or manual_override |
 | ram              | Number                                           | Amount of memory of the VM                      |
 | uuids            | String (comma-separated UUID values)             | List of VM UUIDs to match                       |
 | create_timestamp | Unix Time in milliseconds or UTC ISO Date String | VM creation timestamp                           |

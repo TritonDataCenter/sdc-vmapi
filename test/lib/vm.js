@@ -1,10 +1,9 @@
 var assert = require('assert-plus');
-
 var libuuid = require('libuuid');
 
 var common = require('../../lib/common');
 
-var TEST_VMS_ALIAS = 'test--';
+var TEST_VMS_ALIAS = 'test-vmapi--';
 exports.TEST_VMS_ALIAS = TEST_VMS_ALIAS;
 
 function BunyanNoopLogger() {}
