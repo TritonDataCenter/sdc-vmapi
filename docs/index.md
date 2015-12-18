@@ -41,7 +41,7 @@ update time.
 
 | Param                    | Type                          | Description                                                                                                                                                                                                               | Vm Response Default | Create | Update |
 | ------------------------ | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- | ------ | ------ |
-| alias                    | String                        | VM alias                                                                                                                                                                                                                  | Yes                 | Yes    | Yes    |
+| alias                    | String                        | VM alias (max length 189 chars, and must match `/^[a-zA-Z0-9][a-zA-Z0-9\_\.\-]*$/`)                                                                                                                                       | Yes                 | Yes    | Yes    |
 | autoboot                 | Boolean                       | Controls whether or not a VM is booted when the system is rebooted.                                                                                                                                                       | Yes                 | Yes    | Yes    |
 | billing_id               | UUID                          | Billing Id                                                                                                                                                                                                                | Yes                 | Yes    | Yes    |
 | brand                    | String                        | Brand of the VM (joyent, joyent-minimal, kvm or sngl)                                                                                                                                                                     | Yes                 | Yes    | No     |
@@ -53,10 +53,11 @@ update time.
 | destroyed                | Date                          | The time at which the VM was destroyed in ISO 8601 format                                                                                                                                                                 | Yes                 | No     | No     |
 | datasets                 | Array                         | VM datasets                                                                                                                                                                                                               | Yes                 | No     | No     |
 | delegate_dataset         | Boolean                       | Delegate a data dataset to the VM                                                                                                                                                                                         | No                  | Yes    | No     |
-| dns_domain               | String                        | Domain value for /etc/hosts                                                                                                                                                                                               | No                  | Yes    | No     |
+| dns_domain               | String                        | Domain value for /etc/hosts and /etc/resolv.conf (max length 255 chars)                                                                                                                                                   | No                  | Yes    | No     |
 | do_not_inventory         | Boolean                       | The primary use-case of this attribute is for test VMs that are created but you don't want their existence propagated up to VMAPI since they'll be short-lived and its lifecycle will be physically managed in the server | No                  | Yes    | Yes    |
 | firewall_enabled         | Boolean                       | Enable firewall for the VM                                                                                                                                                                                                | Yes                 | Yes    | Yes    |
 | fs_allowed               | String (comma-separated list) | Filesystems allowed for the VM                                                                                                                                                                                            | No                  | Yes    | Yes    |
+| hostname                 | String                        | Hostname (excluding DNS suffix) for the VM (max length 63 chars, must be DNS-safe)                                                                                                                                        | No                  | Yes    | No     |
 | image_uuid               | UUID                          | Image of the VM                                                                                                                                                                                                           | Yes                 | Yes    | No     |
 | indestructible_delegated | Boolean                       | When set this property adds an @indestructible snapshot to the delegated data dataset and sets a zfs hold on that snapshot. This hold must be removed before the VM can be deleted enabling a two-step deletion           | No                  | Yes    | Yes    |
 | indestructible_zoneroot  | Boolean                       | When set this property adds an @indestructible snapshot to the zoneroot dataset and sets a zfs hold on that snapshot. This hold must be removed before the VM can be deleted or reprovisioned                             | No                  | Yes    | Yes    |
@@ -92,7 +93,7 @@ update time.
 
 Furthermore, when dealing with KVM VMs there are additional attributes to know
 about and are specific to KVM being a different type of virtualization: cpu_type,
-disks, disk_driver, hostname, nic_driver and vcpus. KVM VMs require at least
+disks, disk_driver, nic_driver and vcpus. KVM VMs require at least
 two disks and only the properties documented below should be specified. For
 additional advanced attributes that can be set on disks please refer to the
 vmadm(1) man page.
@@ -104,7 +105,6 @@ vmadm(1) man page.
 | disks               | Array        | Disks for the KVM VM.                    | Yes                 | Yes    | No     |
 | disks[0].image_uuid | UUID         | Image UUID for the KVM VM                | Yes                 | Yes    | No     |
 | disks[1].size       | Number (MiB) | Size of the disk                         | Yes                 | Yes    | No     |
-| hostname            | String       | Hostname of the VM                       | No                  | Yes    | No     |
 | nic_driver          | String       | Drivel model for the VM NICs             | Yes                 | Yes    | No     |
 | vcpus               | Number       | Number of virtual CPUs                   | Yes                 | Yes    | No     |
 
