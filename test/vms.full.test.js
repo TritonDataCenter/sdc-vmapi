@@ -1063,7 +1063,8 @@ exports.change_with_bad_tags = function (t) {
     var stringMsg = '"triton.cns.services" must be a string';
     var booleanMsg = '"triton.cns.disable" must be a boolean';
     var dnsMsg = '"_foo.bar" is not DNS safe';
-    var dockerMsg = 'Special tag "docker:label:com.docker." not supported';
+    var dockerMsg1 = 'Special tag "docker:label:com.docker." not supported';
+    var dockerMsg2 = 'Special tag "sdc_docker" not supported';
 
     function actionBadTritonTag(next) {
         action({ 'triton.foo': true }, unrecognizedMsg, next);
@@ -1081,8 +1082,13 @@ exports.change_with_bad_tags = function (t) {
         action({ 'triton.cns.services': 'foo,_foo.bar' }, dnsMsg, next);
     }
 
-    function actionBadReservedDockerTag(next) {
-        action({ 'docker:label:com.docker.': 'foo,_foo.bar' }, dockerMsg, next);
+    function actionBadReservedDockerTagType1(next) {
+        action({ 'docker:label:com.docker.': 'foo,_foo.bar' }, dockerMsg1,
+               next);
+    }
+
+    function actionBadReservedDockerTagType2(next) {
+        action({ 'sdc_docker': true }, dockerMsg2, next);
     }
 
     function postBadTritonTag(next) {
@@ -1101,9 +1107,13 @@ exports.change_with_bad_tags = function (t) {
         call('post', { 'triton.cns.services': 'foo,_foo.bar' }, dnsMsg, next);
     }
 
-    function postBadReservedDockerTag(next) {
-        call('post', { 'docker:label:com.docker.': 'foo,_foo.bar' }, dockerMsg,
+    function postBadReservedDockerTagType1(next) {
+        call('post', { 'docker:label:com.docker.': 'foo,_foo.bar' }, dockerMsg1,
             next);
+    }
+
+    function postBadReservedDockerTagType2(next) {
+        call('post', { 'sdc_docker': true }, dockerMsg2, next);
     }
 
     function putBadTritonTag(next) {
@@ -1122,9 +1132,13 @@ exports.change_with_bad_tags = function (t) {
         call('put', { 'triton.cns.services': 'foo,_foo.bar' }, dnsMsg, next);
     }
 
-    function putBadReservedDockerTag(next) {
-        call('put', { 'docker:label:com.docker.': 'foo,_foo.bar' }, dockerMsg,
+    function putBadReservedDockerTagType1(next) {
+        call('put', { 'docker:label:com.docker.': 'foo,_foo.bar' }, dockerMsg1,
             next);
+    }
+
+    function putBadReservedDockerTagType2(next) {
+        call('put', { 'sdc_docker': true }, dockerMsg2, next);
     }
 
     async.series([
@@ -1132,8 +1146,9 @@ exports.change_with_bad_tags = function (t) {
         actionBadTritonDNS, postBadTritonTag, postBadTritonTagType1,
         postBadTritonTagType2, postBadTritonDNS, putBadTritonTag,
         putBadTritonTagType1, putBadTritonTagType2, putBadTritonDNS,
-        actionBadReservedDockerTag, postBadReservedDockerTag,
-        putBadReservedDockerTag
+        actionBadReservedDockerTagType1, actionBadReservedDockerTagType2,
+        postBadReservedDockerTagType1, postBadReservedDockerTagType2,
+        putBadReservedDockerTagType1, putBadReservedDockerTagType2
     ], function () {
         t.done();
     });
