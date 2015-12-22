@@ -29,25 +29,14 @@ var assert = require('assert-plus');
 
 var testCommon = require('../test/lib/vm');
 
+var configFileLoader = require('../lib/config-loader');
 var MORAY = require('../lib/apis/moray');
 
 var DEFAULT_NB_TEST_VMS_TO_CREATE = 60;
 var DEFAULT_CONCURRENCY = 10;
 
-function loadConfig() {
-    var configPath = path.join(__dirname, '..', 'config.json');
-
-    if (!fs.existsSync(configPath)) {
-        console.error('Config file not found: ' + configPath +
-          ' does not exist. Aborting.');
-        process.exit(1);
-    }
-
-    var theConfig = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-    return theConfig;
-}
-
-var config = loadConfig();
+var configFilePath = path.join(__dirname, '..', 'config.json');
+var config = configFileLoader.loadConfig(configFilePath);
 
 log = this.log = new bunyan({
     name: 'add-test-vms',
