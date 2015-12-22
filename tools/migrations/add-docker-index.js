@@ -8,46 +8,24 @@
  * Copyright (c) 2014, Joyent, Inc.
  */
 
-// Backfill image_uuid for KVM VMs
 var path = require('path');
-var fs = require('fs');
-var util = require('util');
 
 var bunyan = require('bunyan');
 var restify = require('restify');
+
+var configLoader = require('../../lib/config-loader');
 var moray = require('moray');
-var async = require('async');
-var levels = [bunyan.TRACE, bunyan.DEBUG, bunyan.INFO,
-              bunyan.WARN, bunyan.ERROR, bunyan.FATAL];
-var config;
-var log;
 
+var configFilePath = path.join(__dirname, '..', '..', 'config.json');
+var config = configLoader.loadConfig(configFilePath);
 
-/*
- * Loads and parse the configuration file at config.json
- */
-function loadConfig() {
-    var configPath = path.join(__dirname, '..', '..', 'config.json');
-
-    if (!fs.existsSync(configPath)) {
-        console.error('Config file not found: ' + configPath +
-          ' does not exist. Aborting.');
-        process.exit(1);
-    }
-
-    var theConfig = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-    return theConfig;
-}
-
-var config = loadConfig();
-console.log(config);
-
-log = new bunyan({
+var log = new bunyan({
     name: 'add-docker-index',
     level: config.logLevel || 'debug',
     serializers: restify.bunyan.serializers
 });
 
+log.info({config: config}, 'Loaded configuration');
 
 var BUCKET = {
     name: 'vmapi_vms',
@@ -70,18 +48,10 @@ var BUCKET = {
 };
 
 function getMorayClient(callback) {
-    var client = moray.createClient({
-        connectTimeout: config.moray.connectTimeout || 200,
-        host: config.moray.host,
-        port: config.moray.port,
-        log: log,
-        reconnect: true,
-        retry: (config.moray.retry === false ? false : {
-            retries: Infinity,
-            minTimeout: 1000,
-            maxTimeout: 16000
-        })
-    });
+    var morayConfig = config.moray;
+
+    morayConfig.log = log;
+    var client = moray.createClient(morayConfig);
 
     client.on('connect', function () {
         return callback(client);
