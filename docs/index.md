@@ -1008,6 +1008,7 @@ These inputs can be passed and will be validated wether or not a 'billing_id' SD
 | customer_metadata   | Object       | VM metadata                                 |
 | internal_metadata   | Object       | VM metadata                                 |
 | limit_priv          | String       | List of priviledges to the VM               |
+| locality            | Object       | Locates new VM near or far from certain VMs |
 
 ### Advanced Inputs
 
@@ -1074,6 +1075,30 @@ Note how image_uuid is specified for the first disk and not at the top level of 
         {"image_uuid": "56108678-1183-11e1-83c3-ff3185a5b47f"},
         {"size": 10240}
       ]
+    }'
+
+### Example: creating a VM with locality hints
+
+Note that the VM uuids specified have to be owned by the same account as the new VM
+To make locality a hard requirement, set the value of "strict" to true
+
+    POST /vms -d '{
+      "owner_uuid": "930896af-bf8c-48d4-885c-6573a94b1853",
+      "image_uuid": "28445220-6eac-11e1-9ce8-5f14ed22e782",
+      "brand": "joyent",
+      "networks": ["a4457fc9-c415-4ac9-8738-a03b1a8e7aee"],
+      "ram": 128,
+      "quota": 10,
+      "locality": {
+        "strict": false,
+        "near": [
+          "48bb34cc-5f0f-4cf8-834d-06862a6e89b1",
+          "f7951441-5344-4114-88ce-a064820ed9fe"
+        ],
+        "far": [
+          "fb82f801-b90e-475d-951b-028f48ca12c7"
+        ]
+      }
     }'
 
 
