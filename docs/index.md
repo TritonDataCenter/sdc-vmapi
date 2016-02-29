@@ -77,8 +77,8 @@ update time.
 | networks.*.ip            | IP Address                    | Specifies the IP address desired on this network. Optional                                                                                                                                                                | --                  | --     | --     |
 | nics                     | Array                         | VM NICs. They can only be updated. NICs get provisioned for a VM from the values of `networks` in CreateVm. See UpdateNIcs for more details.                                                                              | Yes                 | No     | No     |
 | owner_uuid               | UUID                          | VM Owner                                                                                                                                                                                                                  | Yes                 | Yes    | Yes    |
-| package_name             | String                        | Private field intended for use by Joyent's SDC product.                                                                                                                                                                   | No                  | Yes    | Yes    |
-| package_version          | String                        | Private field intended for use by Joyent's SDC product.                                                                                                                                                                   | No                  | Yes    | Yes    |
+| package_name             | String                        | DEPRECATED: use billing_id                                                                                                                                                                                                | No                  | Yes    | Yes    |
+| package_version          | String                        | DEPRECATED: use billing_id                                                                                                                                                                                                | No                  | Yes    | Yes    |
 | platform_buildstamp      | String                        | Timestamp of the SDC platform the VM is running on. This value only changes when the platform of the Compute Node where the VM is running is upgraded                                                                     | Yes                 | No     | No     |
 | quota                    | Number (GiB)                  | VM quota                                                                                                                                                                                                                  | Yes                 | Yes    | Yes    |
 | ram                      | Number (MiB)                  | Amount of memory of the VM                                                                                                                                                                                                | Yes                 | Yes    | Yes    |
@@ -174,8 +174,6 @@ attributes present in the payload:
       "image_uuid": "56108678-1183-11e1-83c3-ff3185a5b47f",
       "server_uuid": "564d47c4-b845-113b-664f-2a1d85d0020c",
       "billing_id": "00000000-0000-0000-0000-000000000000",
-      "package_name": null,
-      "package_version": null,
       "alias": null,
       "ram": 256,
       "max_physical_memory": 512,
@@ -417,8 +415,8 @@ will result in a request error.
 | ram              | Number                                           | Amount of memory of the VM                      |
 | uuids            | String (comma-separated UUID values)             | List of VM UUIDs to match                       |
 | create_timestamp | Unix Time in milliseconds or UTC ISO Date String | VM creation timestamp                           |
-| package_name     | String                                           | Package name with which the VM was created      |
-| package_version  | String                                           | Package version with which the VM was created   |
+| package_name     | String                                           | DEPRECATED: use billing_id                      |
+| package_version  | String                                           | DEPRECATED: use billing_id                      |
 | tag.key          | String                                           | VM tags, see below                              |
 | fields           | String (comma-separated values)                  | Specify which VM fields to return, see below    |
 

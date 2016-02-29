@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright (c) 2015, Joyent, Inc.
+ * Copyright (c) 2016, Joyent, Inc.
  */
 
 var url = require('url');
@@ -423,8 +423,6 @@ var NON_STRICT_TOTAL_ORDER_SORT_KEYS = {
     image_uuid: libuuid.create(),
     billing_id: libuuid.create(),
     server_uuid: libuuid.create(),
-    package_name: 'package_name_foo',
-    package_version: 'package_version_foo',
     tags: vmCommon.objectToTagFormat({sometag: 'foo'}),
     brand: 'foobrand',
     state: 'test',
