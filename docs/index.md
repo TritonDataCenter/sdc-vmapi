@@ -783,7 +783,7 @@ As we can see, all we need to do is to enclose the key=value format of tag by th
 
 ## GetVm (GET /vms/:uuid)
 
-Returns a VM with the specified UUID.
+Returns a VM with the specified UUID. When sync=true is passed, VMAPI will directly load VM details with a synchronous call to CNAPI. This will also refresh the VMs cache so that if a VM was already destroyed and it doesn't appear to be, it will be marked as such in the process. Using the sync version of this action can be seen as 'force VMAPI' to load the VM information directly from CNAPI.
 
 ### Inputs
 
@@ -791,7 +791,7 @@ Returns a VM with the specified UUID.
 | ---------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------- |
 | uuid       | UUID    | VM UUID                                                                                                                                                                                          | Yes       |
 | owner_uuid | UUID    | VM Owner. If specified, the VM object will be checked for ownership against this owner_uuid. If vm.owner_uuid does not match the provided value the call will result in a 404 VM Not Found error | No        |
-| sync       | Boolean | Load VM info from CNAPI (deprecated, no-op)                                                                                                                                                      | No        |
+| sync       | Boolean | Load VM info from CNAPI                                                                                                                                                                          | No        |
 
 ### Specifying VM Fields to Return
 

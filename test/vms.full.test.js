@@ -1042,12 +1042,12 @@ exports.change_with_bad_tags = function (t) {
         client[method](opts, tags, function (err, req, res, body) {
             t.ok(err);
             t.equal(err.restCode, 'ValidationFailed');
-            t.equal(err.message, 'Invalid Metadata parameters');
+            t.equal(err.message, 'Invalid tag parameters');
             t.equal(res.statusCode, 409);
 
             t.deepEqual(body, {
                 code: 'ValidationFailed',
-                message: 'Invalid Metadata parameters',
+                message: 'Invalid tag parameters',
                 errors: [ {
                     field: 'tags',
                     code: 'Invalid',
@@ -1999,7 +1999,7 @@ exports.add_docker_tag = function (t) {
         t.equal(err.restCode, 'ValidationFailed');
         t.deepEqual(body, {
             code: 'ValidationFailed',
-            message: 'Invalid Metadata parameters',
+            message: 'Invalid tag parameters',
             errors: [ {
                 field: 'tags',
                 code: 'Invalid',
@@ -2030,7 +2030,7 @@ exports.set_docker_tag_1 = function (t) {
 
         t.deepEqual(body, {
             code: 'ValidationFailed',
-            message: 'Invalid Metadata parameters',
+            message: 'Invalid tag parameters',
             errors: [ {
                 field: 'tags',
                 code: 'Invalid',
@@ -2060,7 +2060,7 @@ exports.set_docker_tag_2 = function (t) {
 
         t.deepEqual(body, {
             code: 'ValidationFailed',
-            message: 'Invalid Metadata parameters',
+            message: 'Invalid tag parameters',
             errors: [ {
                 field: 'tags',
                 code: 'Invalid',
@@ -2118,7 +2118,7 @@ exports.delete_docker_tag = function (t) {
 
         t.deepEqual(body, {
             code: 'ValidationFailed',
-            message: 'Invalid Metadata parameters',
+            message: 'Invalid tag parameters',
             errors: [ {
                 field: 'tags',
                 code: 'Invalid',
@@ -2144,7 +2144,7 @@ exports.delete_docker_all_tags = function (t) {
 
         t.deepEqual(body, {
             code: 'ValidationFailed',
-            message: 'Invalid Metadata parameters',
+            message: 'Invalid tag parameters',
             errors: [ {
                 field: 'tags',
                 code: 'Invalid',
