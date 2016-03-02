@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright (c) 2014, Joyent, Inc.
+ * Copyright (c) 2016, Joyent, Inc.
  */
 
 var path = require('path');
@@ -27,6 +27,10 @@ var log = new bunyan({
 
 log.info({config: config}, 'Loaded configuration');
 
+/*
+ * NOTE: package_version and package_name are deprecated per ZAPI-696 and should
+ * be removed whenever this becomes possible.
+ */
 var BUCKET = {
     name: 'vmapi_vms',
     index: {

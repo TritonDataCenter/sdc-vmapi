@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright (c) 2014, Joyent, Inc.
+ * Copyright (c) 2016, Joyent, Inc.
  */
 
 // var test = require('tap').test;
@@ -1528,8 +1528,6 @@ exports.create_nonautoboot_vm = function (t) {
         networks: [ { uuid: NETWORKS[0].uuid } ],
         brand: 'joyent-minimal',
         billing_id: '00000000-0000-0000-0000-000000000000',
-        package_name: 'sdc_64',
-        package_version: '1.0.0',
         ram: 64,
         quota: 10,
         autoboot: false
