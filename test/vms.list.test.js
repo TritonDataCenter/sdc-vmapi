@@ -288,12 +288,11 @@ exports.list_param_invalid_uuids = function (t) {
 };
 
 /*
- * This function creates a large number of "test" VMs
- * (VMs with alias='test--'), and then sends GET requests to /vms to retrieve
- * them by passing a specific "limit" value.
- * It then makes sure that the correct number of VMs are included in the
- * results, that is the number of VMs created, unless it's greater than the
- * maximum value for "limit".
+ * This function creates a large number of "test" VMs (with a custom alias),
+ * and then sends GET requests to /vms to retrieve them by passing a specific
+ * "limit" value. It then makes sure that the correct number of VMs are
+ * included in the results, that is the number of VMs created, unless it's
+ * greater than the maximum value for "limit".
  */
 function testValidLimit(limit, t, callback) {
     assert.number(limit, 'options');
@@ -303,6 +302,7 @@ function testValidLimit(limit, t, callback) {
 
     var NB_TEST_VMS_TO_CREATE = limit + 1;
     var EXPECTED_NB_VMS_RETURNED = Math.min(limit, MAX_LIMIT);
+    var VALID_LIMIT_TEST_CUSTOM_ALIAS = 'valid-limit-test';
 
     // limit === 0 means "unlimited"
     if (limit === 0) {
@@ -316,14 +316,16 @@ function testValidLimit(limit, t, callback) {
         async.series([
             // Delete test VMs leftover from previous tests run
             function deleteTestVms(next) {
-                vmTest.deleteTestVMs(moray, {}, function vmsDeleted(err) {
+                vmTest.deleteTestVMs(moray, {
+                    alias: VALID_LIMIT_TEST_CUSTOM_ALIAS
+                }, function vmsDeleted(err) {
                     t.ifError(err, 'deleting test VMs should not error');
                     return next(err);
                 });
             },
             function createFakeVms(next) {
                 vmTest.createTestVMs(NB_TEST_VMS_TO_CREATE, moray,
-                    {concurrency: 100}, {},
+                    {concurrency: 100}, {alias: VALID_LIMIT_TEST_CUSTOM_ALIAS},
                     function fakeVmsCreated(err, vmsUuid) {
                         moray.connection.close();
 
@@ -339,7 +341,7 @@ function testValidLimit(limit, t, callback) {
             },
             function listVmsWithLimit(next) {
                 var listVmsQuery = '/vms?limit=' + limit + '&alias='
-                + vmTest.TEST_VMS_ALIAS;
+                + vmTest.getTestVMsPrefix(VALID_LIMIT_TEST_CUSTOM_ALIAS);
 
                 client.get(listVmsQuery, function (err, req, res, body) {
                     t.ifError(err);

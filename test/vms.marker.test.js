@@ -87,11 +87,7 @@ function testMarkerPagination(options, t, callback) {
         limit: LIMIT
     };
 
-    if (vmsCreationParams.alias !== undefined)
-        queryStringObject.alias = vmTest.TEST_VMS_ALIAS +
-            vmsCreationParams.alias;
-    else
-        queryStringObject.alias = vmTest.TEST_VMS_ALIAS;
+    queryStringObject.alias = vmTest.getTestVMsPrefix(vmsCreationParams.alias);
 
     if (options.sort !== undefined)
         queryStringObject.sort = options.sort;
@@ -113,7 +109,10 @@ function testMarkerPagination(options, t, callback) {
             },
             function createFakeVms(next) {
                 vmTest.createTestVMs(NB_TEST_VMS_TO_CREATE, moray,
-                    {concurrency: 100}, vmsCreationParams,
+                    {
+                        concurrency: 100,
+                        uniqueAlias: options.uniqueAlias
+                    }, vmsCreationParams,
                     function fakeVmsCreated(err, vmsUuid) {
                         moray.connection.close();
 
@@ -426,7 +425,7 @@ var NON_STRICT_TOTAL_ORDER_SORT_KEYS = {
     tags: vmCommon.objectToTagFormat({sometag: 'foo'}),
     brand: 'foobrand',
     state: 'test',
-    alias: 'test--marker-pagination',
+    alias: 'test-marker-pagination',
     max_physical_memory: 42,
     create_timestamp: Date.now(),
     docker: true
@@ -466,7 +465,8 @@ function createValidMarkerTest(sortKey, sortOrder, exports) {
         testMarkerPagination({
             sort: sortKey + '.' + sortOrder,
             markerKeys: [sortKey, 'uuid'],
-            vmsCreationParams: vmsCreationParams
+            vmsCreationParams: vmsCreationParams,
+            uniqueAlias: sortKey === 'alias' ? false: true
         }, t, function testDone() {
             t.done();
         });

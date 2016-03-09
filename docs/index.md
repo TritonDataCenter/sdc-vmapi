@@ -1112,7 +1112,7 @@ operations is documented below.
 | ---------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------- |
 | uuid       | UUID    | VM UUID                                                                                                                                                                                          | Yes       |
 | owner_uuid | UUID    | VM Owner. If specified, the VM object will be checked for ownership against this owner_uuid. If vm.owner_uuid does not match the provided value the call will result in a 404 VM Not Found error | No        |
-| action     | String  | start, stop, reboot, reprovision, update, add_nics, remove_nics, create_snapshot, delete_snapshot, rollback_snapshot                                                                             | Yes       |
+| action     | String  | start, stop, kill, reboot, reprovision, update, add_nics, remove_nics, create_snapshot, delete_snapshot, rollback_snapshot                                                                             | Yes       |
 | sync       | Boolean | Wait for workflow to complete before returning                                                                                                                                                   | No        |
 
 ### Response Codes
@@ -1133,6 +1133,7 @@ Also allows:
 | Param      | Type   | Description                                                                                            |
 | ---------- | ------ | ------------------------------------------------------------------------------------------------------ |
 | update     | Object | Optional data to update the vm with before it's started. Currently limited to 'set_internal_metadata'. |
+| idempotent | Boolean| Optional flag to specify whether the request should be considered idempotent. If the request should be considered idempotent, a failure to start a VM because it's already been started will not result in an error. |
 
 ### Example
 
@@ -1140,11 +1141,32 @@ Also allows:
 
 ## StopVm (POST /vms/:uuid?action=stop)
 
-No additional inputs are needed for this action.
+See [General Inputs](#general-inputs)
+
+Also allows:
+
+| Param      | Type   | Description                                                                                            |
+| ---------- | ------ | ------------------------------------------------------------------------------------------------------ |
+| idempotent | Boolean| Optional flag to specify whether the request should be considered idempotent. If the request should be considered idempotent, a failure to stop a VM because it's already been stopped will not result in an error. |
 
 ### Example
 
     POST /vms/e9bd0ed1-7de3-4c66-a649-d675dbce6e83?action=stop
+
+## KillVm (POST /vms/:uuid?action=kill)
+
+See [General Inputs](#general-inputs)
+
+Also allows:
+
+| Param      | Type   | Description                                                                                            |
+| ---------- | ------ | ------------------------------------------------------------------------------------------------------ |
+| signal     | String | Optional data to specify which signal to use when killing the process that runs as the init process in the corresponding VM. |
+| idempotent | Boolean| Optional flag to specify whether the request should be considered idempotent. If the request should be considered idempotent, a failure to kill a VM because it's already been killed will not result in an error. |
+
+### Example
+
+    POST /vms/e9bd0ed1-7de3-4c66-a649-d675dbce6e83?action=start
 
 ## RebootVm (POST /vms/:uuid?action=reboot)
 
@@ -1155,6 +1177,7 @@ Also allows:
 | Param      | Type   | Description                                                                                            |
 | ---------- | ------ | ------------------------------------------------------------------------------------------------------ |
 | update     | Object | Optional data to update the vm with before it's started. Currently limited to 'set_internal_metadata'. |
+| idempotent | Boolean| Optional flag to specify whether the request should be considered idempotent. If the request should be considered idempotent, a failure to reboot a VM because it's already been rebooted will not result in an error. |
 
 ### Example
 

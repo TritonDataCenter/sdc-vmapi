@@ -36,7 +36,7 @@ exports.setUp = function (callback) {
 exports.create_vm_with_null_server_uuid = function (t) {
     client.put('/vms/' + TEST_VM_UUID, {
         uuid: TEST_VM_UUID,
-        alias: vmTest.TEST_VMS_ALIAS,
+        alias: vmTest.getUniqueTestVMName('null-server-uuid'),
         state: 'running'
     }, function onPutDone(err, req, res, newVm) {
         t.ifError(err, 'The test VM should be created succesfully');
@@ -63,7 +63,7 @@ exports.create_vm_on_non_existing_server_uuid = function (t) {
     client.put('/vms/' + TEST_VM_UUID, {
         uuid: TEST_VM_UUID,
         server_uuid: NON_EXISTING_CN_UUID,
-        alias: vmTest.TEST_VMS_ALIAS,
+        alias: vmTest.getUniqueTestVMName('non-existing-server-uuid'),
         state: 'running'
     }, function onPutDone(err, req, res, newVm) {
         t.ifError(err, 'The test VM should be created succesfully');
@@ -90,7 +90,7 @@ exports.delete_vm_on_non_existing_server_uuid = function (t) {
 exports.create_provisioning_vm = function (t) {
     client.put('/vms/' + TEST_VM_UUID, {
         uuid: TEST_VM_UUID,
-        alias: vmTest.TEST_VMS_ALIAS,
+        alias: vmTest.getUniqueTestVMName('provisioning-vm'),
         state: 'provisioning'
     }, function onPutDone(err, req, res, newVm) {
         t.ifError(err, 'The test VM should be created succesfully');

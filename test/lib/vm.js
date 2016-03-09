@@ -4,8 +4,8 @@ var libuuid = require('libuuid');
 
 var common = require('../../lib/common');
 
-var TEST_VMS_ALIAS = 'test--';
-exports.TEST_VMS_ALIAS = TEST_VMS_ALIAS;
+var TEST_VMS_ALIAS_PREFIX = 'test-vmapi';
+exports.TEST_VMS_ALIAS_PREFIX = TEST_VMS_ALIAS_PREFIX;
 
 function BunyanNoopLogger() {}
 BunyanNoopLogger.prototype.trace = function () {};
@@ -27,12 +27,12 @@ function createTestVm(moray, options, vmParams, callback) {
     vmParams = common.clone(vmParams);
     common.setDefaultValues(vmParams, {});
 
-    // Prefix the VM alias with a prefix that identifies
-    // it as a test VM.
-    if (vmParams.alias === undefined)
-        vmParams.alias = TEST_VMS_ALIAS;
-    else
-        vmParams.alias = TEST_VMS_ALIAS + vmParams.alias;
+    // Prefix the VM alias with a prefix that identifies it as a test VM, and
+    // suffix it with a string that makes it unique.
+    vmParams.alias = getTestVmName({
+        uniqueAlias: options.uniqueAlias,
+        debugName: vmParams.alias
+    });
 
     if (vmParams.create_timestamp === undefined)
         vmParams.create_timestamp = Date.now();
@@ -73,6 +73,14 @@ function createTestVMs(nbTestVmsToCreate, moray, options, vmParams, callback) {
     var DEFAULT_MAX_CONCURRENCY = 60;
     var maxConcurrency = options.concurrency || DEFAULT_MAX_CONCURRENCY;
 
+    var vmCreationOpion = {
+        log: log,
+        uniqueAlias: true
+    };
+
+    if (options.uniqueAlias === false)
+        vmCreationOpion.uniqueAlias = false;
+
     for (var i = 0; i < maxConcurrency && i < nbTestVmsToCreate; ++i)
         spawnVmCreation();
 
@@ -80,7 +88,7 @@ function createTestVMs(nbTestVmsToCreate, moray, options, vmParams, callback) {
         log.trace('spawning VM creation');
         ++concurrency;
 
-        createTestVm(moray, {log: log}, vmParams,
+        createTestVm(moray, vmCreationOpion, vmParams,
             function vmCreated(err, vmUuid) {
                 --concurrency;
 
@@ -110,9 +118,9 @@ exports.deleteTestVMs = function deleteTestVMs(moray, params, callback) {
     assert.func(callback, 'callback');
 
     if (params.alias)
-        params.alias = TEST_VMS_ALIAS + params.alias;
+        params.alias = TEST_VMS_ALIAS_PREFIX + '-' + params.alias;
     else
-        params.alias = TEST_VMS_ALIAS;
+        params.alias = TEST_VMS_ALIAS_PREFIX;
 
     // Even though we don't want to delete all VMs,
     // delete the complete subset of VMs if it's higher than
@@ -121,9 +129,42 @@ exports.deleteTestVMs = function deleteTestVMs(moray, params, callback) {
 
     // Make sure that the alias set is not empty so that we don't delete
     // all VMs
-    assert.string(TEST_VMS_ALIAS);
-    assert.ok(TEST_VMS_ALIAS.length > 0);
-    assert.equal(params.alias.indexOf(TEST_VMS_ALIAS), 0);
+    assert.string(TEST_VMS_ALIAS_PREFIX);
+    assert.ok(TEST_VMS_ALIAS_PREFIX.length > 0);
+    assert.equal(params.alias.indexOf(TEST_VMS_ALIAS_PREFIX), 0);
 
     return moray.delVms(params, callback);
 };
+
+function getTestVMsPrefix(debugName) {
+    assert.optionalString(debugName, 'debugName');
+
+    var resourceNameComponents = [ TEST_VMS_ALIAS_PREFIX ];
+
+    if (debugName) {
+        resourceNameComponents.push(debugName);
+    }
+
+    return (resourceNameComponents.join('-'));
+}
+exports.getTestVMsPrefix = getTestVMsPrefix;
+
+function getUniqueTestVMName(debugName) {
+    assert.optionalString(debugName, 'debugName');
+
+    var shortId = libuuid.create().substr(0, 8);
+
+    return (getTestVMsPrefix(debugName) + '-' + shortId);
+}
+exports.getUniqueTestVMName =  getUniqueTestVMName;
+
+function getTestVmName(options) {
+    assert.object(options, 'options');
+
+    if (options.uniqueAlias) {
+        return getUniqueTestVMName(options.debugName);
+    } else {
+        return getTestVMsPrefix(options.debugName);
+    }
+}
+exports.getTestVmName = getTestVmName;
