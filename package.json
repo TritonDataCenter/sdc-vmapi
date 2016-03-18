@@ -22,7 +22,7 @@
     "sigyan": "0.2.0",
     "sprintf": "0.1.1",
     "trace-event": "1.3.0",
-    "triton-tags": "git+ssh://git@github.com/joyent/node-triton-tags.git#3774d24efb5",
+    "triton-tags": "git+ssh://git@github.com/joyent/node-triton-tags.git#3dd65c4cc",
     "vasync": "^1.6.3",
     "wf-client": "git+ssh://git@github.com:joyent/sdc-wf-client.git#469fc74"
   },
