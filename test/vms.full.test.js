@@ -631,6 +631,7 @@ exports.create_vm = function (t) {
     };
 
     var vm = {
+        alias: 'vmapitest-full-' + uuid.create().split('-')[0],
         owner_uuid: CUSTOMER,
         image_uuid: IMAGE,
         server_uuid: SERVER.uuid,
@@ -1298,7 +1299,10 @@ exports.set_tags = function (t) {
 
     var query = {
         role: 'database',
-        group: 'deployment'
+        group: 'deployment',
+        num: -1,  // test a tag number with a '-'
+        mybool: true,
+        withequals: 'foo=bar'  // test a tag value with '='
     };
 
     var opts = createOpts(path, query);
@@ -1325,7 +1329,10 @@ exports.wait_set_tags_job = function (t) {
 exports.wait_set_tags = function (t) {
     var tags = {
         role: 'database',
-        group: 'deployment'
+        group: 'deployment',
+        num: -1,
+        mybool: true,
+        withequals: 'foo=bar'
     };
 
     waitForValue(vmLocation, 'tags', tags, function (err) {
