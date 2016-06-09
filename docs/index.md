@@ -2396,7 +2396,6 @@ Or we can also find all the machines created in a period of time:
     vmapi0
     ca0
     adminui0
-    usageapi0
 
 TODO: modifying vms
 
