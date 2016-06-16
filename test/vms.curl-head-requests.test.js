@@ -17,32 +17,44 @@ var http = require('http');
 var assert = require('assert-plus');
 var once = require('once');
 
-function curlHeadRequest(path, callback) {
+function curlHeadRequest(path, headers, callback) {
     assert.string(path, 'path');
+    assert.object(headers, 'headers');
     assert.func(callback, 'callback');
 
     var endpoint = 'http://localhost/' + path;
-    var CURL_CMD =
-        ['curl', '-sS', '-i', endpoint, '-X', 'HEAD'].join(' ');
+    var CURL_CMD = ['curl', '-sS', '-i', endpoint, '-X', 'HEAD'];
+    var headerName;
 
-    child_process.exec(CURL_CMD, callback);
+    for (headerName in headers) {
+        CURL_CMD.push('-H');
+        CURL_CMD.push('\'' + headerName + ': ' + headers[headerName] + '\'');
+    }
+
+    child_process.exec(CURL_CMD.join(' '), callback);
 }
 
-function nonCurlHeadRequest(path, callback) {
+function nonCurlHeadRequest(path, headers, callback) {
     assert.string(path, 'path');
+    assert.object(headers, 'headers');
     assert.func(callback, 'callback');
 
     var callbackOnce = once(callback);
-
-    var req = http.request({
+    var reqParams = {
         hostname: 'localhost',
         path: path,
         method: 'HEAD',
         headers: {
-            'user-agent': 'foobar',
-            connection: 'keep-alive'
+            'user-agent': 'foobar'
         }
-    }, function onResponse(res) {
+    };
+    var headerName;
+
+    for (headerName in headers) {
+        reqParams.headers[headerName] = headers[headerName];
+    }
+
+    var req = http.request(reqParams, function onResponse(res) {
         // destroy the socket explicitly now since the request was
         // explicitly requesting to not destroy the socket by setting
         // its connection header to 'keep-alive'.
@@ -77,8 +89,8 @@ function headerInCurlOutput(output, headerName) {
     return headerValue;
 }
 
-exports.curl_headvms_request = function (t) {
-    curlHeadRequest('/vms', function onHeadResponse(err, stdout, stderr) {
+exports.curl_headvms_connection_default_request = function (t) {
+    curlHeadRequest('/vms', {}, function onHeadResponse(err, stdout, stderr) {
         var contentLengthHeaderNotPresent =
             headerInCurlOutput(stdout, 'Content-Length') == null;
 
@@ -94,8 +106,10 @@ exports.curl_headvms_request = function (t) {
     });
 };
 
-exports.curl_headvm_request = function (t) {
-    curlHeadRequest('/vm', function onHeadResponse(err, stdout, stderr) {
+exports.curl_headvms_connection_keepalive_request = function (t) {
+    curlHeadRequest('/vms', {
+        connection: 'keep-alive'
+    }, function onHeadResponse(err, stdout, stderr) {
         var contentLengthHeaderNotPresent =
             headerInCurlOutput(stdout, 'Content-Length') == null;
 
@@ -111,8 +125,82 @@ exports.curl_headvm_request = function (t) {
     });
 };
 
-exports.non_curl_headvms_request = function (t) {
-    nonCurlHeadRequest('/vms', function onHeaders(err, headers) {
+exports.curl_headvms_connection_close_request = function (t) {
+    curlHeadRequest('/vms', {
+        connection: 'close'
+    }, function onHeadResponse(err, stdout, stderr) {
+        var contentLengthHeaderNotPresent =
+            headerInCurlOutput(stdout, 'Content-Length') == null;
+
+        var connectionCloseHeaderPresent =
+            headerInCurlOutput(stdout, 'Connection') === 'close';
+
+        t.ok(contentLengthHeaderNotPresent,
+            'content-length header must not be present in response');
+        t.ok(connectionCloseHeaderPresent,
+            'connection response header must be set to close');
+
+        t.done();
+    });
+};
+
+exports.curl_headvm_connection_default_request = function (t) {
+    curlHeadRequest('/vm', {}, function onHeadResponse(err, stdout, stderr) {
+        var contentLengthHeaderNotPresent =
+            headerInCurlOutput(stdout, 'Content-Length') == null;
+
+        var connectionCloseHeaderPresent =
+            headerInCurlOutput(stdout, 'Connection') === 'close';
+
+        t.ok(contentLengthHeaderNotPresent,
+            'content-length header must not be present in response');
+        t.ok(connectionCloseHeaderPresent,
+            'connection response header must be set to close');
+
+        t.done();
+    });
+};
+
+exports.curl_headvm_connection_keepalive_request = function (t) {
+    curlHeadRequest('/vm', {
+        connection: 'keep-alive'
+    }, function onHeadResponse(err, stdout, stderr) {
+        var contentLengthHeaderNotPresent =
+            headerInCurlOutput(stdout, 'Content-Length') == null;
+
+        var connectionCloseHeaderPresent =
+            headerInCurlOutput(stdout, 'Connection') === 'close';
+
+        t.ok(contentLengthHeaderNotPresent,
+            'content-length header must not be present in response');
+        t.ok(connectionCloseHeaderPresent,
+            'connection response header must be set to close');
+
+        t.done();
+    });
+};
+
+exports.curl_headvm_connection_close_request = function (t) {
+    curlHeadRequest('/vm', {
+        connection: 'close'
+    }, function onHeadResponse(err, stdout, stderr) {
+        var contentLengthHeaderNotPresent =
+            headerInCurlOutput(stdout, 'Content-Length') == null;
+
+        var connectionCloseHeaderPresent =
+            headerInCurlOutput(stdout, 'Connection') === 'close';
+
+        t.ok(contentLengthHeaderNotPresent,
+            'content-length header must not be present in response');
+        t.ok(connectionCloseHeaderPresent,
+            'connection response header must be set to close');
+
+        t.done();
+    });
+};
+
+exports.non_curl_headvms_connection_default_request = function (t) {
+    nonCurlHeadRequest('/vms', {}, function onHeaders(err, headers) {
         t.ifError(err, 'request should not result in an error');
 
         t.ok(headers.hasOwnProperty('content-length'),
@@ -124,14 +212,74 @@ exports.non_curl_headvms_request = function (t) {
     });
 };
 
-exports.non_curl_headvm_request = function (t) {
-    nonCurlHeadRequest('/vm', function onHeaders(err, headers) {
+exports.non_curl_headvms_connection_keepalive_request = function (t) {
+    nonCurlHeadRequest('/vms', {
+        connefunction: 'keep-alive'
+    }, function onHeaders(err, headers) {
         t.ifError(err, 'request should not result in an error');
 
         t.ok(headers.hasOwnProperty('content-length'),
             'response must have content-length header');
         t.equal(headers.connection, 'keep-alive',
             'connection response header must be set to keep-alive');
+
+        t.done();
+    });
+};
+
+exports.non_curl_headvms_connection_close_request = function (t) {
+    nonCurlHeadRequest('/vms', {
+        connection: 'close'
+    }, function onHeaders(err, headers) {
+        t.ifError(err, 'request should not result in an error');
+
+        t.ok(headers.hasOwnProperty('content-length'),
+            'response must have content-length header');
+        t.equal(headers.connection, 'close',
+            'connection response header must be set to close');
+
+        t.done();
+    });
+};
+
+exports.non_curl_headvm_connection_default_request = function (t) {
+    nonCurlHeadRequest('/vm', {}, function onHeaders(err, headers) {
+        t.ifError(err, 'request should not result in an error');
+
+        t.ok(headers.hasOwnProperty('content-length'),
+            'response must have content-length header');
+        t.equal(headers.connection, 'keep-alive',
+            'connection response header must be set to keep-alive');
+
+        t.done();
+    });
+};
+
+exports.non_curl_headvm_connection_keepalive_request = function (t) {
+    nonCurlHeadRequest('/vm', {
+        connection: 'keep-alive'
+    }, function onHeaders(err, headers) {
+        t.ifError(err, 'request should not result in an error');
+
+        t.ok(headers.hasOwnProperty('content-length'),
+            'response must have content-length header');
+        t.equal(headers.connection, 'keep-alive',
+            'connection response header must be set to keep-alive');
+
+        t.done();
+    });
+};
+
+exports.non_curl_headvm_connection_close_request = function (t) {
+    nonCurlHeadRequest('/vm', {
+        connection: 'close'
+    }, function onHeaders(err, headers) {
+        t.ifError(err, 'request should not result in an error');
+
+        t.ok(headers.hasOwnProperty('content-length'),
+            'response must have content-length header');
+        t.equal(headers.connection, 'close',
+            'connection response header must be set to close');
 
         t.done();
     });
