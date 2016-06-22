@@ -22,7 +22,8 @@ function curlHeadRequest(path, headers, callback) {
     assert.object(headers, 'headers');
     assert.func(callback, 'callback');
 
-    var endpoint = 'http://localhost/' + path;
+    var vmapiIP = process.env.VMAPI_IP || '127.0.0.1';
+    var endpoint = 'http://' + vmapiIP + '/' + path;
     var CURL_CMD = ['curl', '-sS', '-i', endpoint, '-X', 'HEAD'];
     var headerName;
 
