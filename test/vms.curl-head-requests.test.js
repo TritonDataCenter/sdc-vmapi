@@ -17,13 +17,14 @@ var http = require('http');
 var assert = require('assert-plus');
 var once = require('once');
 
+var VMAPI_IP = process.env.VMAPI_IP || '127.0.0.1';
+
 function curlHeadRequest(path, headers, callback) {
     assert.string(path, 'path');
     assert.object(headers, 'headers');
     assert.func(callback, 'callback');
 
-    var vmapiIP = process.env.VMAPI_IP || '127.0.0.1';
-    var endpoint = 'http://' + vmapiIP + '/' + path;
+    var endpoint = 'http://' + VMAPI_IP + '/' + path;
     var CURL_CMD = ['curl', '-sS', '-i', endpoint, '-X', 'HEAD'];
     var headerName;
 
@@ -42,7 +43,7 @@ function nonCurlHeadRequest(path, headers, callback) {
 
     var callbackOnce = once(callback);
     var reqParams = {
-        hostname: 'localhost',
+        hostname: VMAPI_IP,
         path: path,
         method: 'HEAD',
         headers: {
