@@ -16,7 +16,7 @@ var jsprim = require('jsprim');
 var moray = require('moray');
 var path = require('path');
 var restify = require('restify');
-var url = require('url');
+var mod_url = require('url');
 var util = require('util');
 var vasync = require('vasync');
 
@@ -35,9 +35,11 @@ try {
     config = JSON.parse(fs.readFileSync(DEFAULT_CFG, 'utf8'));
 } catch (e) {}
 
-var VMAPI_URL = process.env.VMAPI_URL || 'http://localhost';
-var NAPI_URL = config.napi.url || 'http://10.99.99.10';
 var CNAPI_URL = config.cnapi.url || 'http://10.99.99.22';
+var IMGAPI_URL = config.imgapi.url || 'http://10.99.99.21';
+var NAPI_URL = config.napi.url || 'http://10.99.99.10';
+var VMAPI_URL = process.env.VMAPI_URL || 'http://localhost';
+var VOLAPI_URL = config.volapi.url || 'http://10.99.99.42';
 
 var VMS_LIST_ENDPOINT = '/vms';
 
@@ -78,8 +80,29 @@ function setUp(callback) {
         agent: false
     });
 
-    client.napi = napi;
+    var volapi = restify.createJsonClient({
+        url: VOLAPI_URL,
+        /*
+         * Use a specific version and not the latest one (with "*"") to avoid
+         * breakage when VOLAPI's API changes in a way that is not backward
+         * compatible.
+         */
+        version: '^1',
+        log: logger,
+        agent: false
+    });
+
+    var imgapi = restify.createJsonClient({
+        url: IMGAPI_URL,
+        version: '*',
+        log: logger,
+        agent: false
+    });
+
     client.cnapi = cnapi;
+    client.imgapi = imgapi;
+    client.napi = napi;
+    client.volapi = volapi;
 
     return callback(null, client);
 }
@@ -89,7 +112,7 @@ function setUp(callback) {
  * the vms listing endpoint results in a request error.
  */
 function testListInvalidParams(client, params, expectedError, t, callback) {
-    var query = url.format({pathname: VMS_LIST_ENDPOINT, query: params});
+    var query = mod_url.format({pathname: VMS_LIST_ENDPOINT, query: params});
 
     return client.get(query, function (err, req, res, body) {
         t.equal(res.statusCode, 409,
@@ -107,7 +130,7 @@ function testListInvalidParams(client, params, expectedError, t, callback) {
  * the vms listing endpoint does not result in a request error.
  */
 function testListValidParams(client, params, t, callback) {
-    var query = url.format({pathname: VMS_LIST_ENDPOINT, query: params});
+    var query = mod_url.format({pathname: VMS_LIST_ENDPOINT, query: params});
 
     return client.get(query, function (err, req, res, body) {
         t.equal(res.statusCode, 200,
@@ -138,6 +161,75 @@ function ifError(t, err) {
     t.ok(!err, err ? ('error: ' + err.message) : 'no error');
 }
 
+
+function checkEqual(value, expected) {
+    if ((typeof (value) === 'object') && (typeof (expected) === 'object')) {
+        var exkeys = Object.keys(expected);
+        for (var i = 0; i < exkeys.length; i++) {
+            var key = exkeys[i];
+            if (value[key] !== expected[key])
+                return false;
+        }
+
+        return true;
+    } else {
+        return (value === expected);
+    }
+}
+
+function checkValue(client, url, key, value, callback) {
+    client.get(url, function (err, req, res, body) {
+        if (err) {
+            callback(err);
+            return;
+        }
+
+        callback(null, checkEqual(body[key], value));
+    });
+}
+
+function waitForValue(url, key, value, options, callback) {
+    assert.string(url, 'url');
+    assert.string(key, 'key');
+    assert.object(options, 'options');
+    assert.object(options.client, 'options.client');
+    assert.optionalNumber(options.timeout, 'options.timeout');
+    assert.func(callback, 'callback');
+
+    var client = options.client;
+    var timeout = 120;
+    var times = 0;
+
+    if (options.timeout !== undefined) {
+        timeout = options.timeout;
+    }
+
+    function performCheck() {
+        checkValue(client, url, key, value, function onChecked(err, ready) {
+            if (err) {
+                callback(err);
+                return;
+            }
+
+            if (!ready) {
+                times++;
+
+                if (times === timeout) {
+                    callback(new Error('Timeout waiting on ' + url));
+                } else {
+                    setTimeout(function () {
+                        performCheck();
+                    }, 1000);
+                }
+            } else {
+                callback(null);
+            }
+        });
+    }
+
+    performCheck();
+}
+
 module.exports = {
     setUp: setUp,
     checkHeaders: checkHeaders,
@@ -145,5 +237,6 @@ module.exports = {
     testListValidParams: testListValidParams,
     config: config,
     ifError: ifError,
-    VMS_LIST_ENDPOINT: VMS_LIST_ENDPOINT
+    VMS_LIST_ENDPOINT: VMS_LIST_ENDPOINT,
+    waitForValue: waitForValue
 };

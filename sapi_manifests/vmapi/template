@@ -55,6 +55,9 @@
     "papi": {
         "url": "http://{{{PAPI_SERVICE}}}"
     },
+    "volapi": {
+        "url": "http://volapi.{{{datacenter_name}}}.{{{dns_domain}}}"
+    },
     "moray": {
         "srvDomain": "{{MORAY_SERVICE}}",
         "cueballOptions": {
