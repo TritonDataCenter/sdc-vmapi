@@ -5,16 +5,17 @@
 -->
 
 <!--
-    Copyright (c) 2014, Joyent, Inc.
+    Copyright (c) 2016, Joyent, Inc.
 -->
 
 # sdc-vmapi
 
-This repository is part of the Joyent SmartDataCenter project (SDC).  For
-contribution guidelines, issues, and general documentation, visit the main
-[SDC](http://github.com/joyent/sdc) project page.
+This repository is part of the Joyent Triton project. See the [contribution
+guidelines](https://github.com/joyent/triton/blob/master/CONTRIBUTING.md) --
+*Triton does not use GitHub PRs* -- and general documentation at the main
+[Triton project](https://github.com/joyent/triton) page.
 
-VMAPI is an HTTP API server for managing VMs on an SDC installation.
+VMAPI is an HTTP API server for managing VMs on a Triton installation.
 
 
 # Features
@@ -49,7 +50,7 @@ Typically VMAPI development is done by:
   See "Testing" below for running the test suite.
 
 
-## Testing
+# Testing
 
 To sync local changes to a running COAL and run the test suite there try:
 
