@@ -60,7 +60,8 @@ var log = new bunyan({
  * 3. It must *only* add *one* index for which *no reindexing is needed*.
  */
 var addIndexMigrations = [
-    './add-docker-index.js'
+    './add-docker-index.js',
+    './add-foo-index.js'
 ];
 
 function runAddIndexMigration(scriptFilePath, callback) {
