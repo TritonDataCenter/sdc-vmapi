@@ -9,14 +9,19 @@
  */
 
 var assert = require('assert-plus');
+var bunyan = require('bunyan');
 var crypto = require('crypto');
-var path = require('path');
 var fs = require('fs');
+var jsprim = require('jsprim');
+var moray = require('moray');
+var path = require('path');
+var restify = require('restify');
 var url = require('url');
 var util = require('util');
+var vasync = require('vasync');
 
-var Logger = require('bunyan');
-var restify = require('restify');
+var morayBucketsConfig = require('../lib/moray/moray-buckets-config');
+var Moray = require('../lib/apis/moray');
 
 
 // --- Globals
@@ -41,13 +46,13 @@ var VMS_LIST_ENDPOINT = '/vms';
 function setUp(callback) {
     assert.ok(callback);
 
-    var logger = new Logger({
+    var logger = new bunyan.createLogger({
         level: process.env.LOG_LEVEL || 'info',
         name: 'vmapi_unit_test',
         stream: process.stderr,
         serializers: {
-            err: Logger.stdSerializers.err,
-            req: Logger.stdSerializers.req,
+            err: bunyan.stdSerializers.err,
+            req: bunyan.stdSerializers.req,
             res: restify.bunyan.serializers.res
         }
     });

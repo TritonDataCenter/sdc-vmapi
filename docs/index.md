@@ -362,30 +362,55 @@ Error responses will be returned when the response status code is one of 40X err
 
 # Ping VMAPI
 
-Use ping when you want a general status report from VMAPI. VMAPI makes HTTP connections to REST APIs and TCP connections to services like moray. The **ping**  endpoint provides a compact response object that lets clients know what is VMAPI's point of view of the backend services it is connected to. The following is the format of the ping response object. The pingErrors attribute is an object where each of its keys is the name of an API (wfapi, moray, cnapi or napi) and the value of each key is the error response that was obtained after pinging the correspondent service.
+Use ping when you want a general status report from VMAPI. VMAPI makes HTTP
+connections to REST APIs and TCP connections to services like moray. The
+**ping**  endpoint provides a compact response object that lets clients know
+what is VMAPI's point of view of the backend services it is connected to. The
+following is the format of the ping response object.
 
 ## Ping (GET /ping)
 
     GET /ping
 
     {
+      "pingErrors": {},
       "pid": 12456,
       "status": "OK",
       "healthy": true,
       "services": {
         "wfapi": "online",
-        "moray": "online",
-        "cnapi": "online",
-        "napi": "online"
-      },
-      "pingErrors": {}
+        "moray": "online"
+      }
+      "initialization": {
+          "moray": {
+            "status": "BUCKETS_REINDEX_DONE",
+            "error": "latest error encountered during moray buckets initialization"
+          }
+        }
+      }
     }
+
+The **pingErrors** attribute is an object where each of its keys is the name of
+an API (wfapi, moray, cnapi or napi) and the value of each key is the error
+response that was obtained after pinging the correspondent service.
 
 Of special note is the **status** attribute that lets us know if VMAPI is fully
 functional in terms of data and services initialized. A "healthy: true" value
 from the ping response means that VMAPI has not had HTTP or backend
 initialization errors.
 
+The `initialization.moray.status` property can have the following values:
+
+* `NOT_STARTED`: the moray buckets initialization process hasn't started yet.
+* `STARTED`: the moray buckets initialization process has started, but all
+  buckets haven't been completely setup (created and updated to the current
+  schemas) yet.
+* `BUCKETS_SETUP_DONE`: the moray buckets have all been created and/or updated
+  to their current schema.
+* `BUCKETS_REINDEX_DONE`: the moray buckets have all been created and/or updated
+  to their current schema, and all their rows have been reindexed.
+* `FAILED`: the moray buckets initialization has failed with a non transient
+  error.
 
 # VMs
 

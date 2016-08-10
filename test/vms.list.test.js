@@ -9,16 +9,19 @@
  */
 
 var assert = require('assert-plus');
-
 var async = require('async');
+var Logger = require('bunyan');
+var restify = require('restify');
 
+var changefeedUtils = require('../lib/changefeed');
 var common = require('./common');
-var morayTest = require('./lib/moray');
+var morayInit = require('../lib/moray/moray-init');
 var validation = require('../lib/common/validation');
 var vmTest = require('./lib/vm');
 
 var client;
-var MORAY = require('../lib/apis/moray');
+var moray;
+var morayClient;
 
 var VALID_UUID = 'ffffffff-ffff-ffff-ffff-ffffffffffff';
 var INVALID_UUID = 'invalid_uuid';
@@ -31,6 +34,25 @@ exports.setUp = function (callback) {
         assert.ok(_client, 'restify client');
         client = _client;
         callback();
+    });
+};
+
+exports.init_storage_layer = function (t) {
+     var morayBucketsInitializer;
+
+    var moraySetup = morayInit.startMorayInit({
+        morayConfig: common.config.moray,
+        maxBucketsReindexAttempts: 1,
+        maxBucketsSetupAttempts: 1,
+        changefeedPublisher: changefeedUtils.createNoopCfPublisher()
+    });
+
+    morayBucketsInitializer = moraySetup.morayBucketsInitializer;
+    morayClient = moraySetup.morayClient;
+    moray = moraySetup.moray;
+
+    morayBucketsInitializer.on('done', function onMorayStorageReady() {
+        t.done();
     });
 };
 
@@ -52,7 +74,7 @@ exports.list_invalid_param = function (t) {
 
 var UUID_PARAMS = ['uuid', 'owner_uuid', 'server_uuid', 'image_uuid'];
 
-exports.list_param_invalid_uuids = function (t) {
+exports.list_invalid_uuid_params = function (t) {
     async.each(UUID_PARAMS,
     function (paramName, next) {
         var expectedError = {
@@ -68,7 +90,7 @@ exports.list_param_invalid_uuids = function (t) {
         var invalidParams = {};
         invalidParams[paramName] = INVALID_UUID;
 
-        common.testListInvalidParam(client, invalidParams, expectedError, t,
+        common.testListInvalidParams(client, invalidParams, expectedError, t,
             next);
     },
     function done(err) {
@@ -309,59 +331,52 @@ function testValidLimit(limit, t, callback) {
         EXPECTED_NB_VMS_RETURNED = NB_TEST_VMS_TO_CREATE;
     }
 
-    var moray = morayTest.createMorayClient();
-    moray.connect();
-
-    moray.once('moray-ready', function () {
-        async.series([
-            // Delete test VMs leftover from previous tests run
-            function deleteTestVms(next) {
-                vmTest.deleteTestVMs(moray, {}, function vmsDeleted(err) {
+    async.series([
+        // Delete test VMs leftover from previous tests run
+        function deleteTestVms(next) {
+            vmTest.deleteTestVMs(moray, {},
+                function vmsDeleted(err) {
                     t.ifError(err, 'deleting test VMs should not error');
                     return next(err);
                 });
-            },
-            function createFakeVms(next) {
-                vmTest.createTestVMs(NB_TEST_VMS_TO_CREATE, moray,
-                    {concurrency: 100}, {},
-                    function fakeVmsCreated(err, vmsUuid) {
-                        moray.connection.close();
-
-                        t.equal(vmsUuid.length,
-                            NB_TEST_VMS_TO_CREATE,
-                            NB_TEST_VMS_TO_CREATE
-                            + ' vms should have been created');
-
-                        t.ifError(err, NB_TEST_VMS_TO_CREATE
-                            + ' vms should be created successfully');
-                        return next(err);
-                    });
-            },
-            function listVmsWithLimit(next) {
-                var listVmsQuery = '/vms?limit=' + limit + '&alias='
-                + vmTest.TEST_VMS_ALIAS;
-
-                client.get(listVmsQuery, function (err, req, res, body) {
-                    t.ifError(err);
-                    if (err)
-                        return next(err);
-
-                    t.equal(res.headers['x-joyent-resource-count'],
+        },
+        function createFakeVms(next) {
+            vmTest.createTestVMs(NB_TEST_VMS_TO_CREATE, moray,
+                {concurrency: 100}, {},
+                function fakeVmsCreated(err, vmUuids) {
+                    t.equal(vmUuids.length,
                         NB_TEST_VMS_TO_CREATE,
-                        'x-joyent-resource-count header should be equal to '
-                        + NB_TEST_VMS_TO_CREATE);
-                    t.equal(body.length, EXPECTED_NB_VMS_RETURNED,
-                        EXPECTED_NB_VMS_RETURNED
-                        + ' vms should be returned from list vms');
+                        NB_TEST_VMS_TO_CREATE
+                        + ' vms should have been created');
 
-                    return next(null);
+                    t.ifError(err, NB_TEST_VMS_TO_CREATE
+                        + ' vms should be created successfully');
+                    return next(err);
                 });
-            }
-        ], function allDone(err, results) {
-            t.ifError(err);
-            moray.connection.close();
-            return callback();
-        });
+        },
+        function listVmsWithLimit(next) {
+            var listVmsQuery = '/vms?limit=' + limit + '&alias='
+            + vmTest.TEST_VMS_ALIAS;
+
+            client.get(listVmsQuery, function (err, req, res, body) {
+                t.ifError(err);
+                if (err)
+                    return next(err);
+
+                t.equal(res.headers['x-joyent-resource-count'],
+                    NB_TEST_VMS_TO_CREATE,
+                    'x-joyent-resource-count header should be equal to '
+                    + NB_TEST_VMS_TO_CREATE);
+                t.equal(body.length, EXPECTED_NB_VMS_RETURNED,
+                    EXPECTED_NB_VMS_RETURNED
+                    + ' vms should be returned from list vms');
+
+                return next(null);
+            });
+        }
+    ], function allDone(err, results) {
+        t.ifError(err);
+        return callback();
     });
 }
 
@@ -380,15 +395,9 @@ exports.list_vms_valid_limit = function (t) {
  * (list_vms_valid_limit).
  */
 exports.delete_list_vms_valid_limit = function (t) {
-    var moray = morayTest.createMorayClient();
-    moray.connect();
-
-    moray.once('moray-ready', function () {
-        vmTest.deleteTestVMs(moray, {}, function testVmsDeleted(err) {
-            moray.connection.close();
-            t.ifError(err, 'deleting fake VMs should not error');
-            t.done();
-        });
+    vmTest.deleteTestVMs(moray, {}, function testVmsDeleted(err) {
+        t.ifError(err, 'deleting fake VMs should not error');
+        t.done();
     });
 };
 
@@ -523,4 +532,9 @@ exports.list_param_invalid_offset = function (t) {
     }, function allDone(err) {
         t.done();
     });
+};
+
+exports.close_moray_client = function (t) {
+    morayClient.close();
+    t.done();
 };

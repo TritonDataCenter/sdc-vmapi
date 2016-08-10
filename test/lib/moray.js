@@ -9,21 +9,65 @@
  */
 
 var assert = require('assert-plus');
+var bunyan = require('bunyan');
 var jsprim = require('jsprim');
+var moray = require('moray');
+var restify = require('restify');
+var vasync = require('vasync');
+var verror = require('verror');
 
-var changefeedTest = require('./changefeed');
 var common = require('../common');
-var MORAY = require('../../lib/apis/moray');
 
-function createMorayClient() {
-    var morayConfig = jsprim.deepCopy(common.config.moray);
+/*
+ * Deletes all buckets whose name is present in the "bucketsName" array. When
+ * done or when if an error is encountered, calls the function "callback" with
+ * an optional parameter, which is the error that was encountered if any.
+ */
+function cleanupLeftoverBuckets(bucketsName, callback) {
+    assert.arrayOfString(bucketsName, 'bucketsName');
+    assert.func(callback, 'callback');
 
-    morayConfig.changefeedPublisher = changefeedTest.createNoopCfPublisher();
+    var morayClientOpts = jsprim.deepCopy(common.config.moray);
+    morayClientOpts.log = bunyan.createLogger({
+        name: 'moray-client',
+        level: common.config.logLevel,
+        serializers: restify.bunyan.serializers
+    });
 
-    var moray = new MORAY(morayConfig);
-    return moray;
+    var morayClient = moray.createClient(morayClientOpts);
+
+    morayClient.on('connect', function onMorayClientConnected() {
+        vasync.forEachParallel({
+            func: function deleteBucket(bucketName, done) {
+                morayClient.delBucket(bucketName, done);
+            },
+            inputs: bucketsName
+        }, function onAllLeftoverBucketsDeleted(deleteErrs) {
+            var unexpectedErrs;
+            var forwardedMultiErr;
+
+            morayClient.close();
+
+            if (deleteErrs) {
+                unexpectedErrs =
+                    deleteErrs.ase_errors.filter(filterBucketNotFoundErr);
+
+                if (unexpectedErrs && unexpectedErrs.length > 0) {
+                    forwardedMultiErr =
+                        new verror.MultiError(unexpectedErrs);
+                }
+            }
+
+            callback(forwardedMultiErr);
+        });
+    });
+
+    function filterBucketNotFoundErr(err) {
+        assert.object(err, 'err');
+        return !verror.hasCauseWithName(err, 'BucketNotFoundError');
+    }
 }
 
 module.exports = {
-    createMorayClient: createMorayClient
+    cleanupLeftoverBuckets: cleanupLeftoverBuckets
 };

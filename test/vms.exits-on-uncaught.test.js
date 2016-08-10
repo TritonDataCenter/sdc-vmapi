@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright (c) 2016, Joyent, Inc.
+ * Copyright (c) 2017, Joyent, Inc.
  */
 
 var child_process = require('child_process');
@@ -24,7 +24,7 @@ exports.vmapi_aborts_on_restify_handler_uncaught_exception = function (t) {
     child.on('exit', function onChildExit(exitCode, signal) {
         t.strictEqual(stderr.indexOf(SERVER_EXPECTED_STDERR), 0,
             'server\'s stderr output should start with: ' +
-                SERVER_EXPECTED_STDERR);
+                SERVER_EXPECTED_STDERR + ', and is: ' + stderr);
         t.strictEqual(exitCode, 1, 'exit code should be 1');
         t.done();
     });

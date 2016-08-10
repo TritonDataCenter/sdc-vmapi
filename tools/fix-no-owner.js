@@ -10,6 +10,7 @@
 
 // Backfill image_uuid for KVM VMs
 
+var assert = require('assert-plus');
 var async = require('async');
 var bunyan = require('bunyan');
 var changefeed = require('changefeed');
@@ -21,34 +22,16 @@ var util = require('util');
 var vasync = require('vasync');
 
 var common = require('../lib/common');
-var MORAY = require('../lib/apis/moray');
+var configLoader = require('../lib/config-loader');
+var morayInit = require('../lib/moray/moray-init');
 var WFAPI = require('../lib/apis/wfapi');
 
 var changefeedPublisher;
-var config;
+var configFilePath = path.join(__dirname, '..', 'config.json');
+var config = configLoader.loadConfig(configFilePath);
 
 // If you don't pass this flag the script will read in test mode
 var force = (process.argv[2] === '-f' ? true : false);
-
-/*
- * Loads and parse the configuration file at config.json
- */
-function loadConfig() {
-    var CONFIG_FILE_PATH = path.join(__dirname, '..', 'config.json');
-
-    if (!fs.existsSync(CONFIG_FILE_PATH)) {
-        console.error('Config file not found: ' + CONFIG_FILE_PATH +
-          ' does not exist. Aborting.');
-        process.exit(1);
-    }
-
-    var theConfig = JSON.parse(fs.readFileSync(CONFIG_FILE_PATH, 'utf-8'));
-    return theConfig;
-}
-
-config = loadConfig();
-var moray;
-var wfapi;
 
 var log = this.log = new bunyan({
     name: 'fix-no-owner',
@@ -56,6 +39,10 @@ var log = this.log = new bunyan({
     serializers: restify.bunyan.serializers
 });
 config.wfapi.log = log;
+
+var morayClient;
+var moray;
+var wfapi;
 
 vasync.pipeline({funcs: [
     function initChangefeed(ctx, next) {
@@ -69,11 +56,26 @@ vasync.pipeline({funcs: [
         changefeedPublisher.on('moray-ready', next);
     },
     function initMoray(ctx, next) {
-        var morayConfig = jsprim.deepCopy(config.moray);
-        morayConfig.changefeedPublisher = changefeedPublisher;
-        moray = new MORAY(morayConfig);
-        moray.connect();
-        moray.once('moray-ready', next);
+        var morayBucketsInitializer;
+        var moraySetup = morayInit.startMorayInit({
+            morayConfig: config.moray,
+            changefeedPublisher: changefeedPublisher,
+            maxBucketsReindexAttempts: 1,
+            maxBucketsSetupAttempts: 1
+        });
+
+        morayBucketsInitializer = moraySetup.morayBucketsInitializer;
+
+        morayClient = moraySetup.morayClient;
+        moray = moraySetup.moray;
+
+        morayBucketsInitializer.on('error',
+            function onMorayBucketsInitError(morayBucketsInitErr) {
+                morayClient.close();
+                next(morayBucketsInitErr);
+            });
+
+        morayBucketsInitializer.on('done', next);
     },
     function initWfApi(ctx, next) {
         wfapi = new WFAPI(config.wfapi);
@@ -101,7 +103,8 @@ vasync.pipeline({funcs: [
                 }
 
                 changefeedPublisher.stop();
-                moray.close();
+                morayClient.close();
+                wfapi.client.close();
             });
         }
     });
