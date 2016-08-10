@@ -13,12 +13,12 @@
  */
 
 var assert = require('assert-plus');
+var bunyan = require('bunyan');
 var changefeed = require('changefeed');
 var fs = require('fs');
 var http = require('http');
 var https = require('https');
 var jsprim = require('jsprim');
-var Logger = require('bunyan');
 var path = require('path');
 var restify = require('restify');
 var sigyan = require('sigyan');
@@ -26,13 +26,18 @@ var vasync = require('vasync');
 
 var CNAPI = require('./lib/apis/cnapi');
 var IMGAPI = require('./lib/apis/imgapi');
-var MORAY = require('./lib/apis/moray');
 var NAPI = require('./lib/apis/napi');
 var PAPI = require('./lib/apis/papi');
-var vmapi = require('./lib/vmapi');
+var VmapiApp = require('./lib/vmapi');
 var WFAPI = require('./lib/apis/wfapi');
 
 var configLoader = require('./lib/config-loader');
+var morayInit = require('./lib/moray/moray-init.js');
+
+var morayBucketsInitializer;
+var morayClient;
+var moray;
+
 var VERSION = false;
 
 /*
@@ -108,24 +113,22 @@ function startVmapiService() {
     var config = configLoader.loadConfig(configFilePath);
     config.version = version() || '7.0.0';
 
-    var morayApi;
-
-    var vmapiLog = new Logger({
+    var vmapiLog = bunyan.createLogger({
         name: 'vmapi',
         level: config.logLevel,
         serializers: restify.bunyan.serializers
     });
 
     // Increase/decrease loggers levels using SIGUSR2/SIGUSR1:
-    sigyan.add([vmapi.log]);
+    sigyan.add([vmapiLog]);
 
     http.globalAgent.maxSockets = config.maxSockets || 100;
     https.globalAgent.maxSockets = config.maxSockets || 100;
 
     apiClients = createApiClients(config, vmapiLog);
 
-    vasync.parallel({funcs: [
-        function initChangefeedPublisher(done) {
+    vasync.pipeline({funcs: [
+        function initChangefeedPublisher(_, next) {
             var changefeedOptions = jsprim.deepCopy(config.changefeed);
             changefeedOptions.log = vmapiLog.child({ component: 'changefeed' },
                 true);
@@ -135,23 +138,39 @@ function startVmapiService() {
 
             changefeedPublisher.on('moray-ready', function onMorayReady() {
                 changefeedPublisher.start();
-                done();
+                next();
             });
         },
-        function initMorayApi(done) {
+        function initMorayApi(_, next) {
             assert.object(changefeedPublisher, 'changefeedPublisher');
 
             var morayConfig = jsprim.deepCopy(config.moray);
             morayConfig.changefeedPublisher = changefeedPublisher;
 
-            morayApi = new MORAY(morayConfig);
-            morayApi.connect();
-
-            morayApi.on('moray-ready', function onMorayReady() {
-                done();
+            var moraySetup = morayInit.startMorayInit({
+                morayConfig: morayConfig,
+                log: vmapiLog.child({ component: 'moray-init' }, true),
+                changefeedPublisher: changefeedPublisher
             });
+
+            morayBucketsInitializer = moraySetup.morayBucketsInitializer;
+            morayClient = moraySetup.morayClient;
+            moray = moraySetup.moray;
+
+            /*
+             * We don't want to wait for the Moray initialization process to
+             * be done before creating the HTTP server that will provide
+             * VMAPI's API endpoints, as:
+             *
+             * 1. some endpoints can function properly without using
+             * the Moray storage layer.
+             *
+             * 2. some endpoints are needed to provide status information,
+             * including status information about the storage layer.
+             */
+            next();
         },
-        function connectToWfApi(done) {
+        function connectToWfApi(_, next) {
             apiClients.wfapi.connect();
             /*
              * We intentionally don't need and want to wait for the Workflow API
@@ -159,7 +178,7 @@ function startVmapiService() {
              * up VMAPI. Individual request handlers will handle the Workflow
              * API client's connection status appropriately and differently.
              */
-            done();
+            next();
         }
     ]}, function dependenciesInitDone(err) {
         if (err) {
@@ -167,22 +186,24 @@ function startVmapiService() {
                 error: err
             }, 'failed to initialize VMAPI\'s dependencies');
 
-            morayApi.close();
+            morayClient.close();
+            process.exitCode = 1;
         } else {
-            var vmapiService = new vmapi({
+            var vmapiApp = new VmapiApp({
                 version: config.version,
                 log: vmapiLog.child({ component: 'http-api' }, true),
                 serverConfig: {
                     bindPort: config.api.port
                 },
                 apiClients: apiClients,
-                moray: morayApi,
                 changefeedPublisher: changefeedPublisher,
+                morayBucketsInitializer: morayBucketsInitializer,
+                moray: moray,
                 overlay: config.overlay,
                 reserveKvmStorage: config.reserveKvmStorage
             });
 
-            vmapiService.listen();
+            vmapiApp.listen();
         }
     });
 }

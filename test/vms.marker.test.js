@@ -10,18 +10,23 @@
 
 var assert = require('assert-plus');
 var async = require('async');
+var jsprim = require('jsprim');
 var libuuid = require('libuuid');
+var Logger = require('bunyan');
+var moray = require('moray');
+var restify = require('restify');
 var url = require('url');
 
+var changefeedUtils = require('../lib/changefeed');
 var common = require('./common');
-var MORAY = require('../lib/apis/moray');
-var morayTest = require('./lib/moray');
+var morayInit = require('../lib/moray/moray-init');
 var sortValidation = require('../lib/validation/sort.js');
 var vmCommon = require('../lib/common/vm-common.js');
 var vmTest = require('./lib/vm');
 
-
 var client;
+var morayClient;
+var storage;
 
 exports.setUp = function (callback) {
     common.setUp(function (err, _client) {
@@ -73,10 +78,6 @@ function testMarkerPagination(options, t, callback) {
     var NB_TEST_VMS_TO_CREATE = options.nbTestVms || 200;
     var LIMIT = NB_TEST_VMS_TO_CREATE / 2;
 
-    var moray = morayTest.createMorayClient();
-
-    moray.connect();
-
     var vmsCreationParams = options.vmsCreationParams || {};
     assert.object(vmsCreationParams,
         'options.vmsCreationParams must be an object');
@@ -101,131 +102,147 @@ function testMarkerPagination(options, t, callback) {
     assert.arrayOfString(markerKeys,
         'options.markerKeys must be an array of strings');
 
-    moray.once('moray-ready', function () {
-        var firstVmsChunk;
-        var secondVmsChunk;
-        async.waterfall([
-            // Delete test VMs leftover from previous tests run
-            function deleteTestVms(next) {
-                vmTest.deleteTestVMs(moray, {}, function vmsDeleted(err) {
+    var firstVmsChunk;
+    var secondVmsChunk;
+    async.waterfall([
+        // Delete test VMs leftover from previous tests run
+        function deleteTestVms(next) {
+            vmTest.deleteTestVMs(storage, {},
+                function vmsDeleted(err) {
                     t.ifError(err, 'deleting test VMs should not error');
                     return next(err);
                 });
-            },
-            function createFakeVms(next) {
-                vmTest.createTestVMs(NB_TEST_VMS_TO_CREATE, moray,
-                    {concurrency: 100}, vmsCreationParams,
-                    function fakeVmsCreated(err, vmsUuid) {
-                        moray.connection.close();
-
-                        t.equal(vmsUuid.length,
-                            NB_TEST_VMS_TO_CREATE,
-                            NB_TEST_VMS_TO_CREATE
-                            + ' vms should have been created');
-
-                        t.ifError(err, NB_TEST_VMS_TO_CREATE
-                            + ' vms should be created successfully');
-                        return next(err);
-                    });
-            },
-            function listFirstVmsChunk(next) {
-                var listVmsQuery = url.format({pathname: '/vms',
-                    query: queryStringObject});
-
-                client.get(listVmsQuery, function (err, req, res, body) {
-                    var lastItem;
-
-                    t.ifError(err);
-                    if (err)
-                        return next(err);
-
-                    t.equal(res.headers['x-joyent-resource-count'],
+        },
+        function createFakeVms(next) {
+            vmTest.createTestVMs(NB_TEST_VMS_TO_CREATE, storage,
+                {concurrency: 100}, vmsCreationParams,
+                function fakeVmsCreated(err, vmUuids) {
+                    t.equal(vmUuids.length,
                         NB_TEST_VMS_TO_CREATE,
-                        'x-joyent-resource-count header should be equal to '
-                        + NB_TEST_VMS_TO_CREATE);
-                    t.equal(body.length, LIMIT,
-                        LIMIT + ' vms should be returned from first list vms');
+                        NB_TEST_VMS_TO_CREATE
+                        + ' vms should have been created');
 
-                    lastItem = body[body.length - 1];
-                    var marker = buildMarker(lastItem, markerKeys);
-
-                    firstVmsChunk = body;
-                    return next(null, JSON.stringify(marker));
+                    t.ifError(err, NB_TEST_VMS_TO_CREATE
+                        + ' vms should be created successfully');
+                    return next(err);
                 });
-            },
-            function listNextVmsChunk(marker, next) {
-                assert.string(marker, 'marker');
-                queryStringObject.marker = marker;
+        },
+        function listFirstVmsChunk(next) {
+            var listVmsQuery = url.format({pathname: '/vms',
+                query: queryStringObject});
 
-                var listVmsQuery = url.format({pathname: '/vms',
-                    query: queryStringObject});
+            client.get(listVmsQuery, function (err, req, res, body) {
+                var lastItem;
 
-                client.get(listVmsQuery, function (err, req, res, body) {
-                    var lastItem;
+                t.ifError(err);
+                if (err)
+                    return next(err);
 
-                    t.ifError(err);
-                    if (err)
-                        return next(err);
+                t.equal(res.headers['x-joyent-resource-count'],
+                    NB_TEST_VMS_TO_CREATE,
+                    'x-joyent-resource-count header should be equal to '
+                    + NB_TEST_VMS_TO_CREATE);
+                t.equal(body.length, LIMIT,
+                    LIMIT + ' vms should be returned from first list vms');
 
-                    t.equal(res.headers['x-joyent-resource-count'],
-                        NB_TEST_VMS_TO_CREATE,
-                        'x-joyent-resource-count header should be equal to '
-                        + NB_TEST_VMS_TO_CREATE);
-                    t.equal(body.length, LIMIT,
-                        'second vms list request should return ' + LIMIT
-                        + ' vms');
+                lastItem = body[body.length - 1];
+                var marker = buildMarker(lastItem, markerKeys);
 
-                    lastItem = body[body.length - 1];
-                    var nextMarker = buildMarker(lastItem, markerKeys);
+                firstVmsChunk = body;
+                return next(null, JSON.stringify(marker));
+            });
+        },
+        function listNextVmsChunk(marker, next) {
+            assert.string(marker, 'marker');
+            queryStringObject.marker = marker;
 
-                    secondVmsChunk = body;
+            var listVmsQuery = url.format({pathname: '/vms',
+                query: queryStringObject});
 
-                    return next(null, JSON.stringify(nextMarker));
-                });
-            },
-            function listLastVmsChunk(marker, next) {
-                assert.string(marker, 'marker must be a string');
-                queryStringObject.marker = marker;
+            client.get(listVmsQuery, function (err, req, res, body) {
+                var lastItem;
 
-                var listVmsQuery = url.format({pathname: '/vms',
-                    query: queryStringObject});
+                t.ifError(err);
+                if (err)
+                    return next(err);
 
-                client.get(listVmsQuery, function (err, req, res, body) {
-                    t.ifError(err);
-                    if (err)
-                        return next(err);
+                t.equal(res.headers['x-joyent-resource-count'],
+                    NB_TEST_VMS_TO_CREATE,
+                    'x-joyent-resource-count header should be equal to '
+                    + NB_TEST_VMS_TO_CREATE);
+                t.equal(body.length, LIMIT,
+                    'second vms list request should return ' + LIMIT
+                    + ' vms');
 
-                    t.equal(res.headers['x-joyent-resource-count'],
-                        NB_TEST_VMS_TO_CREATE,
-                        'x-joyent-resource-count header should be equal to '
-                        + NB_TEST_VMS_TO_CREATE);
-                    t.equal(body.length, 0,
-                        'last vms list request should return no vm');
-                    return next();
-                });
-            },
-            function checkNoOverlap(next) {
-                function getVmUuid(vm) {
-                    assert.object(vm, 'vm must be an object');
-                    return vm.uuid;
-                }
+                lastItem = body[body.length - 1];
+                var nextMarker = buildMarker(lastItem, markerKeys);
 
-                var firstVmsChunkUuids = firstVmsChunk.map(getVmUuid);
-                var secondVmsChunkUuids = secondVmsChunk.map(getVmUuid);
-                var chunksOverlap = firstVmsChunkUuids.some(function (vmUuid) {
-                    return secondVmsChunkUuids.indexOf(vmUuid) !== -1;
-                });
+                secondVmsChunk = body;
 
-                t.equal(chunksOverlap, false,
-                    'subsequent responses should not overlap');
+                return next(null, JSON.stringify(nextMarker));
+            });
+        },
+        function listLastVmsChunk(marker, next) {
+            assert.string(marker, 'marker must be a string');
+            queryStringObject.marker = marker;
+
+            var listVmsQuery = url.format({pathname: '/vms',
+                query: queryStringObject});
+
+            client.get(listVmsQuery, function (err, req, res, body) {
+                t.ifError(err);
+                if (err)
+                    return next(err);
+
+                t.equal(res.headers['x-joyent-resource-count'],
+                    NB_TEST_VMS_TO_CREATE,
+                    'x-joyent-resource-count header should be equal to '
+                    + NB_TEST_VMS_TO_CREATE);
+                t.equal(body.length, 0,
+                    'last vms list request should return no vm');
                 return next();
+            });
+        },
+        function checkNoOverlap(next) {
+            function getVmUuid(vm) {
+                assert.object(vm, 'vm must be an object');
+                return vm.uuid;
             }
-        ], function allDone(err, results) {
-            t.ifError(err);
-            return callback();
-        });
+
+            var firstVmsChunkUuids = firstVmsChunk.map(getVmUuid);
+            var secondVmsChunkUuids = secondVmsChunk.map(getVmUuid);
+            var chunksOverlap = firstVmsChunkUuids.some(function (vmUuid) {
+                return secondVmsChunkUuids.indexOf(vmUuid) !== -1;
+            });
+
+            t.equal(chunksOverlap, false,
+                'subsequent responses should not overlap');
+            return next();
+        }
+    ], function allDone(err, results) {
+        t.ifError(err);
+        return callback();
     });
 }
+
+exports.init_storage_layer = function (t) {
+    var morayBucketsInitializer;
+
+    var moraySetup = morayInit.startMorayInit({
+        morayConfig: common.config.moray,
+        maxBucketsReindexAttempts: 1,
+        maxBucketsSetupAttempts: 1,
+        changefeedPublisher: changefeedUtils.createNoopCfPublisher()
+    });
+
+    morayBucketsInitializer = moraySetup.morayBucketsInitializer;
+    morayClient = moraySetup.morayClient;
+    storage = moraySetup.moray;
+
+    morayBucketsInitializer.on('done', function onMorayStorageReady() {
+        t.done();
+    });
+};
 
 /*
  * Checks that invalid markers result in the response containing
@@ -299,15 +316,9 @@ exports.list_vms_marker_ok = function (t) {
  * Cleanup test VMs created by the previous test (list_vms_marker_ok).
  */
 exports.delete_test_vms_marker_ok = function (t) {
-    var moray = morayTest.createMorayClient();
-    moray.connect();
-
-    moray.once('moray-ready', function () {
-        vmTest.deleteTestVMs(moray, {}, function testVmsDeleted(err) {
-            moray.connection.close();
-            t.ifError(err, 'deleting fake VMs should not error');
-            t.done();
-        });
+    vmTest.deleteTestVMs(storage, {}, function testVmsDeleted(err) {
+        t.ifError(err, 'deleting fake VMs should not error');
+        t.done();
     });
 };
 
@@ -329,15 +340,9 @@ exports.list_vms_marker_and_sort_on_uuid_asc_ok = function (t) {
  * (list_vms_marker_and_sort_on_uuid_asc_ok).
  */
 exports.delete_test_vms_marker_and_sort_on_uuid_asc_ok = function (t) {
-    var moray = morayTest.createMorayClient();
-    moray.connect();
-
-    moray.once('moray-ready', function () {
-        vmTest.deleteTestVMs(moray, {}, function testVmsDeleted(err) {
-            moray.connection.close();
-            t.ifError(err, 'deleting fake VMs should not error');
-            t.done();
-        });
+    vmTest.deleteTestVMs(storage, {}, function testVmsDeleted(err) {
+        t.ifError(err, 'deleting fake VMs should not error');
+        t.done();
     });
 };
 
@@ -359,15 +364,9 @@ exports.list_vms_marker_and_sort_on_uuid_desc_ok = function (t) {
  * (list_vms_marker_and_sort_on_uuid_desc_ok).
  */
 exports.delete_test_vms_marker_and_sort_on_uuid_desc_ok = function (t) {
-    var moray = morayTest.createMorayClient();
-    moray.connect();
-
-    moray.once('moray-ready', function () {
-        vmTest.deleteTestVMs(moray, {}, function testVmsDeleted(err) {
-            moray.connection.close();
-            t.ifError(err, 'deleting fake VMs should not error');
-            t.done();
-        });
+    vmTest.deleteTestVMs(storage, {}, function testVmsDeleted(err) {
+        t.ifError(err, 'deleting fake VMs should not error');
+        t.done();
     });
 };
 
@@ -482,16 +481,11 @@ function createDeleteVMsTest(sortKey, sortOrder, exports) {
     var clearVmsTestName = 'delete_test_vms_marker_with_identical_' + sortKey +
             '_' + sortOrder + '_ok';
     exports[clearVmsTestName] = function (t) {
-        var moray = morayTest.createMorayClient();
-        moray.connect();
-
-        moray.once('moray-ready', function () {
-            vmTest.deleteTestVMs(moray, {}, function testVmsDeleted(err) {
-                moray.connection.close();
+        vmTest.deleteTestVMs(storage, {},
+            function testVmsDeleted(err) {
                 t.ifError(err, 'deleting fake VMs should not error');
                 t.done();
             });
-        });
     };
 }
 
@@ -565,3 +559,8 @@ function createNoStrictTotalOrderKeyInMarkerTest(sortKey, sortOrder, exports) {
 Object.keys(NON_STRICT_TOTAL_ORDER_SORT_KEYS).forEach(function (sortKey) {
     createMarkerTests(sortKey, exports);
 });
+
+exports.close_moray_client = function (t) {
+    morayClient.close();
+    t.done();
+};
