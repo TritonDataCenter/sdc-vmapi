@@ -9,16 +9,21 @@
  */
 
 var assert = require('assert-plus');
-
 var async = require('async');
+var jsprim = require('jsprim');
+var Logger = require('bunyan');
+var moray = require('moray');
+var restify = require('restify');
 
 var common = require('./common');
-
+var morayStorage = require('../lib/storage/moray/moray');
+var morayBucketsConfig = require('../lib/storage/moray/moray-buckets-config');
 var validation = require('../lib/common/validation');
 var vmTest = require('./lib/vm');
 
 var client;
-var MORAY = require('../lib/apis/moray');
+var storage;
+var morayClient;
 
 var VALID_UUID = 'ffffffff-ffff-ffff-ffff-ffffffffffff';
 var INVALID_UUID = 'invalid_uuid';
@@ -32,6 +37,54 @@ exports.setUp = function (callback) {
         client = _client;
         callback();
     });
+};
+
+exports.init_storage_layer = function (t) {
+    var morayClientConfig = jsprim.deepCopy(common.config.moray);
+
+    morayClientConfig.retry = {
+        retries: Infinity,
+        minTimeout: 100,
+        maxTimeout: 1000
+    };
+
+    morayClientConfig.log = new Logger({
+        name: 'moray-client',
+        level: 'info',
+        serializers: restify.bunyan.serializers
+    });
+
+    morayClient = moray.createClient(morayClientConfig);
+    storage = new morayStorage(morayClient);
+
+    morayClient.on('connect', function onMorayClientConnected() {
+        t.ok(true, 'moray client should connect successfully');
+
+        storage.setupBuckets(morayBucketsConfig,
+            function onMorayBucketsSetup(morayBucketsSetupErr) {
+                t.ok(!morayBucketsSetupErr,
+                    'moray buckets setup should succeed');
+                t.done();
+            });
+    });
+
+    morayClient.on('error',
+        function onMorayClientConnectionError(morayClientConnectionErr) {
+            /*
+             * The current semantics of the underlying node-moray client
+             * connection means that it can emit 'error' events for errors that
+             * the client can actually recover from and that don't prevent it
+             * from establishing a connection. See MORAY-309 for more info.
+             *
+             * Since it's expected that, at least in some testing environments,
+             * the moray client will fail to connect a certain number of times,
+             * aborting tests in that case would mean that tests would fail most
+             * of the time, when they could have succeeded. Instead, we
+             * explicitly ignore errors and retry connecting indefinitely. If
+             * the moray client is not able to connect, then the process will
+             * hang or time out.
+             */
+        });
 };
 
 exports.list_invalid_param = function (t) {
@@ -309,59 +362,52 @@ function testValidLimit(limit, t, callback) {
         EXPECTED_NB_VMS_RETURNED = NB_TEST_VMS_TO_CREATE;
     }
 
-    var moray = new MORAY(common.config.moray);
-    moray.connect();
-
-    moray.once('moray-ready', function () {
-        async.series([
-            // Delete test VMs leftover from previous tests run
-            function deleteTestVms(next) {
-                vmTest.deleteTestVMs(moray, {}, function vmsDeleted(err) {
+    async.series([
+        // Delete test VMs leftover from previous tests run
+        function deleteTestVms(next) {
+            vmTest.deleteTestVMs(storage, {},
+                function vmsDeleted(err) {
                     t.ifError(err, 'deleting test VMs should not error');
                     return next(err);
                 });
-            },
-            function createFakeVms(next) {
-                vmTest.createTestVMs(NB_TEST_VMS_TO_CREATE, moray,
-                    {concurrency: 100}, {},
-                    function fakeVmsCreated(err, vmsUuid) {
-                        moray.connection.close();
-
-                        t.equal(vmsUuid.length,
-                            NB_TEST_VMS_TO_CREATE,
-                            NB_TEST_VMS_TO_CREATE
-                            + ' vms should have been created');
-
-                        t.ifError(err, NB_TEST_VMS_TO_CREATE
-                            + ' vms should be created successfully');
-                        return next(err);
-                    });
-            },
-            function listVmsWithLimit(next) {
-                var listVmsQuery = '/vms?limit=' + limit + '&alias='
-                + vmTest.TEST_VMS_ALIAS;
-
-                client.get(listVmsQuery, function (err, req, res, body) {
-                    t.ifError(err);
-                    if (err)
-                        return next(err);
-
-                    t.equal(res.headers['x-joyent-resource-count'],
+        },
+        function createFakeVms(next) {
+            vmTest.createTestVMs(NB_TEST_VMS_TO_CREATE, storage,
+                {concurrency: 100}, {},
+                function fakeVmsCreated(err, vmsUuid) {
+                    t.equal(vmsUuid.length,
                         NB_TEST_VMS_TO_CREATE,
-                        'x-joyent-resource-count header should be equal to '
-                        + NB_TEST_VMS_TO_CREATE);
-                    t.equal(body.length, EXPECTED_NB_VMS_RETURNED,
-                        EXPECTED_NB_VMS_RETURNED
-                        + ' vms should be returned from list vms');
+                        NB_TEST_VMS_TO_CREATE
+                        + ' vms should have been created');
 
-                    return next(null);
+                    t.ifError(err, NB_TEST_VMS_TO_CREATE
+                        + ' vms should be created successfully');
+                    return next(err);
                 });
-            }
-        ], function allDone(err, results) {
-            t.ifError(err);
-            moray.connection.close();
-            return callback();
-        });
+        },
+        function listVmsWithLimit(next) {
+            var listVmsQuery = '/vms?limit=' + limit + '&alias='
+            + vmTest.TEST_VMS_ALIAS;
+
+            client.get(listVmsQuery, function (err, req, res, body) {
+                t.ifError(err);
+                if (err)
+                    return next(err);
+
+                t.equal(res.headers['x-joyent-resource-count'],
+                    NB_TEST_VMS_TO_CREATE,
+                    'x-joyent-resource-count header should be equal to '
+                    + NB_TEST_VMS_TO_CREATE);
+                t.equal(body.length, EXPECTED_NB_VMS_RETURNED,
+                    EXPECTED_NB_VMS_RETURNED
+                    + ' vms should be returned from list vms');
+
+                return next(null);
+            });
+        }
+    ], function allDone(err, results) {
+        t.ifError(err);
+        return callback();
     });
 }
 
@@ -380,15 +426,9 @@ exports.list_vms_valid_limit = function (t) {
  * (list_vms_valid_limit).
  */
 exports.delete_list_vms_valid_limit = function (t) {
-    var moray = new MORAY(common.config.moray);
-    moray.connect();
-
-    moray.once('moray-ready', function () {
-        vmTest.deleteTestVMs(moray, {}, function testVmsDeleted(err) {
-            moray.connection.close();
-            t.ifError(err, 'deleting fake VMs should not error');
-            t.done();
-        });
+    vmTest.deleteTestVMs(storage, {}, function testVmsDeleted(err) {
+        t.ifError(err, 'deleting fake VMs should not error');
+        t.done();
     });
 };
 
@@ -523,4 +563,9 @@ exports.list_param_invalid_offset = function (t) {
     }, function allDone(err) {
         t.done();
     });
+};
+
+exports.close_moray_client = function (t) {
+    morayClient.close();
+    t.done();
 };

@@ -13,12 +13,17 @@
 // represent a CN that actually exists, a destroy workflow is not started and
 // instead the VM's state is set to destroyed immediately.
 
-var libuuid = require('libuuid');
 var assert = require('assert-plus');
+var jsprim = require('jsprim');
+var libuuid = require('libuuid');
+var Logger = require('bunyan');
+var restify = require('restify');
+var moray = require('moray');
 
 var common = require('./common');
 var vmTest = require('./lib/vm');
-var moray = require('../lib/apis/moray');
+var morayStorage = require('../lib/storage/moray/moray');
+var morayBucketsConfig = require('../lib/storage/moray/moray-buckets-config');
 
 var client;
 var TEST_VM_UUID = libuuid.create();
@@ -114,14 +119,57 @@ exports.delete_provisioning_vm = function (t) {
 };
 
 exports.cleanup_test_vms = function (t) {
-    var morayClient = new moray(common.config.moray);
-    morayClient.connect();
+    var morayClientConfig = jsprim.deepCopy(common.config.moray);
 
-    morayClient.once('moray-ready', function () {
-        vmTest.deleteTestVMs(morayClient, {}, function testVmDeleted(err) {
-            morayClient.connection.close();
-            t.ifError(err, 'Deleting the test VM should not error');
-            t.done();
-        });
+    morayClientConfig.retry = {
+        retries: Infinity,
+        minTimeout: 100,
+        maxTimeout: 1000
+    };
+
+    morayClientConfig.log = new Logger({
+        name: 'moray-client',
+        level: 'info',
+        serializers: restify.bunyan.serializers
     });
+
+    var morayClient = moray.createClient(morayClientConfig);
+    var storage = new morayStorage(morayClient);
+
+    morayClient.on('connect', function onMorayClientConnected() {
+        t.ok(true, 'moray client should connect succesfully');
+
+        storage.setupBuckets(morayBucketsConfig,
+            function onMorayBucketsSetup(morayBucketsSetupErr) {
+                t.ok(!morayBucketsSetupErr,
+                    'moray buckets setup should be successful');
+
+                vmTest.deleteTestVMs(storage, {},
+                    function testVmDeleted(deleteVmsErr) {
+                        morayClient.close();
+
+                        t.ok(!deleteVmsErr,
+                            'Deleting test VMs should not error');
+                        t.done();
+                    });
+            });
+    });
+
+    morayClient.on('error',
+        function onMorayClientConnectionError(morayClientConnectionErr) {
+            /*
+             * The current semantics of the underlying node-moray client
+             * connection means that it can emit 'error' events for errors that
+             * the client can actually recover from and that don't prevent it
+             * from establishing a connection. See MORAY-309 for more info.
+             *
+             * Since it's expected that, at least in some testing environments,
+             * the moray client will fail to connect a certain number of times,
+             * aborting tests in that case would mean that tests VMS wouldn't be
+             * cleaned up most of the time. Instead, we explicitly ignore errors
+             * and retry connecting indefinitely. If the moray client is not
+             * able to connect, then the process will hang or time out. At least
+             * we'll be able to know the source of the problem.
+             */
+        });
 };

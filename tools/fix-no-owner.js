@@ -9,55 +9,63 @@
  */
 
 // Backfill image_uuid for KVM VMs
+var async = require('async');
+var bunyan = require('bunyan');
 var path = require('path');
 var fs = require('fs');
-var util = require('util');
-var MORAY = require('../lib/apis/moray');
-var WFAPI = require('../lib/apis/wfapi');
-var common = require('../lib/common');
-
-var config_file = path.resolve(__dirname, '..', 'config.json');
-var bunyan = require('bunyan');
+var jsprim = require('jsprim');
+var moray = require('moray');
 var restify = require('restify');
-var async = require('async');
+var util = require('util');
+
+var common = require('../lib/common');
+var configLoader = require('../lib/config-loader');
+var mod_morayStorage = require('../lib/storage/moray/moray');
+var morayBucketsConfig = require('../lib/storage/moray/moray-buckets-config');
+var WFAPI = require('../lib/apis/wfapi');
+
 var levels = [bunyan.TRACE, bunyan.DEBUG, bunyan.INFO,
               bunyan.WARN, bunyan.ERROR, bunyan.FATAL];
-var config;
-var log;
+
+var configFilePath = path.join(__dirname, '..', 'config.json');
+var config = configLoader.loadConfig(configFilePath);
 
 // If you don't pass this flag the script will read in test mode
 var force = (process.argv[2] === '-f' ? true : false);
 
-/*
- * Loads and parse the configuration file at config.json
- */
-function loadConfig() {
-    var configPath = path.join(__dirname, '..', 'config.json');
-
-    if (!fs.existsSync(configPath)) {
-        console.error('Config file not found: ' + configPath +
-          ' does not exist. Aborting.');
-        process.exit(1);
-    }
-
-    var theConfig = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-    return theConfig;
-}
-
-var config = loadConfig();
-
-log = this.log = new bunyan({
+var log = this.log = new bunyan({
     name: 'fix-now-owner',
     level: config.logLevel || 'debug',
     serializers: restify.bunyan.serializers
 });
 config.wfapi.log = log;
 
-var moray = new MORAY(config.moray);
-var wfapi = new WFAPI(config.wfapi);
+var morayClientConfig = jsprim.deepCopy(config.moray);
+morayClientConfig.log = log.child({component: 'moray-client'}, true);
 
-moray.connect();
-moray.once('moray-ready', function () {
+var morayClient = moray.createClient(morayClientConfig);
+
+morayClient.on('connect', function onMorayClientConnected() {
+    var morayStorage = new mod_morayStorage({
+        morayClient: morayClient
+    });
+
+    morayStorage.setupBuckets(morayBucketsConfig,
+        function onMorayBucketsSetup(morayBucketsSetupErr) {
+            if (morayBucketsSetupErr) {
+                log.error({error: morayBucketsSetupErr},
+                    'Error when setting up moray buckets');
+                morayClient.close();
+                process.exitCode = 1;
+            } else {
+                fixVMsWithoutOwner();
+            }
+        });
+});
+
+function fixVMsWithoutOwner() {
+    var wfapi = new WFAPI(config.wfapi);
+
     wfapi.connect(onWfapi);
 
     function onWfapi() {
@@ -116,5 +124,4 @@ moray.once('moray-ready', function () {
             });
         });
     }
-});
-
+}

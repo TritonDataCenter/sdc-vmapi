@@ -18,18 +18,20 @@
  * Run node add-test-vms.js -h for usage.
  */
 
-var path = require('path');
-var fs = require('fs');
-
-var dashdash = require('dashdash');
-var libuuid = require('libuuid');
-var bunyan = require('bunyan');
-var restify = require('restify');
 var assert = require('assert-plus');
+var bunyan = require('bunyan');
+var dashdash = require('dashdash');
+var fs = require('fs');
+var jsprim = require('jsprim');
+var moray = require('moray');
+var libuuid = require('libuuid');
+var path = require('path');
+var restify = require('restify');
 
 var testVm = require('../test/lib/vm');
 var configFileLoader = require('../lib/config-loader');
-var MORAY = require('../lib/apis/moray');
+var mod_morayStorage = require('../lib/storage/moray/moray');
+var morayBucketsConfig = require('../lib/storage/moray/moray-buckets-config');
 
 var DEFAULT_NB_TEST_VMS_TO_CREATE = 60;
 var DEFAULT_CONCURRENCY = 10;
@@ -37,14 +39,11 @@ var DEFAULT_CONCURRENCY = 10;
 var configFilePath = path.join(__dirname, '..', 'config.json');
 var config = configFileLoader.loadConfig(configFilePath);
 
-log = this.log = new bunyan({
+var log = this.log = new bunyan({
     name: 'add-test-vms',
     level: process.env.LOG_LEVEL || config.logLevel || 'debug',
     serializers: restify.bunyan.serializers
 });
-
-config.moray.reconnect = true;
-var moray = new MORAY(config.moray);
 
 var cmdlineOptions = [
     {
@@ -85,17 +84,47 @@ function addTestVms(nbVms, concurrency, data) {
     assert.optionalObject(data, 'data must be an optional object');
     data = data || {};
 
-    moray.connect();
-    moray.once('moray-ready', function () {
-        log.debug('Moray ready!');
+    var morayClientConfig = jsprim.deepCopy(config.moray);
+    morayClientConfig.log = log.child({component: 'moray-client'}, true);
 
-        log.debug('Number of test VMs to create:', nbTestVmsToCreate);
-        assert.number(nbTestVmsToCreate);
+    var morayClient = moray.createClient(morayClientConfig);
+    var morayStorage = new mod_morayStorage({
+            morayClient: morayClient
+        });
+
+    morayClient.on('connect', function onMorayClientConnected() {
+
+        morayStorage.setupBuckets(morayBucketsConfig,
+            function onMorayBucketsSetup(morayBucketsSetupErr) {
+                if (morayBucketsSetupErr) {
+                    log.error({error: morayBucketsSetupErr},
+                        'Error when setting up moray buckets');
+                    morayClient.close();
+                    process.exitCode = 1;
+                } else {
+                    onMorayStorageReady();
+                }
+            });
+    });
+
+    morayClient.on('error', function onMorayClientConnectionError(err) {
+        /*
+         * The current semantics of the underlying node-moray client
+         * connection means that it can emit 'error' events for errors
+         * that the client can actually recover from and that don't
+         * prevent it from establishing a connection. See MORAY-309 for
+         * more info.
+         */
+    });
+
+    function onMorayStorageReady() {
+        log.debug('Number of test VMs to create:', nbVms);
+        assert.number(nbVms);
 
         log.debug('concurrency:', concurrency);
         assert.number(concurrency);
 
-        testVm.createTestVMs(nbTestVmsToCreate, moray, {
+        testVm.createTestVMs(nbVms, morayStorage, {
             concurrency: concurrency,
             log: log
         }, data, function allVmsCreated(err) {
@@ -106,15 +135,15 @@ function addTestVms(nbVms, concurrency, data) {
             }
 
             log.debug('Closing moray connection');
-            moray.connection.close();
+            morayClient.close();
         });
-    });
+    }
 }
 
 var cmdlineOptionsParser = dashdash.createParser({options: cmdlineOptions});
-var nbTestVmsToCreate;
-var concurrency;
-var testVmsData;
+var nbVmsParam;
+var concurrencyParam;
+var vmsDataParam;
 var parsedCmdlineOpts;
 
 try {
@@ -123,17 +152,17 @@ try {
     if (parsedCmdlineOpts.help) {
         printUsage(cmdlineOptionsParser);
     } else {
-        nbTestVmsToCreate = Number(parsedCmdlineOpts.n) ||
+        nbVmsParam = Number(parsedCmdlineOpts.n) ||
             DEFAULT_NB_TEST_VMS_TO_CREATE;
 
-        concurrency = Number(parsedCmdlineOpts.c) ||
+        concurrencyParam = Number(parsedCmdlineOpts.c) ||
             DEFAULT_CONCURRENCY;
 
         if (parsedCmdlineOpts.d) {
-            testVmsData = JSON.parse(parsedCmdlineOpts.d);
+            vmsDataParam = JSON.parse(parsedCmdlineOpts.d);
         }
 
-        addTestVms(nbTestVmsToCreate, concurrency, testVmsData);
+        addTestVms(nbVmsParam, concurrencyParam, vmsDataParam);
     }
 } catch (err) {
     console.error('Could not parse command line options');

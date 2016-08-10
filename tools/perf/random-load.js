@@ -17,7 +17,6 @@ var config_file = path.resolve(__dirname, '..', '..', 'config.json');
 var bunyan = require('bunyan');
 var restify = require('restify');
 var async = require('async');
-var log;
 
 var VMAPI = require('sdc-clients').VMAPI;
 var log = new bunyan({
@@ -39,7 +38,7 @@ var REQUESTS = [
     [ 'snapshotVm', 0.07, true, true ]
 ];
 
-vmapi = new VMAPI({
+var vmapi = new VMAPI({
     url: 'localhost',
     retry: {
         retries: 1,
@@ -107,7 +106,7 @@ function randomLoad() {
 }
 
 
-process.on('SIGINT', function() {
+process.on('SIGINT', function onSigInt() {
     console.log('Received CTRL-C. Exiting...');
     vmapi.client.close();
 });

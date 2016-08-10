@@ -42,7 +42,7 @@ NODEUNIT  := ./node_modules/.bin/nodeunit
 DOC_FILES	 = index.md
 RESTDOWN_FLAGS   = --brand-dir=deps/restdown-brand-remora
 EXTRA_DOC_DEPS += deps/restdown-brand-remora/.git
-JS_FILES	:= $(shell find lib test -name '*.js')
+JS_FILES	:= $(shell find tools lib test -name '*.js')
 JSL_CONF_NODE	 = tools/jsl.node.conf
 JSL_FILES_NODE   = server.js $(JS_FILES)
 JSSTYLE_FILES	 = server.js $(JS_FILES)
