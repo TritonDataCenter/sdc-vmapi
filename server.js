@@ -30,6 +30,7 @@ var sdc = require('sdc-clients');
 var CNAPI = require('./lib/apis/cnapi');
 var IMGAPI = require('./lib/apis/imgapi');
 var PAPI = require('./lib/apis/papi');
+var tritonTracer = require('triton-tracer');
 var VmapiApp = require('./lib/vmapi');
 var VOLAPI = require('sdc-clients').VOLAPI;
 var WFAPI = require('./lib/apis/wfapi');
@@ -161,6 +162,19 @@ function startVmapiService() {
     apiClients = createApiClients(config, vmapiLog);
 
     vasync.pipeline({funcs: [
+        function initTritonTracer(_, next) {
+            tritonTracer.init({
+                // create this generically and pass in to constructor/config?
+                log: new bunyan({
+                    name: 'vmapi',
+                    level: 'debug'
+                })
+            }, function (/* session */) {
+                // session.set('sessionState', ['server.js:53']);
+                vmapi = new VMAPI(config);
+                vmapi.init();
+            });
+        },
         function initChangefeedPublisher(_, next) {
             var changefeedOptions = jsprim.deepCopy(config.changefeed);
             changefeedOptions.log = vmapiLog.child({ component: 'changefeed' },
