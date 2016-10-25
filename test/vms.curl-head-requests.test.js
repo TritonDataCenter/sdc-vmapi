@@ -207,8 +207,8 @@ exports.non_curl_headvms_connection_default_request = function (t) {
 
         t.ok(headers.hasOwnProperty('content-length'),
             'response must have content-length header');
-        t.equal(headers.connection, 'keep-alive',
-            'connection response header must be set to keep-alive');
+        t.equal(headers.connection, 'close',
+            'connection response header must be set to close');
 
         t.done();
     });
@@ -216,7 +216,7 @@ exports.non_curl_headvms_connection_default_request = function (t) {
 
 exports.non_curl_headvms_connection_keepalive_request = function (t) {
     nonCurlHeadRequest('/vms', {
-        connefunction: 'keep-alive'
+        connection: 'keep-alive'
     }, function onHeaders(err, headers) {
         t.ifError(err, 'request should not result in an error');
 
@@ -250,8 +250,8 @@ exports.non_curl_headvm_connection_default_request = function (t) {
 
         t.ok(headers.hasOwnProperty('content-length'),
             'response must have content-length header');
-        t.equal(headers.connection, 'keep-alive',
-            'connection response header must be set to keep-alive');
+        t.equal(headers.connection, 'close',
+            'connection response header must be set to close');
 
         t.done();
     });
