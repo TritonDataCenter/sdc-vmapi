@@ -13,7 +13,6 @@
     "cueball": "2.2.7",
     "dashdash": "1.14.1",
     "deep-diff": "0.3.3",
-    "filed": "0.0.5",
     "jsprim": "^1.2.2",
     "krill": "1.0.1",
     "ldap-filter": "0.3.3",
