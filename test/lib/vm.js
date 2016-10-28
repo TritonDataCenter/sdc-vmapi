@@ -1,3 +1,13 @@
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+
+/*
+ * Copyright (c) 2016, Joyent, Inc.
+ */
+
 var assert = require('assert-plus');
 
 var libuuid = require('libuuid');
@@ -59,7 +69,7 @@ function createTestVm(moray, options, vmParams, callback) {
 exports.createTestVm = createTestVm;
 
 function createTestVMs(nbTestVmsToCreate, moray, options, vmParams, callback) {
-    assert.number(nbTestVmsToCreate, 'nbTestVmsToCreate');
+    assert.finite(nbTestVmsToCreate, 'nbTestVmsToCreate');
     assert.object(moray, 'moray');
     assert.object(options, 'options');
     assert.object(vmParams, 'vmParams must be an object');

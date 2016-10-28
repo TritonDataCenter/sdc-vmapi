@@ -5,7 +5,7 @@
 #
 
 #
-# Copyright (c) 2015, Joyent, Inc.
+# Copyright (c) 2016, Joyent, Inc.
 #
 
 #
@@ -24,11 +24,11 @@
 
 # The prebuilt sdcnode version we want. See
 # "tools/mk/Makefile.node_prebuilt.targ" for details.
-NODE_PREBUILT_VERSION=v0.10.26
+NODE_PREBUILT_VERSION=v4.6.1
 ifeq ($(shell uname -s),SunOS)
 	NODE_PREBUILT_TAG=zone
-	# Allow building on a SmartOS image other than sdc-smartos/1.6.3.
-	NODE_PREBUILT_IMAGE=fd2cc906-8938-11e3-beab-4359c665ac99
+	# Allow building on other than sdc-minimal-multiarch-lts@15.4.1
+	NODE_PREBUILT_IMAGE=18b094b0-eb01-11e5-80c1-175dac7ddf02
 endif
 
 #

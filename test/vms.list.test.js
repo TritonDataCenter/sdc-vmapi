@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright (c) 2015, Joyent, Inc.
+ * Copyright (c) 2016, Joyent, Inc.
  */
 
 var assert = require('assert-plus');
@@ -296,7 +296,7 @@ exports.list_param_invalid_uuids = function (t) {
  * maximum value for "limit".
  */
 function testValidLimit(limit, t, callback) {
-    assert.number(limit, 'options');
+    assert.finite(limit, 'options');
 
     assert.object(t, 't');
     assert.func(callback, 'callback');

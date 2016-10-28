@@ -6,7 +6,7 @@
  */
 
 /*
- * Copyright (c) 2015, Joyent, Inc.
+ * Copyright (c) 2016, Joyent, Inc.
  */
 
 /*
@@ -76,10 +76,10 @@ function printUsage(cmdLineOptionsParser) {
 }
 
 function addTestVms(nbVms, concurrency, data) {
-    assert.number(nbVms, 'nbVms must be a number');
+    assert.finite(nbVms, 'nbVms must be a number');
     assert.ok(nbVms > 0, 'nbVms must be a positive number');
 
-    assert.number(concurrency, 'concurrency must be a number');
+    assert.finite(concurrency, 'concurrency must be a number');
     assert.ok(concurrency > 0, 'concurrency must be a positive number');
 
     assert.optionalObject(data, 'data must be an optional object');
@@ -90,10 +90,10 @@ function addTestVms(nbVms, concurrency, data) {
         log.debug('Moray ready!');
 
         log.debug('Number of test VMs to create:', nbTestVmsToCreate);
-        assert.number(nbTestVmsToCreate);
+        assert.finite(nbTestVmsToCreate);
 
         log.debug('concurrency:', concurrency);
-        assert.number(concurrency);
+        assert.finite(concurrency);
 
         testVm.createTestVMs(nbTestVmsToCreate, moray, {
             concurrency: concurrency,
