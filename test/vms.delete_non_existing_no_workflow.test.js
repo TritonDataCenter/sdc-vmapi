@@ -13,12 +13,12 @@
 // represent a CN that actually exists, a destroy workflow is not started and
 // instead the VM's state is set to destroyed immediately.
 
-var libuuid = require('libuuid');
 var assert = require('assert-plus');
+var libuuid = require('libuuid');
 
 var common = require('./common');
-var vmTest = require('./lib/vm');
 var moray = require('../lib/apis/moray');
+var vmTest = require('./lib/vm');
 
 var client;
 var TEST_VM_UUID = libuuid.create();

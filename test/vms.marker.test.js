@@ -8,18 +8,16 @@
  * Copyright (c) 2016, Joyent, Inc.
  */
 
-var url = require('url');
-
 var assert = require('assert-plus');
 var async = require('async');
 var libuuid = require('libuuid');
+var url = require('url');
 
 var common = require('./common');
-var vmTest = require('./lib/vm');
-
 var MORAY = require('../lib/apis/moray');
 var sortValidation = require('../lib/validation/sort.js');
 var vmCommon = require('../lib/common/vm-common.js');
+var vmTest = require('./lib/vm');
 
 var client;
 
