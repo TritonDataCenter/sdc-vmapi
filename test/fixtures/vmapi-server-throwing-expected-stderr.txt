@@ -1,0 +1,6 @@
+/opt/smartdc/vmapi/test/fixtures/vmapi-server-with-throwing-handler.js:16
+    throw new Error('boom');
+    ^
+
+Error: boom
+    at Server.throwingRestifyHandler (/opt/smartdc/vmapi/test/fixtures/vmapi-server-with-throwing-handler.js:16:11)
