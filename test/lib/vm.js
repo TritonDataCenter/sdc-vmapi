@@ -35,7 +35,7 @@ function createTestVm(moray, options, vmParams, callback) {
     var log = options.log || new BunyanNoopLogger();
 
     vmParams = common.clone(vmParams);
-    common.setDefaultValues(vmParams, {});
+    common.setDefaultValues(vmParams, { config: {} });
 
     // Prefix the VM alias with a prefix that identifies
     // it as a test VM.

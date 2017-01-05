@@ -18,7 +18,11 @@
     },
     "overlay": {
 {{#fabric_cfg}}
+        "enabled": true,
         "natPool": "{{{sdc_nat_pool}}}"
+{{/fabric_cfg}}
+{{^fabric_cfg}}
+        "enabled": false
 {{/fabric_cfg}}
     },
     "wfapi": {

@@ -145,7 +145,7 @@ function startVmapiService() {
         }
     ]}, function dependenciesInitDone(err) {
         if (err) {
-            vmapi.log.error({
+            vmapiLog.error({
                 error: err
             }, 'failed to initialize VMAPI\'s dependencies');
 
