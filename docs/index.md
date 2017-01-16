@@ -993,6 +993,7 @@ These inputs can be passed and will be validated wether or not a 'billing_id' SD
 
 | Param               | Type         | Description                                 |
 | ------------------- | ------------ | ------------------------------------------- |
+| uuid                | UUID         | The UUID of the VM to be created            |
 | server_uuid         | UUID         | Manually specify a server for the provision |
 | alias               | String       | VM alias                                    |
 | max_physical_memory | Number (MiB) | Same as RAM                                 |
