@@ -23,7 +23,7 @@ var jsprim = require('jsprim');
 var path = require('path');
 var restify = require('restify');
 var sigyan = require('sigyan');
-var util = require('util');
+var tritonTracer = require('triton-tracer');
 var vasync = require('vasync');
 
 var sdc = require('sdc-clients');
@@ -152,6 +152,20 @@ function startVmapiService() {
     });
 
     config.version = version() || '7.0.0';
+
+    // Init tracing now that we have a logger
+    tritonTracer.init({
+        log: vmapiLog,
+        sampling: {
+            route: {
+                changefeeds: 0.1,
+                changefeeds_stats: 0.1,
+                ping: 0.1
+            }, GET: {
+                '/ping': 0.1
+            }
+        }
+    });
 
     // Increase/decrease loggers levels using SIGUSR2/SIGUSR1:
     sigyan.add([vmapiLog]);
