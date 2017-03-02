@@ -5,15 +5,13 @@
  */
 
 /*
- * Copyright (c) 2015, Joyent, Inc.
+ * Copyright 2017 Joyent, Inc.
  */
 
 var assert = require('assert-plus');
 var async = require('async');
 var bunyan = require('bunyan');
 var changefeed = require('changefeed');
-var qs = require('querystring');
-var restify = require('restify');
 var uuid = require('libuuid');
 
 var common = require('./common');
@@ -98,7 +96,7 @@ function waitForValue(url, key, value, callback) {
         if (!ready) {
             times++;
 
-            if (times == TIMEOUT) {
+            if (times === TIMEOUT) {
                 throw new Error('Timeout waiting on ' + url);
             } else {
                 setTimeout(function () {
@@ -185,17 +183,17 @@ exports.setUp = function (callback) {
 
 exports.find_headnode = function (t) {
     client.cnapi.get('/servers', function (err, req, res, servers) {
-        t.ifError(err);
-        t.equal(res.statusCode, 200);
-        t.ok(servers);
-        t.ok(Array.isArray(servers));
+        common.ifError(t, err);
+        t.equal(res.statusCode, 200, '200 OK');
+        t.ok(servers, 'servers is set');
+        t.ok(Array.isArray(servers), 'servers is Array');
         for (var i = 0; i < servers.length; i++) {
             if (servers[i].headnode === true) {
                 SERVER = servers[i];
                 break;
             }
         }
-        t.ok(SERVER);
+        t.ok(SERVER, 'server found');
         t.done();
     });
 };
@@ -203,11 +201,11 @@ exports.find_headnode = function (t) {
 
 exports.napi_networks_ok = function (t) {
     client.napi.get('/networks', function (err, req, res, networks) {
-        t.ifError(err);
-        t.equal(res.statusCode, 200);
-        t.ok(networks);
-        t.ok(Array.isArray(networks));
-        t.ok(networks.length > 1);
+        common.ifError(t, err);
+        t.equal(res.statusCode, 200, '200 OK');
+        t.ok(networks, 'networks is set');
+        t.ok(Array.isArray(networks), 'networks is Array');
+        t.ok(networks.length > 1, 'more than 1 network found');
         NETWORKS = networks;
         t.done();
     });
@@ -241,8 +239,8 @@ exports.create_vm = function (t) {
 
     listener.on('bootstrap', function () {
         client.post(opts, vm, function (err, req, res, body) {
-            t.ifError(err);
-            t.equal(res.statusCode, 202);
+            common.ifError(t, err);
+            t.equal(res.statusCode, 202, '202 Accepted');
             common.checkHeaders(t, res.headers);
             t.ok(res.headers['workflow-api'], 'workflow-api header');
             t.ok(body, 'vm ok');
@@ -252,7 +250,7 @@ exports.create_vm = function (t) {
 
             // GetVm should not fail after provision has been queued
             client.get(vmLocation, function (err2, req2, res2, body2) {
-                t.ifError(err2);
+                common.ifError(t, err2);
                 t.equal(res2.statusCode, 200, '200 OK');
                 common.checkHeaders(t, res2.headers);
                 t.ok(body2, 'provisioning vm ok');
@@ -280,7 +278,7 @@ exports.create_vm = function (t) {
 exports.wait_provisioned_job = function (t) {
     t.expect(1);
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
-        t.ifError(err);
+        common.ifError(t, err);
         t.done();
     });
 };
@@ -293,7 +291,7 @@ exports.check_create_vm_nics_running = function (t) {
     };
 
     waitForNicState(t, query, 'running', function (err) {
-        t.ifError(err);
+        common.ifError(t, err);
         t.done();
     });
 };
@@ -303,7 +301,7 @@ exports.get_vm_ok = function (t) {
     var path = '/vms/' + VM.uuid + '?owner_uuid=' + CUSTOMER;
 
     client.get(path, function (err, req, res, body) {
-        t.ifError(err);
+        common.ifError(t, err);
         t.equal(res.statusCode, 200, '200 OK');
         common.checkHeaders(t, res.headers);
         t.ok(body, 'vm ok');
@@ -321,7 +319,7 @@ exports.listen_for_alias = function (t) {
 
     listener.on('bootstrap', function () {
         client.put(opts, VM, function (err, req, res) {
-            t.ifError(err);
+            common.ifError(t, err);
         });
     });
     var noStateReceived = true;
@@ -349,7 +347,7 @@ exports.listen_for_customer_metadata = function (t) {
 
     listener.on('bootstrap', function () {
         client.put(opts, VM, function (err, req, res) {
-            t.ifError(err);
+            common.ifError(t, err);
         });
     });
     var noStateReceived = true;
@@ -377,7 +375,7 @@ exports.listen_for_internal_metadata = function (t) {
 
     listener.on('bootstrap', function () {
         client.put(opts, VM, function (err, req, res) {
-            t.ifError(err);
+            common.ifError(t, err);
         });
     });
 
@@ -406,7 +404,7 @@ exports.listen_for_tags = function (t) {
 
     listener.on('bootstrap', function () {
         client.put(opts, VM, function (err, req, res) {
-            t.ifError(err);
+            common.ifError(t, err);
         });
     });
 
@@ -439,10 +437,10 @@ exports.listen_for_nics = function (t) {
 
     listener.on('bootstrap', function () {
         client.post(opts, params, function (err, req, res, body) {
-            t.ifError(err);
-            t.equal(res.statusCode, 202);
+            common.ifError(t, err);
+            t.equal(res.statusCode, 202, '202 Accepted');
             common.checkHeaders(t, res.headers);
-            t.ok(body);
+            t.ok(body, 'bootstrap body');
             t.ok(body.job_uuid, 'job_uuid: ' + body.job_uuid);
         });
     });
@@ -475,10 +473,10 @@ exports.listen_for_stop_state = function (t) {
 
     listener.on('bootstrap', function () {
         client.post(opts, params, function (err, req, res, body) {
-            t.ifError(err);
-            t.equal(res.statusCode, 202);
+            common.ifError(t, err);
+            t.equal(res.statusCode, 202, '202 Accepted');
             common.checkHeaders(t, res.headers);
-            t.ok(body);
+            t.ok(body, 'bootstrap body');
             t.ok(body.job_uuid, 'job_uuid: ' + body.job_uuid);
         });
     });
@@ -511,10 +509,10 @@ exports.listen_for_start_state = function (t) {
 
     listener.on('bootstrap', function () {
         client.post(opts, params, function (err, req, res, body) {
-            t.ifError(err);
-            t.equal(res.statusCode, 202);
+            common.ifError(t, err);
+            t.equal(res.statusCode, 202, '202 Accepted');
             common.checkHeaders(t, res.headers);
-            t.ok(body);
+            t.ok(body, 'bootstrap body');
             t.ok(body.job_uuid, 'job_uuid: ' + body.job_uuid);
         });
     });
@@ -546,10 +544,10 @@ exports.listen_for_reboot_state = function (t) {
 
     listener.on('bootstrap', function () {
         client.post(opts, params, function (err, req, res, body) {
-            t.ifError(err);
-            t.equal(res.statusCode, 202);
+            common.ifError(t, err);
+            t.equal(res.statusCode, 202, '202 Accepted');
             common.checkHeaders(t, res.headers);
-            t.ok(body);
+            t.ok(body, 'bootstrap body');
             t.ok(body.job_uuid, 'job_uuid: ' + body.job_uuid);
         });
     });
@@ -577,10 +575,10 @@ exports.listen_for_destroy = function (t) {
 
     listener.on('bootstrap', function () {
         client.del(opts, function (err, req, res, body) {
-            t.ifError(err);
-            t.equal(res.statusCode, 202);
+            common.ifError(t, err);
+            t.equal(res.statusCode, 202, '202 Accepted');
             common.checkHeaders(t, res.headers);
-            t.ok(body);
+            t.ok(body, 'bootstrap body');
         });
     });
 
@@ -608,10 +606,10 @@ exports.put_new_vm = function (t) {
     var opts = { path: '/vms/' + vm.uuid };
 
     client.put(opts, vm, function (err, req, res) {
-        t.ifError(err);
+        common.ifError(t, err);
         vm.state = 'destroyed';
         client.put(opts, vm, function (err2, req2, res2) {
-            t.ifError(err2);
+            common.ifError(t, err2);
             t.done();
         });
     });
@@ -628,10 +626,10 @@ exports.put_new_vms = function (t) {
     var vms = {};
     vms[vm.uuid] = vm;
     client.put(opts, { vms: vms }, function (err, req, res) {
-        t.ifError(err);
+        common.ifError(t, err);
         vms[vm.uuid].state = 'destroyed';
         client.put(opts, { vms: vms }, function (err2, req2, res2) {
-            t.ifError(err2);
+            common.ifError(t, err2);
             t.done();
         });
     });

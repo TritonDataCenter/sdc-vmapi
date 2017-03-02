@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright (c) 2016, Joyent, Inc.
+ * Copyright 2017 Joyent, Inc.
  */
 
 // var test = require('tap').test;
@@ -13,6 +13,7 @@ var assert = require('assert-plus');
 var uuid = require('libuuid');
 var qs = require('querystring');
 var async = require('async');
+var util = require('util');
 
 var common = require('./common');
 
@@ -110,7 +111,7 @@ function waitForValue(url, key, value, callback) {
         if (!ready) {
             times++;
 
-            if (times == TIMEOUT) {
+            if (times === TIMEOUT) {
                 throw new Error('Timeout waiting on ' + url);
             } else {
                 setTimeout(function () {
@@ -204,17 +205,17 @@ exports.setUp = function (callback) {
 
 exports.find_headnode = function (t) {
     client.cnapi.get('/servers', function (err, req, res, servers) {
-        t.ifError(err);
-        t.equal(res.statusCode, 200);
-        t.ok(servers);
-        t.ok(Array.isArray(servers));
+        common.ifError(t, err);
+        t.equal(res.statusCode, 200, '200 OK');
+        t.ok(servers, 'servers is set');
+        t.ok(Array.isArray(servers), 'servers is Array');
         for (var i = 0; i < servers.length; i++) {
             if (servers[i].headnode === true) {
                 SERVER = servers[i];
                 break;
             }
         }
-        t.ok(SERVER);
+        t.ok(SERVER, 'server found');
         t.done();
     });
 };
@@ -222,11 +223,11 @@ exports.find_headnode = function (t) {
 
 exports.napi_networks_ok = function (t) {
     client.napi.get('/networks', function (err, req, res, networks) {
-        t.ifError(err);
-        t.equal(res.statusCode, 200);
-        t.ok(networks);
-        t.ok(Array.isArray(networks));
-        t.ok(networks.length > 1);
+        common.ifError(t, err);
+        t.equal(res.statusCode, 200, '200 OK');
+        t.ok(networks, 'networks is set');
+        t.ok(Array.isArray(networks), 'networks is Array');
+        t.ok(networks.length > 1, 'more than 1 network found');
         NETWORKS = networks;
         t.done();
     });
@@ -237,12 +238,12 @@ exports.filter_vms_empty = function (t) {
     var path = '/vms?ram=32&owner_uuid=' + CUSTOMER;
 
     client.get(path, function (err, req, res, body) {
-        t.ifError(err);
-        t.equal(res.statusCode, 200);
+        common.ifError(t, err);
+        t.equal(res.statusCode, 200, '200 OK');
         common.checkHeaders(t, res.headers);
-        t.ok(body);
-        t.ok(Array.isArray(body));
-        t.ok(!body.length);
+        t.ok(body, 'body is set');
+        t.ok(Array.isArray(body), 'body is Array');
+        t.equal(body.length, 0, 'body Array has 0 elements');
         t.done();
     });
 };
@@ -252,13 +253,13 @@ exports.filter_vms_ok = function (t) {
     var path = '/vms?ram=' + 128 + '&owner_uuid=' + CUSTOMER;
 
     client.get(path, function (err, req, res, body) {
-        t.ifError(err);
-        t.equal(res.statusCode, 200);
+        common.ifError(t, err);
+        t.equal(res.statusCode, 200, '200 OK');
         common.checkHeaders(t, res.headers);
         t.ok(res.headers['x-joyent-resource-count']);
-        t.ok(body);
-        t.ok(Array.isArray(body));
-        t.ok(body.length);
+        t.ok(body, 'body is set');
+        t.ok(Array.isArray(body), 'body is Array');
+        t.ok(body.length > 0, 'body Array has more than 0 elements');
         body.forEach(function (m) {
             checkMachine(t, m);
             muuid = m.uuid;
@@ -278,13 +279,13 @@ exports.filter_vms_advanced = function (t) {
     var path = '/vms?query=' + query;
 
     client.get(path, function (err, req, res, body) {
-        t.ifError(err);
-        t.equal(res.statusCode, 200);
+        common.ifError(t, err);
+        t.equal(res.statusCode, 200, '200 OK');
         common.checkHeaders(t, res.headers);
         t.ok(res.headers['x-joyent-resource-count']);
-        t.ok(body);
-        t.ok(Array.isArray(body));
-        t.ok(body.length);
+        t.ok(body, 'body is set');
+        t.ok(Array.isArray(body), 'body is Array');
+        t.ok(body.length > 0, 'body Array has more than 0 elements');
         t.done();
     });
 };
@@ -295,18 +296,19 @@ exports.filter_vms_predicate = function (t) {
     var path = '/vms?predicate=' + pred;
 
     client.get(path, function (err, req, res, body) {
-        t.ifError(err);
+        common.ifError(t, err);
 
-        t.equal(res.statusCode, 200);
+        t.equal(res.statusCode, 200, '200 OK');
         common.checkHeaders(t, res.headers);
 
         t.ok(res.headers['x-joyent-resource-count']);
-        t.ok(body);
-        t.ok(Array.isArray(body));
-        t.ok(body.length);
+        t.ok(body, 'body is set');
+        t.ok(Array.isArray(body), 'body is Array');
+        t.ok(body.length > 0, 'body Array has more than 0 elements');
 
-        body.forEach(function (m) {
-            t.equal(m.brand, 'joyent-minimal');
+        body.forEach(function (m, i) {
+            t.equal(m.brand, 'joyent-minimal',
+                util.format('body[%d].brand == "joyent-minimal"', i));
         });
 
         t.done();
@@ -322,21 +324,22 @@ exports.filter_vms_mixed = function (t) {
     var path = '/vms?query=' + query + '&predicate=' + pred + '&' + args;
 
     client.get(path, function (err, req, res, body) {
-        t.ifError(err);
+        common.ifError(t, err);
 
-        t.equal(res.statusCode, 200);
+        t.equal(res.statusCode, 200, '200 OK');
         common.checkHeaders(t, res.headers);
 
         t.ok(res.headers['x-joyent-resource-count']);
-        t.ok(body);
-        t.ok(Array.isArray(body));
-        t.ok(body.length);
+        t.ok(body, 'body is set');
+        t.ok(Array.isArray(body), 'body is Array');
+        t.ok(body.length > 0, 'body Array has more than 0 elements');
 
-        body.forEach(function (m) {
+        body.forEach(function (m, i) {
+            t.ok(m, util.format('body[%d] is set', i));
             checkMachine(t, m);
-            t.equal(m.owner_uuid, CUSTOMER);
-            t.equal(m.max_physical_memory, 128);
-            t.equal(m.brand, 'joyent-minimal');
+            t.equal(m.owner_uuid, CUSTOMER, 'owner_uuid');
+            t.equal(m.max_physical_memory, 128, 'max_physical_memory');
+            t.equal(m.brand, 'joyent-minimal', 'brand');
         });
 
         // Being extra safe here; if owner_uuid is ignored, then we get
@@ -345,11 +348,11 @@ exports.filter_vms_mixed = function (t) {
         path = '/vms?query=' + query + '&predicate=' + pred + '&' + badArgs;
 
         client.get(path, function (err2, req2, res2, body2) {
-            t.ifError(err2);
+            common.ifError(t, err2);
 
-            t.equal(res2.statusCode, 200);
-            t.ok(Array.isArray(body2));
-            t.equal(body2.length, 0);
+            t.equal(res2.statusCode, 200, '200 OK');
+            t.ok(Array.isArray(body2), 'body is Array');
+            t.equal(body2.length, 0, 'body Array is empty');
 
             t.done();
         });
@@ -361,13 +364,13 @@ exports.limit_vms_ok = function (t) {
     var path = '/vms?limit=5';
 
     client.get(path, function (err, req, res, body) {
-        t.ifError(err);
-        t.equal(res.statusCode, 200);
+        common.ifError(t, err);
+        t.equal(res.statusCode, 200, '200 OK');
         common.checkHeaders(t, res.headers);
         t.ok(res.headers['x-joyent-resource-count']);
-        t.ok(body);
-        t.ok(Array.isArray(body));
-        t.equal(body.length, 5);
+        t.ok(body, 'body is set');
+        t.ok(Array.isArray(body), 'body is Array');
+        t.equal(body.length, 5, 'body length is 5');
         t.done();
     });
 };
@@ -376,10 +379,11 @@ exports.limit_vms_ok = function (t) {
 exports.head_vms_ok = function (t) {
     var path = '/vms?ram=' + 128 + '&owner_uuid=' + CUSTOMER;
     client.head(path, function (err, req, res) {
-        t.ifError(err);
-        t.equal(res.statusCode, 200);
+        common.ifError(t, err);
+        t.equal(res.statusCode, 200, '200 OK');
         common.checkHeaders(t, res.headers);
-        t.ok(res.headers['x-joyent-resource-count']);
+        t.ok(res.headers['x-joyent-resource-count'],
+            'x-joyent-resource-count header');
         vmCount = res.headers['x-joyent-resource-count'];
         t.done();
     });
@@ -390,13 +394,14 @@ exports.offset_vms_ok = function (t) {
     var path = '/vms?ram=' + 128 + '&owner_uuid=' + CUSTOMER + '&offset=2';
 
     client.get(path, function (err, req, res, body) {
-        t.ifError(err);
-        t.equal(res.statusCode, 200);
+        common.ifError(t, err);
+        t.equal(res.statusCode, 200, '200 OK');
         common.checkHeaders(t, res.headers);
-        t.ok(res.headers['x-joyent-resource-count']);
-        t.ok(body);
-        t.ok(Array.isArray(body));
-        t.equal(body.length, vmCount - 2);
+        t.ok(res.headers['x-joyent-resource-count'],
+            'x-joyent-resource-count header');
+        t.ok(body, 'body is set');
+        t.ok(Array.isArray(body), 'body is Array');
+        t.equal(body.length, vmCount - 2, 'body length');
         t.done();
     });
 };
@@ -407,12 +412,12 @@ exports.offset_vms_at_end = function (t) {
         '&offset=' + vmCount;
 
     client.get(path, function (err, req, res, body) {
-        t.ifError(err);
-        t.equal(res.statusCode, 200);
+        common.ifError(t, err);
+        t.equal(res.statusCode, 200, '200 OK');
         common.checkHeaders(t, res.headers);
-        t.ok(body);
-        t.ok(Array.isArray(body));
-        t.equal(body.length, 0);
+        t.ok(body, 'body is set');
+        t.ok(Array.isArray(body), 'body is Array');
+        t.equal(body.length, 0, 'body is empty');
         t.done();
     });
 };
@@ -423,12 +428,12 @@ exports.offset_vms_beyond = function (t) {
         '&offset=' + vmCount + 5;
 
     client.get(path, function (err, req, res, body) {
-        t.ifError(err);
-        t.equal(res.statusCode, 200);
+        common.ifError(t, err);
+        t.equal(res.statusCode, 200, '200 OK');
         common.checkHeaders(t, res.headers);
-        t.ok(body);
-        t.ok(Array.isArray(body));
-        t.equal(body.length, 0);
+        t.ok(body, 'body is set');
+        t.ok(Array.isArray(body), 'body is Array');
+        t.equal(body.length, 0, 'body is empty');
         t.done();
     });
 };
@@ -441,13 +446,13 @@ exports.offset_fields_vms_ok = function (t) {
         '&fields=uuid,alias&offset=1';
 
     client.get(path, function (err, req, res, body) {
-        t.ifError(err);
-        t.equal(res.statusCode, 200);
+        common.ifError(t, err);
+        t.equal(res.statusCode, 200, '200 OK');
         common.checkHeaders(t, res.headers);
         t.ok(res.headers['x-joyent-resource-count']);
-        t.ok(body);
-        t.ok(Array.isArray(body));
-        t.equal(body.length, vmCount - 1);
+        t.ok(body, 'body is set');
+        t.ok(Array.isArray(body), 'body is Array');
+        t.equal(body.length, vmCount - 1, 'body length');
         // TODO: this should not depend on the number of VMs, instead
         // we should create a known specific number of VMs as a setup step
         // for this test. Thus we would know that we have at least one VM
@@ -467,12 +472,12 @@ exports.offset_fields_vms_beyond = function (t) {
         '&fields=uuid,alias&offset=' + vmCount + 5;
 
     client.get(path, function (err, req, res, body) {
-        t.ifError(err);
-        t.equal(res.statusCode, 200);
+        common.ifError(t, err);
+        t.equal(res.statusCode, 200, '200 OK');
         common.checkHeaders(t, res.headers);
-        t.ok(body);
-        t.ok(Array.isArray(body));
-        t.equal(body.length, 0);
+        t.ok(body, 'body is set');
+        t.ok(Array.isArray(body), 'body is Array');
+        t.equal(body.length, 0, 'body is empty');
         t.done();
     });
 };
@@ -483,7 +488,7 @@ exports.get_vm_not_found = function (t) {
     var path = '/vms/' + nouuid + '?owner_uuid=' + CUSTOMER;
 
     client.get(path, function (err, req, res, body) {
-        t.equal(res.statusCode, 404);
+        t.equal(res.statusCode, 404, '404 Not Found');
         common.checkHeaders(t, res.headers);
         t.done();
     });
@@ -494,7 +499,7 @@ exports.get_vm_ok = function (t) {
     var path = '/vms/' + muuid + '?owner_uuid=' + CUSTOMER;
 
     client.get(path, function (err, req, res, body) {
-        t.ifError(err);
+        common.ifError(t, err);
         t.equal(res.statusCode, 200, '200 OK');
         common.checkHeaders(t, res.headers);
         t.ok(body, 'vm ok');
@@ -507,7 +512,7 @@ exports.get_vm_ok = function (t) {
 exports.head_vm_ok = function (t) {
     var path = '/vms/' + muuid + '?owner_uuid=' + CUSTOMER;
     client.head(path, function (err, req, res) {
-        t.ifError(err);
+        common.ifError(t, err);
         t.equal(res.statusCode, 200, '200 OK');
         common.checkHeaders(t, res.headers);
         t.done();
@@ -518,7 +523,7 @@ exports.head_vm_ok = function (t) {
 exports.create_vm_not_ok = function (t) {
     client.post('/vms', { owner_uuid: CUSTOMER },
       function (err, req, res, data) {
-        t.equal(res.statusCode, 409);
+        t.equal(res.statusCode, 409, '409 Conflict');
         common.checkHeaders(t, res.headers);
         t.done();
     });
@@ -542,7 +547,7 @@ exports.create_vm_locality_not_ok = function (t) {
     var opts = createOpts('/vms', vm);
 
     client.post(opts, vm, function (err, req, res, body) {
-        t.equal(res.statusCode, 409);
+        t.equal(res.statusCode, 409, '409 Conflict');
         t.deepEqual(body, {
             code: 'ValidationFailed',
             message: 'Invalid VM parameters',
@@ -576,10 +581,10 @@ exports.create_vm_tags_not_ok = function (t) {
 
         var opts = createOpts('/vms', vm);
         client.post(opts, vm, function (err, req, res, body) {
-            t.ok(err);
-            t.equal(err.restCode, 'ValidationFailed');
-            t.equal(err.message, 'Invalid VM parameters');
-            t.equal(res.statusCode, 409);
+            t.ok(err, 'expecting: ' + expectedErr);
+            t.equal(err.restCode, 'ValidationFailed', 'err.restCode');
+            t.equal(err.message, 'Invalid VM parameters', 'err.message');
+            t.equal(res.statusCode, 409, '409 Conflict');
 
             t.deepEqual(body, {
                 code: 'ValidationFailed',
@@ -649,19 +654,20 @@ exports.create_vm = function (t) {
     var opts = createOpts('/vms', vm);
 
     client.post(opts, vm, function (err, req, res, body) {
-        t.ifError(err);
-        t.equal(res.statusCode, 202);
+        common.ifError(t, err);
+        t.equal(res.statusCode, 202, '202 Accepted');
         common.checkHeaders(t, res.headers);
         t.ok(res.headers['workflow-api'], 'workflow-api header');
         t.ok(body, 'vm ok');
 
         jobLocation = '/jobs/' + body.job_uuid;
+        t.ok(true, 'jobLocation: ' + jobLocation);
         newUuid = body.vm_uuid;
         vmLocation = '/vms/' + newUuid;
 
         // GetVm should not fail after provision has been queued
         client.get(vmLocation, function (err2, req2, res2, body2) {
-            t.ifError(err2);
+            common.ifError(t, err2);
             t.equal(res2.statusCode, 200, '200 OK');
             common.checkHeaders(t, res2.headers);
             t.ok(body2, 'provisioning vm ok');
@@ -679,7 +685,7 @@ exports.create_vm = function (t) {
 
 exports.get_job = function (t) {
     client.get(jobLocation, function (err, req, res, body) {
-        t.ifError(err);
+        common.ifError(t, err);
         t.equal(res.statusCode, 200, 'GetJob 200 OK');
         common.checkHeaders(t, res.headers);
         t.ok(body, 'job ok');
@@ -691,7 +697,7 @@ exports.get_job = function (t) {
 
 exports.wait_provisioned_job = function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
-        t.ifError(err);
+        common.ifError(t, err);
         t.done();
     });
 };
@@ -705,7 +711,7 @@ exports.check_create_vm_nics_running = function (t) {
     };
 
     waitForNicState(t, query, 'running', function (err) {
-        t.ifError(err);
+        common.ifError(t, err);
         t.done();
     });
 };
@@ -719,12 +725,13 @@ exports.stop_vm = function (t) {
     var opts = createOpts(vmLocation, params);
 
     client.post(opts, params, function (err, req, res, body) {
-        t.ifError(err);
-        t.equal(res.statusCode, 202);
+        common.ifError(t, err);
+        t.equal(res.statusCode, 202, '202 Accepted');
         common.checkHeaders(t, res.headers);
         t.ok(res.headers['workflow-api'], 'workflow-api header');
-        t.ok(body);
+        t.ok(body, 'body is set');
         jobLocation = '/jobs/' + body.job_uuid;
+        t.ok(true, 'jobLocation: ' + jobLocation);
         t.done();
     });
 };
@@ -732,7 +739,7 @@ exports.stop_vm = function (t) {
 
 exports.wait_stopped_job = function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
-        t.ifError(err);
+        common.ifError(t, err);
         t.done();
     });
 };
@@ -745,7 +752,7 @@ exports.check_stop_vm_nics_stopped = function (t) {
     };
 
     waitForNicState(t, query, 'stopped', function (err) {
-        t.ifError(err);
+        common.ifError(t, err);
         t.done();
     });
 };
@@ -759,12 +766,13 @@ exports.start_vm = function (t) {
     var opts = createOpts(vmLocation, params);
 
     client.post(opts, params, function (err, req, res, body) {
-        t.ifError(err);
-        t.equal(res.statusCode, 202);
+        common.ifError(t, err);
+        t.equal(res.statusCode, 202, '202 Accepted');
         common.checkHeaders(t, res.headers);
         t.ok(res.headers['workflow-api'], 'workflow-api header');
-        t.ok(body);
+        t.ok(body, 'body is set');
         jobLocation = '/jobs/' + body.job_uuid;
+        t.ok(true, 'jobLocation: ' + jobLocation);
         t.done();
     });
 };
@@ -772,7 +780,7 @@ exports.start_vm = function (t) {
 
 exports.wait_started_job = function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
-        t.ifError(err);
+        common.ifError(t, err);
         t.done();
     });
 };
@@ -785,7 +793,7 @@ exports.check_start_vm_nics_running = function (t) {
     };
 
     waitForNicState(t, query, 'running', function (err) {
-        t.ifError(err);
+        common.ifError(t, err);
         t.done();
     });
 };
@@ -799,11 +807,12 @@ exports.reboot_vm = function (t) {
     var opts = createOpts(vmLocation, params);
 
     client.post(opts, params, function (err, req, res, body) {
-        t.ifError(err);
-        t.equal(res.statusCode, 202);
+        common.ifError(t, err);
+        t.equal(res.statusCode, 202, '202 Accepted');
         common.checkHeaders(t, res.headers);
-        t.ok(body);
+        t.ok(body, 'body is set');
         jobLocation = '/jobs/' + body.job_uuid;
+        t.ok(true, 'jobLocation: ' + jobLocation);
         t.done();
     });
 };
@@ -811,7 +820,7 @@ exports.reboot_vm = function (t) {
 
 exports.wait_rebooted_job = function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
-        t.ifError(err);
+        common.ifError(t, err);
         t.done();
     });
 };
@@ -824,7 +833,7 @@ exports.check_reboot_vm_nics_running = function (t) {
     };
 
     waitForNicState(t, query, 'running', function (err) {
-        t.ifError(err);
+        common.ifError(t, err);
         t.done();
     });
 };
@@ -839,12 +848,13 @@ exports.add_nics_with_networks = function (t) {
     var opts = createOpts(vmLocation, params);
 
     client.post(opts, params, function (err, req, res, body) {
-        t.ifError(err);
-        t.equal(res.statusCode, 202);
+        common.ifError(t, err);
+        t.equal(res.statusCode, 202, '202 Accepted');
         common.checkHeaders(t, res.headers);
-        t.ok(body);
+        t.ok(body, 'body is set');
         t.ok(body.job_uuid, 'job_uuid: ' + body.job_uuid);
         jobLocation = '/jobs/' + body.job_uuid;
+        t.ok(true, 'jobLocation: ' + jobLocation);
         t.done();
     });
 };
@@ -852,7 +862,7 @@ exports.add_nics_with_networks = function (t) {
 
 exports.wait_add_nics_with_networks = function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
-        t.ifError(err);
+        common.ifError(t, err);
         t.done();
     });
 };
@@ -866,7 +876,7 @@ exports.check_add_nics_with_network_nics_running = function (t) {
     };
 
     waitForNicState(t, query, 'running', function (err) {
-        t.ifError(err);
+        common.ifError(t, err);
         t.done();
     });
 };
@@ -885,7 +895,7 @@ exports.add_nics_with_macs = function (t) {
     var opts = createOpts('/nics', params);
 
     client.napi.post(opts, params, function (err, req, res, nic) {
-        t.ifError(err);
+        common.ifError(t, err);
 
         var params2 = {
             action: 'add_nics',
@@ -895,11 +905,12 @@ exports.add_nics_with_macs = function (t) {
         var opts2 = createOpts(vmLocation, params2);
 
         client.post(opts2, params2, function (err2, req2, res2, body2) {
-            t.ifError(err2);
-            t.equal(res2.statusCode, 202);
+            common.ifError(t, err2);
+            t.equal(res2.statusCode, 202, '202 Accepted');
             common.checkHeaders(t, res2.headers);
-            t.ok(body2);
+            t.ok(body2, 'body2 is set');
             jobLocation = '/jobs/' + body2.job_uuid;
+            t.ok(true, 'jobLocation: ' + jobLocation);
             t.done();
         });
     });
@@ -908,7 +919,7 @@ exports.add_nics_with_macs = function (t) {
 
 exports.wait_add_nics_with_macs = function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
-        t.ifError(err);
+        common.ifError(t, err);
         t.done();
     });
 };
@@ -922,7 +933,7 @@ exports.check_add_nics_with_macs_nics_running = function (t) {
     };
 
     waitForNicState(t, query, 'running', function (err) {
-        t.ifError(err);
+        common.ifError(t, err);
         t.done();
     });
 };
@@ -931,13 +942,14 @@ exports.check_add_nics_with_macs_nics_running = function (t) {
 exports.remove_nics = function (t) {
     // Get VM object to get its NICs
     client.get(vmLocation, function (err, req, res, body) {
-        t.ifError(err);
+        common.ifError(t, err);
         t.equal(res.statusCode, 200, '200 OK');
         common.checkHeaders(t, res.headers);
         t.ok(body, 'vm ok');
         checkMachine(t, body);
-        t.ok(body.nics);
-        t.equal(body.nics.length, 3);
+        t.ok(body.nics, 'body.nics is set');
+        t.ok(Array.isArray(body.nics), 'body.nics is Array');
+        t.equal(body.nics.length, 3, 'body.nics has length 3');
 
         var macs = body.nics.filter(function (nic) {
             return nic.nic_tag === NETWORKS[1].nic_tag;
@@ -945,7 +957,7 @@ exports.remove_nics = function (t) {
             return nic.mac;
         });
 
-        t.equal(macs.length, 2);
+        t.equal(macs.length, 2, 'macs has length 2');
 
         var params = {
             action: 'remove_nics',
@@ -955,11 +967,12 @@ exports.remove_nics = function (t) {
         var opts = createOpts(vmLocation, params);
 
         client.post(opts, params, function (err2, req2, res2, body2) {
-            t.ifError(err2);
-            t.equal(res2.statusCode, 202);
+            common.ifError(t, err2);
+            t.equal(res2.statusCode, 202, '202 Accepted');
             common.checkHeaders(t, res2.headers);
-            t.ok(body2);
+            t.ok(body2, 'body2 is set');
             jobLocation = '/jobs/' + body2.job_uuid;
+            t.ok(true, 'jobLocation: ' + jobLocation);
             t.done();
         });
     });
@@ -968,7 +981,7 @@ exports.remove_nics = function (t) {
 
 exports.wait_remove_nics = function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
-        t.ifError(err);
+        common.ifError(t, err);
         t.done();
     });
 };
@@ -983,7 +996,7 @@ exports.check_remove_nics_removed = function (t) {
             nic_tag: NETWORKS[1].nic_tag
         }
     }, function (err, req, res, nics) {
-        t.ifError(err);
+        common.ifError(t, err);
         t.equal(nics.length, 0);
         t.done();
     });
@@ -1001,7 +1014,7 @@ exports.change_owner_without_uuid = function (t) {
     var opts = createOpts(vmLocation, params);
 
     client.post(opts, params, function (err, req, res, body) {
-          t.equal(res.statusCode, 409);
+          t.equal(res.statusCode, 409, '409 Conflict');
           t.done();
     });
 };
@@ -1016,11 +1029,12 @@ exports.change_with_bad_tags = function (t) {
 
         var opts = createOpts(vmLocation, params);
 
+        t.ok(true, 'client.post expecting: ' + expectedErr);
         client.post(opts, params, function (err, req, res, body) {
-            t.ok(err);
-            t.equal(err.restCode, 'ValidationFailed');
-            t.equal(err.message, 'Invalid VM update parameters');
-            t.equal(res.statusCode, 409);
+            t.ok(err, 'error set');
+            t.equal(err.restCode, 'ValidationFailed', 'err.restCode');
+            t.equal(err.message, 'Invalid VM update parameters', 'err.message');
+            t.equal(res.statusCode, 409, '409 Conflict');
 
             t.deepEqual(body, {
                 code: 'ValidationFailed',
@@ -1040,11 +1054,14 @@ exports.change_with_bad_tags = function (t) {
         var path = '/vms/' + newUuid + '/tags';
         var opts = createOpts(path, tags);
 
+        t.ok(true, util.format('client.%s  expecting: %s',
+            method, expectedErr));
+
         client[method](opts, tags, function (err, req, res, body) {
-            t.ok(err);
-            t.equal(err.restCode, 'ValidationFailed');
-            t.equal(err.message, 'Invalid tag parameters');
-            t.equal(res.statusCode, 409);
+            t.ok(err, 'error set');
+            t.equal(err.restCode, 'ValidationFailed', 'err.restCode');
+            t.equal(err.message, 'Invalid tag parameters', 'err.message');
+            t.equal(res.statusCode, 409, '409 Conflict');
 
             t.deepEqual(body, {
                 code: 'ValidationFailed',
@@ -1160,7 +1177,7 @@ exports.list_tags = function (t) {
     var path = '/vms/' + newUuid + '/tags?owner_uuid=' + CUSTOMER;
 
     client.get(path, function (err, req, res, body) {
-        t.ifError(err);
+        common.ifError(t, err);
         t.equal(res.statusCode, 200, '200 OK');
         common.checkHeaders(t, res.headers);
         t.ok(body, 'body');
@@ -1181,11 +1198,12 @@ exports.add_tags = function (t) {
     var opts = createOpts(path, query);
 
     client.post(opts, query, function (err, req, res, body) {
-        t.ifError(err);
-        t.equal(res.statusCode, 202);
+        common.ifError(t, err);
+        t.equal(res.statusCode, 202, '202 Accepted');
         common.checkHeaders(t, res.headers);
-        t.ok(body);
+        t.ok(body, 'body is set');
         jobLocation = '/jobs/' + body.job_uuid;
+        t.ok(true, 'jobLocation: ' + jobLocation);
         t.done();
     });
 };
@@ -1193,7 +1211,7 @@ exports.add_tags = function (t) {
 
 exports.wait_new_tag_job = function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
-        t.ifError(err);
+        common.ifError(t, err);
         t.done();
     });
 };
@@ -1206,7 +1224,7 @@ exports.wait_new_tag = function (t) {
     };
 
     waitForValue(vmLocation, 'tags', tags, function (err) {
-        t.ifError(err);
+        common.ifError(t, err);
         t.done();
     });
 };
@@ -1216,8 +1234,8 @@ exports.get_tag = function (t) {
     var path = '/vms/' + newUuid + '/tags/role?owner_uuid=' + CUSTOMER;
 
     client.get(path, function (err, req, res, data) {
-        t.ifError(err);
-        t.equal(res.statusCode, 200);
+        common.ifError(t, err);
+        t.equal(res.statusCode, 200, '200 OK');
         common.checkHeaders(t, res.headers);
         t.ok(data);
         t.equal(data, 'database');
@@ -1232,11 +1250,12 @@ exports.delete_tag = function (t) {
     var opts = createOpts(path, { owner_uuid: CUSTOMER });
 
     client.del(opts, function (err, req, res, body) {
-        t.ifError(err);
-        t.equal(res.statusCode, 202);
+        common.ifError(t, err);
+        t.equal(res.statusCode, 202, '202 Accepted');
         common.checkHeaders(t, res.headers);
-        t.ok(body);
+        t.ok(body, 'body is set');
         jobLocation = '/jobs/' + body.job_uuid;
+        t.ok(true, 'jobLocation: ' + jobLocation);
         t.done();
     });
 };
@@ -1244,7 +1263,7 @@ exports.delete_tag = function (t) {
 
 exports.wait_delete_tag_job = function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
-        t.ifError(err);
+        common.ifError(t, err);
         t.done();
     });
 };
@@ -1256,7 +1275,7 @@ exports.wait_delete_tag = function (t) {
     };
 
     waitForValue(vmLocation, 'tags', tags, function (err) {
-        t.ifError(err);
+        common.ifError(t, err);
         t.done();
     });
 };
@@ -1268,11 +1287,12 @@ exports.delete_tags = function (t) {
     var opts = createOpts(path, { owner_uuid: CUSTOMER });
 
     client.del(opts, function (err, req, res, body) {
-        t.ifError(err);
-        t.equal(res.statusCode, 202);
+        common.ifError(t, err);
+        t.equal(res.statusCode, 202, '202 Accepted');
         common.checkHeaders(t, res.headers);
-        t.ok(body);
+        t.ok(body, 'body is set');
         jobLocation = '/jobs/' + body.job_uuid;
+        t.ok(true, 'jobLocation: ' + jobLocation);
         t.done();
     });
 };
@@ -1280,7 +1300,7 @@ exports.delete_tags = function (t) {
 
 exports.wait_delete_tags_job = function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
-        t.ifError(err);
+        common.ifError(t, err);
         t.done();
     });
 };
@@ -1288,7 +1308,7 @@ exports.wait_delete_tags_job = function (t) {
 
 exports.wait_delete_tags = function (t) {
     waitForValue(vmLocation, 'tags', {}, function (err) {
-        t.ifError(err);
+        common.ifError(t, err);
         t.done();
     });
 };
@@ -1308,11 +1328,12 @@ exports.set_tags = function (t) {
     var opts = createOpts(path, query);
 
     client.put(opts, query, function (err, req, res, body) {
-        t.ifError(err);
-        t.equal(res.statusCode, 202);
+        common.ifError(t, err);
+        t.equal(res.statusCode, 202, '202 Accepted');
         common.checkHeaders(t, res.headers);
-        t.ok(body);
+        t.ok(body, 'body is set');
         jobLocation = '/jobs/' + body.job_uuid;
+        t.ok(true, 'jobLocation: ' + jobLocation);
         t.done();
     });
 };
@@ -1320,7 +1341,7 @@ exports.set_tags = function (t) {
 
 exports.wait_set_tags_job = function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
-        t.ifError(err);
+        common.ifError(t, err);
         t.done();
     });
 };
@@ -1336,7 +1357,7 @@ exports.wait_set_tags = function (t) {
     };
 
     waitForValue(vmLocation, 'tags', tags, function (err) {
-        t.ifError(err);
+        common.ifError(t, err);
         t.done();
     });
 };
@@ -1351,11 +1372,12 @@ exports.snapshot_vm = function (t) {
     var opts = createOpts(vmLocation, params);
 
     client.post(opts, params, function (err, req, res, body) {
-        t.ifError(err);
-        t.equal(res.statusCode, 202);
+        common.ifError(t, err);
+        t.equal(res.statusCode, 202, '202 Accepted');
         common.checkHeaders(t, res.headers);
-        t.ok(body);
+        t.ok(body, 'body is set');
         jobLocation = '/jobs/' + body.job_uuid;
+        t.ok(true, 'jobLocation: ' + jobLocation);
         t.done();
     });
 };
@@ -1363,7 +1385,7 @@ exports.snapshot_vm = function (t) {
 
 exports.wait_snapshot_job = function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
-        t.ifError(err);
+        common.ifError(t, err);
         t.done();
     });
 };
@@ -1378,11 +1400,12 @@ exports.rollback_vm = function (t) {
     var opts = createOpts(vmLocation, params);
 
     client.post(opts, params, function (err, req, res, body) {
-        t.ifError(err);
-        t.equal(res.statusCode, 202);
+        common.ifError(t, err);
+        t.equal(res.statusCode, 202, '202 Accepted');
         common.checkHeaders(t, res.headers);
-        t.ok(body);
+        t.ok(body, 'body is set');
         jobLocation = '/jobs/' + body.job_uuid;
+        t.ok(true, 'jobLocation: ' + jobLocation);
         t.done();
     });
 };
@@ -1390,7 +1413,7 @@ exports.rollback_vm = function (t) {
 
 exports.wait_rollback_job = function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
-        t.ifError(err);
+        common.ifError(t, err);
         t.done();
     });
 };
@@ -1405,11 +1428,12 @@ exports.delete_snapshot = function (t) {
     var opts = createOpts(vmLocation, params);
 
     client.post(opts, params, function (err, req, res, body) {
-        t.ifError(err);
-        t.equal(res.statusCode, 202);
+        common.ifError(t, err);
+        t.equal(res.statusCode, 202, '202 Accepted');
         common.checkHeaders(t, res.headers);
-        t.ok(body);
+        t.ok(body, 'body is set');
         jobLocation = '/jobs/' + body.job_uuid;
+        t.ok(true, 'jobLocation: ' + jobLocation);
         t.done();
     });
 };
@@ -1417,7 +1441,7 @@ exports.delete_snapshot = function (t) {
 
 exports.wait_delete_snapshot_job = function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
-        t.ifError(err);
+        common.ifError(t, err);
         t.done();
     });
 };
@@ -1432,11 +1456,12 @@ exports.reprovision_vm = function (t) {
     var opts = createOpts(vmLocation, repdata);
 
     client.post(opts, repdata, function (err, req, res, body) {
-        t.ifError(err);
-        t.equal(res.statusCode, 202);
+        common.ifError(t, err);
+        t.equal(res.statusCode, 202, '202 Accepted');
         common.checkHeaders(t, res.headers);
-        t.ok(body);
+        t.ok(body, 'body is set');
         jobLocation = '/jobs/' + body.job_uuid;
+        t.ok(true, 'jobLocation: ' + jobLocation);
         t.done();
     });
 };
@@ -1444,7 +1469,7 @@ exports.reprovision_vm = function (t) {
 
 exports.wait_reprovision_job = function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
-        t.ifError(err);
+        common.ifError(t, err);
         t.done();
     });
 };
@@ -1454,11 +1479,12 @@ exports.destroy_vm = function (t) {
     var opts = createOpts(vmLocation);
 
     client.del(opts, function (err, req, res, body) {
-        t.ifError(err);
-        t.equal(res.statusCode, 202);
+        common.ifError(t, err);
+        t.equal(res.statusCode, 202, '202 Accepted');
         common.checkHeaders(t, res.headers);
-        t.ok(body);
+        t.ok(body, 'body is set');
         jobLocation = '/jobs/' + body.job_uuid;
+        t.ok(true, 'jobLocation: ' + jobLocation);
         t.done();
     });
 };
@@ -1466,7 +1492,7 @@ exports.destroy_vm = function (t) {
 
 exports.wait_destroyed_job = function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
-        t.ifError(err);
+        common.ifError(t, err);
         t.done();
     });
 };
@@ -1476,11 +1502,11 @@ exports.filter_jobs_ok = function (t) {
     var path = '/jobs?task=provision&vm_uuid=' + newUuid;
 
     client.get(path, function (err, req, res, body) {
-        t.ifError(err);
-        t.equal(res.statusCode, 200);
+        common.ifError(t, err);
+        t.equal(res.statusCode, 200, '200 OK');
         common.checkHeaders(t, res.headers);
-        t.ok(body);
-        t.ok(Array.isArray(body));
+        t.ok(body, 'body is set');
+        t.ok(Array.isArray(body), 'body is Array');
         t.equal(body.length, 1);
         t.done();
     });
@@ -1491,11 +1517,11 @@ exports.filter_vm_jobs_ok = function (t) {
     var path = '/vms/' + newUuid + '/jobs?task=reboot';
 
     client.get(path, function (err, req, res, body) {
-        t.ifError(err);
-        t.equal(res.statusCode, 200);
+        common.ifError(t, err);
+        t.equal(res.statusCode, 200, '200 OK');
         common.checkHeaders(t, res.headers);
-        t.ok(body);
-        t.ok(Array.isArray(body));
+        t.ok(body, 'body is set');
+        t.ok(Array.isArray(body), 'body is Array');
         t.equal(body.length, 1);
         t.done();
     });
@@ -1504,7 +1530,7 @@ exports.filter_vm_jobs_ok = function (t) {
 
 exports.get_audit = function (t) {
     client.get('/jobs?vm_uuid=' + newUuid, function (err, req, res, jobs) {
-        t.ifError(err);
+        common.ifError(t, err);
 
         var expectedNames = [
             'destroy', 'reprovision', 'delete-snapshot', 'rollback', 'snapshot',
@@ -1543,11 +1569,12 @@ exports.create_nonautoboot_vm = function (t) {
     var opts = createOpts('/vms', vm);
 
     client.post(opts, vm, function (err, req, res, body) {
-          t.ifError(err);
-          t.equal(res.statusCode, 202);
+          common.ifError(t, err);
+          t.equal(res.statusCode, 202, '202 Accepted');
           common.checkHeaders(t, res.headers);
           t.ok(body, 'vm ok');
           jobLocation = '/jobs/' + body.job_uuid;
+        t.ok(true, 'jobLocation: ' + jobLocation);
           newUuid = body.vm_uuid;
           vmLocation = '/vms/' + newUuid;
           t.done();
@@ -1557,7 +1584,7 @@ exports.create_nonautoboot_vm = function (t) {
 
 exports.get_nonautoboot_job = function (t) {
     client.get(jobLocation, function (err, req, res, body) {
-        t.ifError(err);
+        common.ifError(t, err);
         t.equal(res.statusCode, 200, 'GetJob 200 OK');
         common.checkHeaders(t, res.headers);
         t.ok(body, 'job ok');
@@ -1569,7 +1596,7 @@ exports.get_nonautoboot_job = function (t) {
 
 exports.wait_nonautoboot_provisioned_job = function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
-        t.ifError(err);
+        common.ifError(t, err);
         t.done();
     });
 };
@@ -1584,9 +1611,10 @@ exports.change_autoboot = function (t) {
     var opts = createOpts(vmLocation, params);
 
     client.post(opts, params, function (err, req, res, body) {
-        t.ifError(err);
-        t.equal(res.statusCode, 202);
+        common.ifError(t, err);
+        t.equal(res.statusCode, 202, '202 Accepted');
         jobLocation = '/jobs/' + body.job_uuid;
+        t.ok(true, 'jobLocation: ' + jobLocation);
         t.done();
     });
 };
@@ -1594,7 +1622,7 @@ exports.change_autoboot = function (t) {
 
 exports.wait_autoboot_update_job = function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
-        t.ifError(err);
+        common.ifError(t, err);
         t.done();
     });
 };
@@ -1604,7 +1632,7 @@ exports.get_nonautoboot_vm_ok = function (t) {
     var path = '/vms/' + newUuid + '?owner_uuid=' + CUSTOMER;
 
     client.get(path, function (err, req, res, body) {
-        t.ifError(err);
+        common.ifError(t, err);
         t.equal(res.statusCode, 200, '200 OK');
         common.checkHeaders(t, res.headers);
         t.ok(body, 'vm ok');
@@ -1619,11 +1647,12 @@ exports.destroy_nonautoboot_vm = function (t) {
     var opts = createOpts(vmLocation);
 
     client.del(opts, function (err, req, res, body) {
-        t.ifError(err);
-        t.equal(res.statusCode, 202);
+        common.ifError(t, err);
+        t.equal(res.statusCode, 202, '202 Accepted');
         common.checkHeaders(t, res.headers);
-        t.ok(body);
+        t.ok(body, 'body is set');
         jobLocation = '/jobs/' + body.job_uuid;
+        t.ok(true, 'jobLocation: ' + jobLocation);
         t.done();
     });
 };
@@ -1631,7 +1660,7 @@ exports.destroy_nonautoboot_vm = function (t) {
 
 exports.wait_nonautoboot_destroyed_job = function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
-        t.ifError(err);
+        common.ifError(t, err);
         t.done();
     });
 };
@@ -1650,11 +1679,12 @@ exports.create_vm_with_package = function (t) {
     var opts = createOpts('/vms', vm);
 
     client.post(opts, vm, function (err, req, res, body) {
-          t.ifError(err);
-          t.equal(res.statusCode, 202);
+          common.ifError(t, err);
+          t.equal(res.statusCode, 202, '202 Accepted');
           common.checkHeaders(t, res.headers);
           t.ok(body, 'vm ok');
           jobLocation = '/jobs/' + body.job_uuid;
+          t.ok(true, 'jobLocation: ' + jobLocation);
           newUuid = body.vm_uuid;
           vmLocation = '/vms/' + newUuid;
           t.done();
@@ -1664,7 +1694,7 @@ exports.create_vm_with_package = function (t) {
 
 exports.wait_provisioned_with_package_job = function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
-        t.ifError(err);
+        common.ifError(t, err);
         t.done();
     });
 };
@@ -1680,8 +1710,8 @@ exports.resize_package_up_fail = function (t) {
     var largerPkg;
 
     client.get(path, function (err, req, res, body) {
-        t.ifError(err);
-        t.equal(res.statusCode, 200);
+        common.ifError(t, err);
+        t.equal(res.statusCode, 200, '200 OK');
         body.forEach(function (m) {
             // Any non-null package works
             if (m['billing_id'] &&
@@ -1717,13 +1747,13 @@ exports.find_new_package_ok = function (t) {
     var path = '/vms?ram=' + 256 + '&owner_uuid=' + CUSTOMER;
 
     client.get(path, function (err, req, res, body) {
-        t.ifError(err);
-        t.equal(res.statusCode, 200);
+        common.ifError(t, err);
+        t.equal(res.statusCode, 200, '200 OK');
         common.checkHeaders(t, res.headers);
         t.ok(res.headers['x-joyent-resource-count']);
-        t.ok(body);
-        t.ok(Array.isArray(body));
-        t.ok(body.length);
+        t.ok(body, 'body is set');
+        t.ok(Array.isArray(body), 'body is Array');
+        t.ok(body.length > 0, 'body Array has more than 0 elements');
         body.forEach(function (m) {
             // Any non-null package works
             if (m['billing_id'] &&
@@ -1742,9 +1772,10 @@ exports.resize_package = function (t) {
     var opts = createOpts(vmLocation + '?force=true', params);
 
     client.post(opts, params, function (err, req, res, body) {
-        t.ifError(err);
-        t.equal(res.statusCode, 202);
+        common.ifError(t, err);
+        t.equal(res.statusCode, 202, '202 Accepted');
         jobLocation = '/jobs/' + body.job_uuid;
+        t.ok(true, 'jobLocation: ' + jobLocation);
         t.done();
     });
 };
@@ -1752,7 +1783,7 @@ exports.resize_package = function (t) {
 
 exports.wait_resize_package_job = function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
-        t.ifError(err);
+        common.ifError(t, err);
         t.done();
     });
 };
@@ -1764,8 +1795,8 @@ exports.resize_package_down = function (t) {
     var smallerPkg;
 
     client.get(path, function (err, req, res, body) {
-        t.ifError(err);
-        t.equal(res.statusCode, 200);
+        common.ifError(t, err);
+        t.equal(res.statusCode, 200, '200 OK');
         body.forEach(function (m) {
             // Any non-null package works
             if (m['billing_id'] &&
@@ -1779,9 +1810,10 @@ exports.resize_package_down = function (t) {
         var opts = createOpts(vmLocation, params);
 
         return client.post(opts, params, function (err2, req2, res2, body2) {
-            t.ifError(err2);
-            t.equal(res.statusCode, 200);
+            common.ifError(t, err2);
+            t.equal(res.statusCode, 200, '200 OK');
             jobLocation = '/jobs/' + body2.job_uuid;
+            t.ok(true, 'jobLocation: ' + jobLocation);
             t.done();
         });
     });
@@ -1790,7 +1822,7 @@ exports.resize_package_down = function (t) {
 
 exports.wait_resize_package_job_2 = function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
-        t.ifError(err);
+        common.ifError(t, err);
         t.done();
     });
 };
@@ -1800,11 +1832,12 @@ exports.destroy_vm_with_package = function (t) {
     var opts = createOpts(vmLocation);
 
     client.del(opts, function (err, req, res, body) {
-        t.ifError(err);
-        t.equal(res.statusCode, 202);
+        common.ifError(t, err);
+        t.equal(res.statusCode, 202, '202 Accepted');
         common.checkHeaders(t, res.headers);
-        t.ok(body);
+        t.ok(body, 'body is set');
         jobLocation = '/jobs/' + body.job_uuid;
+        t.ok(true, 'jobLocation: ' + jobLocation);
         t.done();
     });
 };
@@ -1812,7 +1845,7 @@ exports.destroy_vm_with_package = function (t) {
 
 exports.wait_destroyed_with_package_job = function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
-        t.ifError(err);
+        common.ifError(t, err);
         t.done();
     });
 };
@@ -1835,12 +1868,13 @@ exports.provision_network_names = function (t) {
     var opts = createOpts('/vms', vm);
 
     client.post(opts, vm, function (err, req, res, body) {
-        t.ifError(err);
-        t.equal(res.statusCode, 202);
+        common.ifError(t, err);
+        t.equal(res.statusCode, 202, '202 Accepted');
         common.checkHeaders(t, res.headers);
         t.ok(body, 'vm ok');
 
         jobLocation = '/jobs/' + body.job_uuid;
+        t.ok(true, 'jobLocation: ' + jobLocation);
         vmLocation = '/vms/' + body.vm_uuid;
         t.done();
     });
@@ -1849,7 +1883,7 @@ exports.provision_network_names = function (t) {
 
 exports.wait_provision_network_names = function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
-        t.ifError(err);
+        common.ifError(t, err);
         t.done();
     });
 };
@@ -1859,11 +1893,12 @@ exports.destroy_provision_network_name_vm = function (t) {
     var opts = createOpts(vmLocation);
 
     client.del(opts, function (err, req, res, body) {
-        t.ifError(err);
-        t.equal(res.statusCode, 202);
+        common.ifError(t, err);
+        t.equal(res.statusCode, 202, '202 Accepted');
         common.checkHeaders(t, res.headers);
-        t.ok(body);
+        t.ok(body, 'body is set');
         jobLocation = '/jobs/' + body.job_uuid;
+        t.ok(true, 'jobLocation: ' + jobLocation);
         t.done();
     });
 };
@@ -1968,10 +2003,11 @@ exports.create_docker_vm = function (t) {
     var opts = createOpts('/vms', vm);
 
     client.post(opts, vm, function (err, req, res, body) {
-        t.ifError(err);
-        t.equal(res.statusCode, 202);
+        common.ifError(t, err);
+        t.equal(res.statusCode, 202, '202 Accepted');
 
         jobLocation = '/jobs/' + body.job_uuid;
+        t.ok(true, 'jobLocation: ' + jobLocation);
         newUuid = body.vm_uuid;
         vmLocation = '/vms/' + newUuid;
 
@@ -1982,7 +2018,7 @@ exports.create_docker_vm = function (t) {
 
 exports.wait_provisioned_docker_job = function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
-        t.ifError(err);
+        common.ifError(t, err);
         t.done();
     });
 };
@@ -2000,7 +2036,7 @@ exports.add_docker_tag = function (t) {
 
     client.post(opts, query, function (err, req, res, body) {
         t.ok(err);
-        t.equal(res.statusCode, 409);
+        t.equal(res.statusCode, 409, '409 Conflict');
         t.equal(err.restCode, 'ValidationFailed');
         t.deepEqual(body, {
             code: 'ValidationFailed',
@@ -2030,7 +2066,7 @@ exports.set_docker_tag_1 = function (t) {
 
     client.put(opts, query, function (err, req, res, body) {
         t.ok(err);
-        t.equal(res.statusCode, 409);
+        t.equal(res.statusCode, 409, '409 Conflict');
         t.equal(err.restCode, 'ValidationFailed');
 
         t.deepEqual(body, {
@@ -2060,7 +2096,7 @@ exports.set_docker_tag_2 = function (t) {
 
     client.put(opts, query, function (err, req, res, body) {
         t.ok(err);
-        t.equal(res.statusCode, 409);
+        t.equal(res.statusCode, 409, '409 Conflict');
         t.equal(err.restCode, 'ValidationFailed');
 
         t.deepEqual(body, {
@@ -2091,7 +2127,7 @@ exports.update_docker_vm = function (t) {
 
     client.post(opts, params, function (err, req, res, body) {
         t.ok(err);
-        t.equal(res.statusCode, 409);
+        t.equal(res.statusCode, 409, '409 Conflict');
         t.equal(err.restCode, 'ValidationFailed');
 
         t.deepEqual(body, {
@@ -2118,7 +2154,7 @@ exports.delete_docker_tag = function (t) {
 
     client.del(opts, function (err, req, res, body) {
         t.ok(err);
-        t.equal(res.statusCode, 409);
+        t.equal(res.statusCode, 409, '409 Conflict');
         t.equal(err.restCode, 'ValidationFailed');
 
         t.deepEqual(body, {
@@ -2144,7 +2180,7 @@ exports.delete_docker_all_tags = function (t) {
 
     client.del(opts, function (err, req, res, body) {
         t.ok(err);
-        t.equal(res.statusCode, 409);
+        t.equal(res.statusCode, 409, '409 Conflict');
         t.equal(err.restCode, 'ValidationFailed');
 
         t.deepEqual(body, {
@@ -2167,11 +2203,12 @@ exports.destroy_docker_vm = function (t) {
     var opts = createOpts(vmLocation);
 
     client.del(opts, function (err, req, res, body) {
-        t.ifError(err);
-        t.equal(res.statusCode, 202);
+        common.ifError(t, err);
+        t.equal(res.statusCode, 202, '202 Accepted');
         common.checkHeaders(t, res.headers);
-        t.ok(body);
+        t.ok(body, 'body is set');
         jobLocation = '/jobs/' + body.job_uuid;
+        t.ok(true, 'jobLocation: ' + jobLocation);
         t.done();
     });
 };

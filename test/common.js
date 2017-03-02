@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright (c) 2014, Joyent, Inc.
+ * Copyright 2017 Joyent, Inc.
  */
 
 var assert = require('assert-plus');
@@ -126,11 +126,19 @@ function checkHeaders(t, headers) {
     // t.equal(headers['x-api-version'], '7.0.0');
 }
 
+/*
+ * like t.ifError with a printed message
+ */
+function ifError(t, err) {
+    t.ok(!err, err ? ('error: ' + err.message) : 'no error');
+}
+
 module.exports = {
     setUp: setUp,
     checkHeaders: checkHeaders,
     testListInvalidParams: testListInvalidParams,
     testListValidParams: testListValidParams,
     config: config,
+    ifError: ifError,
     VMS_LIST_ENDPOINT: VMS_LIST_ENDPOINT
 };
