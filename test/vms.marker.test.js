@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright (c) 2016, Joyent, Inc.
+ * Copyright (c) 2017, Joyent, Inc.
  */
 
 var assert = require('assert-plus');
@@ -15,9 +15,11 @@ var url = require('url');
 
 var common = require('./common');
 var MORAY = require('../lib/apis/moray');
+var morayTest = require('./lib/moray');
 var sortValidation = require('../lib/validation/sort.js');
 var vmCommon = require('../lib/common/vm-common.js');
 var vmTest = require('./lib/vm');
+
 
 var client;
 
@@ -71,7 +73,8 @@ function testMarkerPagination(options, t, callback) {
     var NB_TEST_VMS_TO_CREATE = options.nbTestVms || 200;
     var LIMIT = NB_TEST_VMS_TO_CREATE / 2;
 
-    var moray = new MORAY(common.config.moray);
+    var moray = morayTest.createMorayClient();
+
     moray.connect();
 
     var vmsCreationParams = options.vmsCreationParams || {};
@@ -296,7 +299,7 @@ exports.list_vms_marker_ok = function (t) {
  * Cleanup test VMs created by the previous test (list_vms_marker_ok).
  */
 exports.delete_test_vms_marker_ok = function (t) {
-    var moray = new MORAY(common.config.moray);
+    var moray = morayTest.createMorayClient();
     moray.connect();
 
     moray.once('moray-ready', function () {
@@ -326,7 +329,7 @@ exports.list_vms_marker_and_sort_on_uuid_asc_ok = function (t) {
  * (list_vms_marker_and_sort_on_uuid_asc_ok).
  */
 exports.delete_test_vms_marker_and_sort_on_uuid_asc_ok = function (t) {
-    var moray = new MORAY(common.config.moray);
+    var moray = morayTest.createMorayClient();
     moray.connect();
 
     moray.once('moray-ready', function () {
@@ -356,7 +359,7 @@ exports.list_vms_marker_and_sort_on_uuid_desc_ok = function (t) {
  * (list_vms_marker_and_sort_on_uuid_desc_ok).
  */
 exports.delete_test_vms_marker_and_sort_on_uuid_desc_ok = function (t) {
-    var moray = new MORAY(common.config.moray);
+    var moray = morayTest.createMorayClient();
     moray.connect();
 
     moray.once('moray-ready', function () {
@@ -479,7 +482,7 @@ function createDeleteVMsTest(sortKey, sortOrder, exports) {
     var clearVmsTestName = 'delete_test_vms_marker_with_identical_' + sortKey +
             '_' + sortOrder + '_ok';
     exports[clearVmsTestName] = function (t) {
-        var moray = new MORAY(common.config.moray);
+        var moray = morayTest.createMorayClient();
         moray.connect();
 
         moray.once('moray-ready', function () {

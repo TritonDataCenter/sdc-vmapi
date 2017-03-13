@@ -1,10 +1,22 @@
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+
+/*
+ * Copyright (c) 2017, Joyent, Inc.
+ */
+
 var libuuid = require('libuuid');
 var mod_vmapiClient = require('sdc-clients').VMAPI;
 var path = require('path');
 var vasync = require('vasync');
 
+var changefeedTest = require('../lib/changefeed');
 var configLoader = require('../../lib/config-loader');
 var MORAY = require('../../lib/apis/moray');
+var morayTest = require('../lib/moray');
 var vmapi = require('../../lib/vmapi');
 
 var UNIQUE_ENDPOINT_PATH = '/' + libuuid.create();
@@ -32,7 +44,7 @@ vasync.pipeline({funcs: [
     function initMoray(arg, next) {
         console.log('initializing moray...');
 
-        morayApi = new MORAY(CONFIG.moray);
+        morayApi = morayTest.createMorayClient();
         morayApi.connect();
 
         morayApi.on('moray-ready', function onMorayReady() {
@@ -47,10 +59,11 @@ vasync.pipeline({funcs: [
             apiClients: {
                 wfapi: mockedWfapiClient
             },
-            moray: morayApi
+            moray: morayApi,
+            changefeedPublisher: changefeedTest.createNoopCfPublisher()
         });
 
-        vmapiService.init(next);
+        next();
     },
     function addThrowingHandler(arg, next) {
         console.log('adding throwing restify handler...');

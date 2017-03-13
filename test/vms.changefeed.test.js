@@ -635,3 +635,98 @@ exports.put_new_vms = function (t) {
     });
 
 };
+
+/*
+ * This test is a regression test for https://smartos.org/bugview/ZAPI-770. It
+ * purposely provisions a VM on a non-existent network so that the provisioning
+ * workflow fails. It then tests that at least one changefeed event is emitted
+ * and that after this event was emitted the newly created VM's state is
+ * 'failed'. Before the fix for https://smartos.org/bugview/ZAPI-770, no
+ * changefeed event would be emitted for this VM.
+ *
+ * Unfortunately this test relies on the implementation detail that sending a
+ * request to VMAPI's CreateVm endpoint with a non-existent network creates a
+ * workflow and doesn't error right away. As a result, this test might not work
+ * as expected in the future, and might not prevent further regressions.
+ */
+exports.create_vm_that_fails_provisioning_workflow = function (t) {
+
+    var listener = changefeed.createListener(listenerOpts);
+    var nonExistentNetworkUuid = uuid.create();
+    var vmParams = {
+        owner_uuid: CUSTOMER,
+        image_uuid: IMAGE,
+        server_uuid: SERVER.uuid,
+        networks: [ { uuid: nonExistentNetworkUuid } ],
+        brand: 'joyent-minimal',
+        billing_id: '00000000-0000-0000-0000-000000000000',
+        ram: 64,
+        quota: 10,
+        creator_uuid: CUSTOMER
+    };
+    var vmLocation;
+
+    var vmCreationOpts = createOpts('/vms', vmParams);
+
+    VM = null;
+
+    listener.register();
+
+    listener.on('bootstrap', function onCfBootstrap() {
+        client.post(vmCreationOpts, vmParams,
+            function onVmCreated(vmCreateErr, req, res, vmCreationObj) {
+                common.ifError(t, vmCreateErr);
+
+                t.equal(res.statusCode, 202, '202 Accepted');
+                common.checkHeaders(t, res.headers);
+
+                t.ok(vmCreationObj, 'vm ok');
+
+                jobLocation = '/jobs/' + vmCreationObj.job_uuid;
+                vmLocation = '/vms/' + vmCreationObj.vm_uuid;
+
+                // GetVm should not fail after provision has been queued
+                client.get(vmLocation,
+                    function onGetVm(vmGetErr, vmGetReq, vmGetRes, vm) {
+                        common.ifError(t, vmGetErr);
+                        t.equal(vmGetRes.statusCode, 200, '200 OK');
+                        common.checkHeaders(t, vmGetRes.headers);
+                        t.ok(vm, 'provisioning vm ok');
+                        VM = vm;
+                    });
+            });
+    });
+
+    listener.on('readable', function onCfListenerReadable() {
+        var changeItem;
+        var changeKind;
+        var expectedStates = ['provisioning', 'failed'];
+
+        while ((changeItem = listener.read()) !== null) {
+            changeKind = changeItem.changeKind;
+            if (VM && changeItem.changedResourceId === VM.uuid &&
+                changeKind.subResources &&
+                changeKind.subResources.indexOf('state') !== -1) {
+                t.ok(true, 'state received');
+
+                client.get(vmLocation,
+                    function onGetVm(vmGetErr, vmGetReq, vmGetRes, vm) {
+                        common.ifError(t, vmGetErr);
+
+                        t.equal(vmGetRes.statusCode, 200, '200 OK');
+                        common.checkHeaders(t, vmGetRes.headers);
+
+                        t.ok(vm, 'provisioning vm ok');
+                        t.ok(expectedStates.indexOf(vm.state) !== -1,
+                            'VM is in one of the following states: ' +
+                                expectedStates.join(', '));
+                        if (vm.state === 'failed') {
+                            t.ok(true, 'VM eventually reached state failed');
+                            listener._endSocket();
+                            t.done();
+                        }
+                    });
+            }
+        }
+    });
+};

@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright (c) 2016, Joyent, Inc.
+ * Copyright (c) 2017, Joyent, Inc.
  */
 
 var assert = require('assert-plus');
@@ -57,7 +57,7 @@ function createTestVm(moray, options, vmParams, callback) {
     vmParams = common.translateVm(vmParams, false);
     log.debug({vmParams: vmParams}, 'params after translation');
 
-    moray.putVm(vmParams.uuid, vmParams, function (err) {
+    moray.putVm(vmParams.uuid, vmParams, {}, function (err) {
         if (err) {
             log.error({ err: err, vmParams: vmParams },
                 'Error storing VM %s in moray', vmParams.uuid);

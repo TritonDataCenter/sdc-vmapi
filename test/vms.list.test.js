@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright (c) 2016, Joyent, Inc.
+ * Copyright (c) 2017, Joyent, Inc.
  */
 
 var assert = require('assert-plus');
@@ -13,7 +13,7 @@ var assert = require('assert-plus');
 var async = require('async');
 
 var common = require('./common');
-
+var morayTest = require('./lib/moray');
 var validation = require('../lib/common/validation');
 var vmTest = require('./lib/vm');
 
@@ -309,7 +309,7 @@ function testValidLimit(limit, t, callback) {
         EXPECTED_NB_VMS_RETURNED = NB_TEST_VMS_TO_CREATE;
     }
 
-    var moray = new MORAY(common.config.moray);
+    var moray = morayTest.createMorayClient();
     moray.connect();
 
     moray.once('moray-ready', function () {
@@ -380,7 +380,7 @@ exports.list_vms_valid_limit = function (t) {
  * (list_vms_valid_limit).
  */
 exports.delete_list_vms_valid_limit = function (t) {
-    var moray = new MORAY(common.config.moray);
+    var moray = morayTest.createMorayClient();
     moray.connect();
 
     moray.once('moray-ready', function () {

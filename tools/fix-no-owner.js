@@ -12,15 +12,19 @@
 
 var async = require('async');
 var bunyan = require('bunyan');
+var changefeed = require('changefeed');
 var fs = require('fs');
+var jsprim = require('jsprim');
 var path = require('path');
 var restify = require('restify');
 var util = require('util');
+var vasync = require('vasync');
 
 var common = require('../lib/common');
 var MORAY = require('../lib/apis/moray');
 var WFAPI = require('../lib/apis/wfapi');
 
+var changefeedPublisher;
 var config;
 
 // If you don't pass this flag the script will read in test mode
@@ -43,6 +47,8 @@ function loadConfig() {
 }
 
 config = loadConfig();
+var moray;
+var wfapi;
 
 var log = this.log = new bunyan({
     name: 'fix-no-owner',
@@ -51,20 +57,35 @@ var log = this.log = new bunyan({
 });
 config.wfapi.log = log;
 
-var moray = new MORAY(config.moray);
-var wfapi = new WFAPI(config.wfapi);
+vasync.pipeline({funcs: [
+    function initChangefeed(ctx, next) {
+        var changefeedOptions;
 
-moray.connect();
-moray.once('moray-ready', function () {
+        changefeedOptions = jsprim.deepCopy(config.changefeed);
+        changefeedOptions.log = log.child({ component: 'changefeed' },
+            true);
+
+        changefeedPublisher = changefeed.createPublisher(changefeedOptions);
+        changefeedPublisher.on('moray-ready', next);
+    },
+    function initMoray(ctx, next) {
+        var morayConfig = jsprim.deepCopy(config.moray);
+        morayConfig.changefeedPublisher = changefeedPublisher;
+        moray = new MORAY(morayConfig);
+        moray.connect();
+        moray.once('moray-ready', next);
+    },
+    function initWfApi(ctx, next) {
+        wfapi = new WFAPI(config.wfapi);
+        wfapi.connect();
+        next();
+    }
+]}, function onInitDone(initErr) {
     var listVmsParams = { query: '(&(state=destroyed)!(owner_uuid=*))' };
-
-    log.info('Connected to moray, listing all VMs');
-
-    wfapi.connect();
-
     moray.listVms(listVmsParams, function onListVms(err, vms) {
         if (err) {
             log.error({err: err}, 'Error when listing VMs');
+            changefeedPublisher.stop();
             moray.close();
         } else {
             log.info('All VMs listed successfully, processing them...');
@@ -79,6 +100,7 @@ moray.once('moray-ready', function () {
                     log.info('%s corrupt VMs have been fixed', vms.length);
                 }
 
+                changefeedPublisher.stop();
                 moray.close();
             });
         }
@@ -89,6 +111,8 @@ moray.once('moray-ready', function () {
         // Each VM should only have one destroy job
         // Just be careful and re-check the job is a destroy task
         wfapi.listJobs(listJobsParams, function (err, jobs) {
+            var fixedVm = jsprim.deepCopy(vm);
+
             if (err) {
                 return next(err);
             }
@@ -108,14 +132,14 @@ moray.once('moray-ready', function () {
                     new Error('Expecting owner_uuid for VM ' + vm.uuid));
             }
 
-            vm.owner_uuid = job.params.owner_uuid;
-            var m = common.translateVm(vm, false);
+            fixedVm.owner_uuid = job.params.owner_uuid;
+            fixedVm = common.translateVm(fixedVm, false);
             if (!force) {
-                log.debug({ vm: m }, 'Going to fix VM %s', vm.uuid);
+                log.debug({ vm: fixedVm }, 'Going to fix VM %s', vm.uuid);
                 return next();
             }
 
-            moray.putVm(vm.uuid, m, function (merr) {
+            moray.putVm(vm.uuid, fixedVm, vm, function (merr) {
                 if (merr) {
                     return next(merr);
                 }

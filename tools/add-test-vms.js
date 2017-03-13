@@ -80,7 +80,20 @@ function addTestVms(nbVms, concurrency, data) {
     assert.ok(concurrency > 0, 'concurrency must be a positive number');
 
     assert.optionalObject(data, 'data must be an optional object');
-    var moray = new MORAY(config.moray);
+    var morayConfig = jsprim.deepCopy(config.moray);
+
+    var noopChangefeedPublisher = {
+        publish: function publish(item, cb) {
+            assert.object(item, 'item');
+            assert.func(cb, 'cb');
+            cb();
+        }
+    };
+
+    morayConfig.changefeedPublisher = noopChangefeedPublisher;
+    morayConfig.reconnect = true;
+
+    var moray = new MORAY(morayConfig);
 
     data = data || {};
 

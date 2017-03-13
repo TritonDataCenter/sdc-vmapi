@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright (c) 2015, Joyent, Inc.
+ * Copyright (c) 2017, Joyent, Inc.
  */
 
 // The goal of this test is to make sure that, when sending a DELETE request
@@ -18,6 +18,7 @@ var libuuid = require('libuuid');
 
 var common = require('./common');
 var moray = require('../lib/apis/moray');
+var morayTest = require('./lib/moray');
 var vmTest = require('./lib/vm');
 
 var client;
@@ -114,7 +115,7 @@ exports.delete_provisioning_vm = function (t) {
 };
 
 exports.cleanup_test_vms = function (t) {
-    var morayClient = new moray(common.config.moray);
+    var morayClient = morayTest.createMorayClient();
     morayClient.connect();
 
     morayClient.once('moray-ready', function () {
