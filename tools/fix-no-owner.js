@@ -5,25 +5,23 @@
  */
 
 /*
- * Copyright (c) 2014, Joyent, Inc.
+ * Copyright (c) 2017, Joyent, Inc.
  */
 
 // Backfill image_uuid for KVM VMs
-var path = require('path');
+
+var async = require('async');
+var bunyan = require('bunyan');
 var fs = require('fs');
+var path = require('path');
+var restify = require('restify');
 var util = require('util');
+
+var common = require('../lib/common');
 var MORAY = require('../lib/apis/moray');
 var WFAPI = require('../lib/apis/wfapi');
-var common = require('../lib/common');
 
-var config_file = path.resolve(__dirname, '..', 'config.json');
-var bunyan = require('bunyan');
-var restify = require('restify');
-var async = require('async');
-var levels = [bunyan.TRACE, bunyan.DEBUG, bunyan.INFO,
-              bunyan.WARN, bunyan.ERROR, bunyan.FATAL];
 var config;
-var log;
 
 // If you don't pass this flag the script will read in test mode
 var force = (process.argv[2] === '-f' ? true : false);
@@ -32,22 +30,22 @@ var force = (process.argv[2] === '-f' ? true : false);
  * Loads and parse the configuration file at config.json
  */
 function loadConfig() {
-    var configPath = path.join(__dirname, '..', 'config.json');
+    var CONFIG_FILE_PATH = path.join(__dirname, '..', 'config.json');
 
-    if (!fs.existsSync(configPath)) {
-        console.error('Config file not found: ' + configPath +
+    if (!fs.existsSync(CONFIG_FILE_PATH)) {
+        console.error('Config file not found: ' + CONFIG_FILE_PATH +
           ' does not exist. Aborting.');
         process.exit(1);
     }
 
-    var theConfig = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+    var theConfig = JSON.parse(fs.readFileSync(CONFIG_FILE_PATH, 'utf-8'));
     return theConfig;
 }
 
-var config = loadConfig();
+config = loadConfig();
 
-log = this.log = new bunyan({
-    name: 'fix-now-owner',
+var log = this.log = new bunyan({
+    name: 'fix-no-owner',
     level: config.logLevel || 'debug',
     serializers: restify.bunyan.serializers
 });
@@ -58,11 +56,19 @@ var wfapi = new WFAPI(config.wfapi);
 
 moray.connect();
 moray.once('moray-ready', function () {
-    wfapi.connect(onWfapi);
+    var listVmsParams = { query: '(&(state=destroyed)!(owner_uuid=*))' };
 
-    function onWfapi() {
-        var params = { query: '(&(state=destroyed)!(owner_uuid=*))' };
-        moray.listVms(params, function (err, vms) {
+    log.info('Connected to moray, listing all VMs');
+
+    wfapi.connect();
+
+    moray.listVms(listVmsParams, function onListVms(err, vms) {
+        if (err) {
+            log.error({err: err}, 'Error when listing VMs');
+            moray.close();
+        } else {
+            log.info('All VMs listed successfully, processing them...');
+
             async.mapSeries(vms, fixVM, function (ferr) {
                 if (ferr) {
                     log.error({ err: ferr }, 'Could not fix all VMs');
@@ -72,15 +78,17 @@ moray.once('moray-ready', function () {
                     }
                     log.info('%s corrupt VMs have been fixed', vms.length);
                 }
+
+                moray.close();
             });
-        });
-    }
+        }
+    });
 
     function fixVM(vm, next) {
-        var params = { vm_uuid: vm.uuid, task: 'destroy' };
+        var listJobsParams = { vm_uuid: vm.uuid, task: 'destroy' };
         // Each VM should only have one destroy job
         // Just be careful and re-check the job is a destroy task
-        wfapi.listJobs(params, function (err, jobs) {
+        wfapi.listJobs(listJobsParams, function (err, jobs) {
             if (err) {
                 return next(err);
             }
@@ -117,4 +125,3 @@ moray.once('moray-ready', function () {
         });
     }
 });
-

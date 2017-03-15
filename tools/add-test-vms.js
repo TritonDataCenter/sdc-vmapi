@@ -6,7 +6,7 @@
  */
 
 /*
- * Copyright (c) 2016, Joyent, Inc.
+ * Copyright (c) 2017, Joyent, Inc.
  */
 
 /*
@@ -18,14 +18,14 @@
  * Run node add-test-vms.js -h for usage.
  */
 
-var path = require('path');
-var fs = require('fs');
-
-var dashdash = require('dashdash');
-var libuuid = require('libuuid');
-var bunyan = require('bunyan');
-var restify = require('restify');
 var assert = require('assert-plus');
+var bunyan = require('bunyan');
+var dashdash = require('dashdash');
+var fs = require('fs');
+var jsprim = require('jsprim');
+var libuuid = require('libuuid');
+var path = require('path');
+var restify = require('restify');
 
 var testVm = require('../test/lib/vm');
 var configFileLoader = require('../lib/config-loader');
@@ -37,14 +37,11 @@ var DEFAULT_CONCURRENCY = 10;
 var configFilePath = path.join(__dirname, '..', 'config.json');
 var config = configFileLoader.loadConfig(configFilePath);
 
-log = this.log = new bunyan({
+var log = this.log = new bunyan({
     name: 'add-test-vms',
     level: process.env.LOG_LEVEL || config.logLevel || 'debug',
     serializers: restify.bunyan.serializers
 });
-
-config.moray.reconnect = true;
-var moray = new MORAY(config.moray);
 
 var cmdlineOptions = [
     {
@@ -83,19 +80,21 @@ function addTestVms(nbVms, concurrency, data) {
     assert.ok(concurrency > 0, 'concurrency must be a positive number');
 
     assert.optionalObject(data, 'data must be an optional object');
+    var moray = new MORAY(config.moray);
+
     data = data || {};
 
     moray.connect();
     moray.once('moray-ready', function () {
         log.debug('Moray ready!');
 
-        log.debug('Number of test VMs to create:', nbTestVmsToCreate);
-        assert.finite(nbTestVmsToCreate);
+        log.debug('Number of test VMs to create:', nbVms);
+        assert.finite(nbVms);
 
         log.debug('concurrency:', concurrency);
         assert.finite(concurrency);
 
-        testVm.createTestVMs(nbTestVmsToCreate, moray, {
+        testVm.createTestVMs(nbVms, moray, {
             concurrency: concurrency,
             log: log
         }, data, function allVmsCreated(err) {
@@ -112,10 +111,10 @@ function addTestVms(nbVms, concurrency, data) {
 }
 
 var cmdlineOptionsParser = dashdash.createParser({options: cmdlineOptions});
-var nbTestVmsToCreate;
-var concurrency;
-var testVmsData;
+var concurrencyParam;
+var nbVmsParam;
 var parsedCmdlineOpts;
+var vmsDataParam;
 
 try {
     parsedCmdlineOpts = cmdlineOptionsParser.parse(process.argv);
@@ -123,20 +122,20 @@ try {
     if (parsedCmdlineOpts.help) {
         printUsage(cmdlineOptionsParser);
     } else {
-        nbTestVmsToCreate = Number(parsedCmdlineOpts.n) ||
+        nbVmsParam = Number(parsedCmdlineOpts.n) ||
             DEFAULT_NB_TEST_VMS_TO_CREATE;
 
-        concurrency = Number(parsedCmdlineOpts.c) ||
+        concurrencyParam = Number(parsedCmdlineOpts.c) ||
             DEFAULT_CONCURRENCY;
 
         if (parsedCmdlineOpts.d) {
-            testVmsData = JSON.parse(parsedCmdlineOpts.d);
+            vmsDataParam = JSON.parse(parsedCmdlineOpts.d);
         }
 
-        addTestVms(nbTestVmsToCreate, concurrency, testVmsData);
+        addTestVms(nbVmsParam, concurrencyParam, vmsDataParam);
     }
 } catch (err) {
-    console.error('Could not parse command line options');
+    console.error('Could not parse command line options, error:', err);
     printUsage(cmdlineOptionsParser);
     process.exit(1);
 }

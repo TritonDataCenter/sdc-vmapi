@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright (c) 2016, Joyent, Inc.
+ * Copyright (c) 2017, Joyent, Inc.
  */
 
 var path = require('path');
@@ -64,7 +64,7 @@ function getMorayClient(callback) {
 
 function updateBucket(callback) {
     getMorayClient(function (mclient) {
-        morayClient = mclient;
+        var morayClient = mclient;
         morayClient.getBucket(BUCKET.name, function (err, bck) {
             if (err) {
                 return callback(err);
@@ -91,4 +91,3 @@ updateBucket(function (updateErr) {
     log.info('"docker" index has been successfully added');
     process.exit(0);
 });
-

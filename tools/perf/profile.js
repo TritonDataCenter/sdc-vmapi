@@ -1,4 +1,3 @@
-#!/usr//bin/env node
 /*
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -6,7 +5,7 @@
  */
 
 /*
- * Copyright (c) 2015, Joyent, Inc.
+ * Copyright (c) 2017, Joyent, Inc.
  */
 
 //
@@ -17,9 +16,9 @@
 //
 
 var cp = require('child_process');
+var fs = require('fs');
 var exec = cp.exec;
 var sprintf = require('sprintf').sprintf;
-var fs = require("fs");
 
 var FILE = './dtrace.out';
 var LINES = [];
@@ -53,7 +52,7 @@ function parseLines(cb) {
         cb();
     });
 
-    stream.on('data', function(chunk) {
+    stream.on('data', function onData(chunk) {
         var lines, i;
         lines = (lastLine + chunk).split('\n');
 
@@ -69,7 +68,7 @@ function parseLines(cb) {
 
 
 function processLine(line) {
-    var reqLine, fields, latency, statusCode, success, serverName;
+    var reqLine, fields, latency, statusCode, success;
 
     fields = line.split(' ');
     reqLine = fields.slice(0, 2).join(' ');
@@ -125,7 +124,7 @@ function printSummary() {
         avgRounded = Math.round((req.total / req.count) * 100) / 100;
 
         console.log(sprintf('%50s %10s %10s %10s %10s %10s',
-            reqLine.substr(0,50), req.count, req.min, avgRounded,
+            reqLine.substr(0, 50), req.count, req.min, avgRounded,
             req.max, req.statusCodes.join(', ')));
     });
 }
