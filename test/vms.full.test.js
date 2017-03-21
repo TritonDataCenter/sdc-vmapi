@@ -838,6 +838,21 @@ exports.check_reboot_vm_nics_running = function (t) {
     });
 };
 
+// This test exists to prevent regression of ZAPI-779 where a user could
+// send a POST request without a VM UUID
+exports.undefined_vm_action = function (t) {
+    var params = {
+        action: 'add_nics'
+    };
+
+    var opts = createOpts(vmLocation, params);
+
+    client.post(opts, params, function (err, req, res, body) {
+        t.equal(res.statusCode, 409, '409 Conflict');
+        t.done();
+    });
+};
+
 
 exports.add_nics_with_networks = function (t) {
     var params = {
