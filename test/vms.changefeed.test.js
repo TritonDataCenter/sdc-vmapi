@@ -653,6 +653,7 @@ exports.create_vm_that_fails_provisioning_workflow = function (t) {
 
     var listener = changefeed.createListener(listenerOpts);
     var nonExistentNetworkUuid = uuid.create();
+    var testDone = false;
     var vmParams = {
         owner_uuid: CUSTOMER,
         image_uuid: IMAGE,
@@ -672,7 +673,10 @@ exports.create_vm_that_fails_provisioning_workflow = function (t) {
 
     listener.register();
 
-    listener.on('bootstrap', function onCfBootstrap() {
+    listener.on('bootstrap', onCfBootstrap);
+    listener.on('readable', onCfListenerReadable);
+
+    function onCfBootstrap() {
         client.post(vmCreationOpts, vmParams,
             function onVmCreated(vmCreateErr, req, res, vmCreationObj) {
                 common.ifError(t, vmCreateErr);
@@ -682,12 +686,15 @@ exports.create_vm_that_fails_provisioning_workflow = function (t) {
 
                 t.ok(vmCreationObj, 'vm ok');
 
-                jobLocation = '/jobs/' + vmCreationObj.job_uuid;
                 vmLocation = '/vms/' + vmCreationObj.vm_uuid;
 
                 // GetVm should not fail after provision has been queued
                 client.get(vmLocation,
                     function onGetVm(vmGetErr, vmGetReq, vmGetRes, vm) {
+                        if (testDone) {
+                            return;
+                        }
+
                         common.ifError(t, vmGetErr);
                         t.equal(vmGetRes.statusCode, 200, '200 OK');
                         common.checkHeaders(t, vmGetRes.headers);
@@ -695,9 +702,9 @@ exports.create_vm_that_fails_provisioning_workflow = function (t) {
                         VM = vm;
                     });
             });
-    });
+    }
 
-    listener.on('readable', function onCfListenerReadable() {
+    function onCfListenerReadable() {
         var changeItem;
         var changeKind;
         var expectedStates = ['provisioning', 'failed'];
@@ -711,8 +718,11 @@ exports.create_vm_that_fails_provisioning_workflow = function (t) {
 
                 client.get(vmLocation,
                     function onGetVm(vmGetErr, vmGetReq, vmGetRes, vm) {
-                        common.ifError(t, vmGetErr);
+                        if (testDone) {
+                            return;
+                        }
 
+                        common.ifError(t, vmGetErr);
                         t.equal(vmGetRes.statusCode, 200, '200 OK');
                         common.checkHeaders(t, vmGetRes.headers);
 
@@ -723,10 +733,16 @@ exports.create_vm_that_fails_provisioning_workflow = function (t) {
                         if (vm.state === 'failed') {
                             t.ok(true, 'VM eventually reached state failed');
                             listener._endSocket();
+
+                            testDone = true;
+                            listener.removeListener('readable',
+                                onCfListenerReadable);
+                            listener.removeListener('bootStrap', onCfBootstrap);
+
                             t.done();
                         }
                     });
             }
         }
-    });
+    }
 };
