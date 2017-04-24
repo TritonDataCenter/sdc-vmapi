@@ -8,10 +8,9 @@
  * Copyright (c) 2017, Joyent, Inc.
  */
 
-// The goal of this test is to make sure that, when sending a DELETE request
-// for a VM that has no server_uuid, or for which the server_uuid does not
-// represent a CN that actually exists, a destroy workflow is not started and
-// instead the VM's state is set to destroyed immediately.
+// The goal of this test is to make sure that, when sending a DELETE request for
+// a VM that has no server_uuid, a destroy workflow is not started and instead
+// the request results in an error right away.
 
 var assert = require('assert-plus');
 var libuuid = require('libuuid');
@@ -51,66 +50,25 @@ exports.create_vm_with_null_server_uuid = function (t) {
 exports.delete_vm_with_null_server_uuid = function (t) {
     client.del('/vms/' + TEST_VM_UUID,
         function onVmDeleted(err, req, res, body) {
-            t.ifError(err);
-            t.equal(body.state, 'destroyed',
-                'The response body should have a state set to destroyed');
-            t.equal(body.job_uuid, undefined,
-                'The response body should not have a job uuid');
-            t.done();
-        });
-};
+            var expectedErrMsg = 'Cannot delete a VM with no server_uuid';
 
-exports.create_vm_on_non_existing_server_uuid = function (t) {
-    client.put('/vms/' + TEST_VM_UUID, {
-        uuid: TEST_VM_UUID,
-        server_uuid: NON_EXISTING_CN_UUID,
-        alias: vmTest.TEST_VMS_ALIAS,
-        state: 'running'
-    }, function onPutDone(err, req, res, newVm) {
-        t.ifError(err, 'The test VM should be created succesfully');
-        t.ok(newVm, 'The response should contain a VM object');
-        t.equal(newVm.server_uuid, NON_EXISTING_CN_UUID,
-            'The server_uuid property of the test VM should be the uuid of ' +
-            'the non-existing CN');
-        t.done();
-    });
-};
+            t.ok(err, 'deleting a vm with a null server_uuid should error');
+            if (err) {
+                t.equal(err.message, expectedErrMsg,
+                    'Error message should be: ' + expectedErrMsg);
+            }
 
-exports.delete_vm_on_non_existing_server_uuid = function (t) {
-    client.del('/vms/' + TEST_VM_UUID,
-        function onVmDeleted(err, req, res, body) {
-            t.ifError(err);
-            t.equal(body.state, 'destroyed',
-                'The response body should have a state set to destroyed');
-            t.equal(body.job_uuid, undefined,
-                'The response body should not have a job uuid');
-            t.done();
-        });
-};
+            client.get('/vms/' + TEST_VM_UUID,
+                function onGetVm(getVmErr, getVmReq, getVmRes, getVmBody) {
+                    var expectedState = 'running';
 
-exports.create_provisioning_vm = function (t) {
-    client.put('/vms/' + TEST_VM_UUID, {
-        uuid: TEST_VM_UUID,
-        alias: vmTest.TEST_VMS_ALIAS,
-        state: 'provisioning'
-    }, function onPutDone(err, req, res, newVm) {
-        t.ifError(err, 'The test VM should be created succesfully');
-        t.ok(newVm, 'The response should contain a VM object');
-        t.equal(newVm.server_uuid, null,
-            'The server_uuid property of the test VM should be null');
-        t.equal(newVm.state, 'provisioning',
-            'The new VM should be in the provisioning state');
-        t.done();
-    });
-};
+                    t.ifError(getVmErr, 'Getting VM with uuid ' + TEST_VM_UUID +
+                        ' should not error');
+                    t.equal(getVmBody.state, expectedState,
+                        'VM state should be ' + expectedState);
 
-exports.delete_provisioning_vm = function (t) {
-    client.del('/vms/' + TEST_VM_UUID,
-        function onVmDeleted(err, req, res, body) {
-            t.ok(err);
-            t.equal(res.statusCode, 409,
-                'The server should respond with a 409 HTTP status code');
-            t.done();
+                    t.done();
+                });
         });
 };
 

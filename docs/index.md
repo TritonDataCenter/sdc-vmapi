@@ -10,7 +10,7 @@ markdown2extras: tables, code-friendly
 -->
 
 <!--
-    Copyright (c) 2015, Joyent, Inc.
+    Copyright (c) 2017, Joyent, Inc.
 -->
 
 # Introduction to VMs API
@@ -1399,8 +1399,11 @@ has succeeded.
 
 ## DeleteVm (DELETE /vms/:uuid)
 
-Deletes a VM. The VM will be physically destroyed and it will be marked as destroyed
-in the cache database.
+Deletes a VM. If the VM exists and has a `server_uuid` that refers to an actual
+CN that is available, the VM will be physically destroyed and it will be marked
+as destroyed in the cache database.
+
+If the VM doesn't have a `server_uuid`, the request will result in an error.
 
 ### Inputs
 
@@ -1418,11 +1421,29 @@ in the cache database.
 | 404  | VM Not Found. VM does not exist or VM does not belong to the specified owner | Error object       |
 | 409  | VM not allocated to a server yet                                             | Error object       |
 
+On a successful response, a [VM Job Response Object](#vm-job-response-object) is
+returned in the response body.
 
 ### Example
 
     DELETE /vms/e9bd0ed1-7de3-4c66-a649-d675dbce6e83
 
+    HTTP/1.1 202 Accepted
+    Connection: close
+    workflow-api: http://workflow.coal.joyent.us
+    Content-Type: application/json
+    Content-Length: 100
+    Content-MD5: as77tkERx4gj7igpE83PyQ==
+    Date: Mon, 24 Apr 2017 22:30:44 GMT
+    Server: VMAPI
+    x-request-id: d169bbdf-a54c-4f71-a543-8928cda5b152
+    x-response-time: 170
+    x-server-name: d6334b70-2e19-4af4-85ba-53776ef82820
+
+    {
+      "vm_uuid": "e9bd0ed1-7de3-4c66-a649-d675dbce6e83",
+      "job_uuid": "56aca67a-5374-4117-9817-6ac77060697e"
+    }
 
 # VM Metadata
 
