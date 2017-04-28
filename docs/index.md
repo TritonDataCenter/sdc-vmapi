@@ -2134,7 +2134,6 @@ on VMAPI is updated as well.
 | moray.retry.minTimeout | Number           | -               | Moray minimum retry timeout                                    |
 | moray.retry.maxTimeout | Number           | -               | Moray maximum retry timeout                                    |
 | docker_tag_re          | String           | -               | Tags matching regex are treated with Docker tag semantics      |
-| triton_tag_re          | String           | -               | Tags matching regex are treated with Triton tag semantics      |
 
 
 ## SAPI Configuration
@@ -2151,15 +2150,12 @@ production.
 | ------------------------------ | ------ | ---------------------------------------------------------------------------- |
 | **experimental_fluentd_host**  | String |                                                                              |
 | **docker_tag_re**              | String | Tags matching regex are treated with Docker tag semantics                    |
-| **triton_tag_re**              | String | Tags matching regex are treated with Triton tag semantics                    |
 
-`docker_tag_re` and `triton_tag_re` must be valid regular expression strings --
-more concretely, what Javascript's RegExp() considers valid. Docker tags can be
-added during provisioning, but otherwise cannot later be altered or removed, and
-may have special significance to Docker. Triton tags may be used by various
-Triton services. It's recommende to not change either `docker_tag_re` or
-`triton_tag_re` unless you're aware of the semantics and effects of Docker and
-Triton tags.
+`docker_tag_re` must be a valid regular expression string -- more concretely,
+what Javascript's RegExp() considers valid. Docker tags can be added during
+provisioning, but otherwise cannot later be altered or removed, and may have
+special significance to Docker. It's recommended to not change `docker_tag_re`
+unless you're aware of the semantics and effects of Docker tags.
 
 
 ## Health

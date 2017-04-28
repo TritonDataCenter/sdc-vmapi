@@ -606,18 +606,21 @@ exports.create_vm_tags_not_ok = function (t) {
     }
 
     function checkBadTritonTagType1(next) {
-        var msg = '"triton.cns.services" must be a string';
+        var msg = 'Triton tag "triton.cns.services" value must be a string: ' +
+            'true (boolean)';
         callVmapi({ 'triton.cns.services': true }, msg, next);
     }
 
     function checkBadTritonTagType2(next) {
-        var msg = '"triton.cns.disable" must be a boolean';
+        var msg = 'Triton tag "triton.cns.disable" value must be a boolean: ' +
+            '"true" (string)';
         callVmapi({ 'triton.cns.disable': 'true' }, msg, next);
     }
 
     function checkBadTritonDNS(next) {
-        var msg = '"_foo.bar" is not DNS safe';
-        callVmapi({ 'triton.cns.services': 'foo,_foo.bar' }, msg, next);
+        var msg = 'invalid "triton.cns.services" tag: Expected DNS name ' +
+            'but "$" found.';
+        callVmapi({ 'triton.cns.services': 'foo,$#foo.bar' }, msg, next);
     }
 
     async.series([
@@ -1093,9 +1096,12 @@ exports.change_with_bad_tags = function (t) {
     }
 
     var unrecognizedMsg = 'Unrecognized special triton tag "triton.foo"';
-    var stringMsg = '"triton.cns.services" must be a string';
-    var booleanMsg = '"triton.cns.disable" must be a boolean';
-    var dnsMsg = '"_foo.bar" is not DNS safe';
+    var stringMsg = 'Triton tag "triton.cns.services" value must be a ' +
+        'string: true (boolean)';
+    var booleanMsg = 'Triton tag "triton.cns.disable" value must be a ' +
+        'boolean: "true" (string)';
+    var dnsMsg = 'invalid "triton.cns.services" tag: Expected DNS name but ' +
+        '"_" found.';
     var dockerMsg1 = 'Special tag "docker:label:com.docker." not supported';
     var dockerMsg2 = 'Special tag "sdc_docker" not supported';
 
