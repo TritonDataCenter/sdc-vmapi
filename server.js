@@ -15,6 +15,7 @@
 var assert = require('assert-plus');
 var bunyan = require('bunyan');
 var changefeed = require('changefeed');
+var cueball = require('cueball');
 var fs = require('fs');
 var http = require('http');
 var https = require('https');
@@ -72,29 +73,39 @@ function createApiClients(config, parentLog) {
     assert.object(config, 'config');
     assert.object(parentLog, 'parentLog');
 
+    var agent;
+    if (config.cueballHttpAgent) {
+        agent = new cueball.HttpAgent(config.cueballHttpAgent);
+    }
+
     assert.object(config.cnapi, 'config.cnapi');
     var cnapiClientOpts = jsprim.deepCopy(config.cnapi);
     cnapiClientOpts.log = parentLog.child({ component: 'cnapi' }, true);
+    cnapiClientOpts.agent = agent;
     var cnapiClient = new CNAPI(cnapiClientOpts);
 
     assert.object(config.imgapi, 'config.imgapi');
     var imgapiClientOpts = jsprim.deepCopy(config.imgapi);
     imgapiClientOpts.log = parentLog.child({ component: 'imgapi' }, true);
+    imgapiClientOpts.agent = agent;
     var imgapiClient = new IMGAPI(imgapiClientOpts);
 
     assert.object(config.napi, 'config.napi');
     var napiClientOpts = jsprim.deepCopy(config.napi);
     napiClientOpts.log = parentLog.child({ component: 'napi' }, true);
+    napiClientOpts.agent = agent;
     var napiClient = new NAPI(napiClientOpts);
 
     assert.object(config.papi, 'config.papi');
     var papiClientOpts = jsprim.deepCopy(config.papi);
     papiClientOpts.log = parentLog.child({ component: 'papi' }, true);
+    papiClientOpts.agent = agent;
     var papiClient = new PAPI(papiClientOpts);
 
     assert.object(config.wfapi, 'config.wfapi');
     var wfapiClientOpts = jsprim.deepCopy(config.wfapi);
     wfapiClientOpts.log = parentLog.child({ component: 'wfapi' }, true);
+    wfapiClientOpts.agent = agent;
     var wfapiClient = new WFAPI(wfapiClientOpts);
 
     return {

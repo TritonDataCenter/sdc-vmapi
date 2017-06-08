@@ -1,7 +1,4 @@
 {
-    "binder": {
-        "domain": "{{{BINDER_SERVICE}}}"
-    },
     "logLevel": "debug",
     "maxSockets": 100,
     "useVmAgent": true,
@@ -62,6 +59,27 @@
         "srvDomain": "{{MORAY_SERVICE}}",
         "cueballOptions": {
             "resolvers": ["{{{BINDER_SERVICE}}}"]
+        }
+    },
+    "cueballHttpAgent": {
+        "resolvers": ["{{{BINDER_SERVICE}}}"],
+        "initialDomains": [
+            "{{{CNAPI_SERVICE}}}",
+            "{{{NAPI_SERVICE}}}",
+            "{{{WORKFLOW_SERVICE}}}",
+            "{{{IMGAPI_SERVICE}}}",
+            "{{{PAPI_SERVICE}}}"
+        ],
+        "spares": 4,
+        "maximum": 100,
+        "recovery": {
+            "default": {
+                "timeout": 2000,
+                "maxTimeout": 8000,
+                "retries": 5,
+                "delay": 250,
+                "maxDelay": 1000
+            }
         }
     },
     "changefeed": {
