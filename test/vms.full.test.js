@@ -16,6 +16,7 @@ var async = require('async');
 var util = require('util');
 
 var common = require('./common');
+var waitForValue = common.waitForValue;
 
 // --- Globals
 
@@ -36,10 +37,6 @@ var CALLER = {
     ip: '127.0.0.68',
     keyId: '/foo@joyent.com/keys/id_rsa'
 };
-
-// In seconds
-var TIMEOUT = 120;
-
 
 // --- Helpers
 
@@ -68,63 +65,6 @@ function checkJob(t, job) {
     t.ok(job.name, 'name');
     t.ok(job.execution, 'execution');
     t.ok(job.params, 'params');
-}
-
-
-function checkEqual(value, expected) {
-    if ((typeof (value) === 'object') && (typeof (expected) === 'object')) {
-        var exkeys = Object.keys(expected);
-        for (var i = 0; i < exkeys.length; i++) {
-            var key = exkeys[i];
-            if (value[key] !== expected[key])
-                return false;
-        }
-
-        return true;
-    } else {
-        return (value === expected);
-    }
-}
-
-
-function checkValue(url, key, value, callback) {
-    return client.get(url, function (err, req, res, body) {
-        if (err) {
-            return callback(err);
-        }
-
-        return callback(null, checkEqual(body[key], value));
-    });
-}
-
-
-var times = 0;
-
-function waitForValue(url, key, value, callback) {
-
-    function onReady(err, ready) {
-        if (err) {
-            callback(err);
-            return;
-        }
-
-        if (!ready) {
-            times++;
-
-            if (times === TIMEOUT) {
-                throw new Error('Timeout waiting on ' + url);
-            } else {
-                setTimeout(function () {
-                    waitForValue(url, key, value, callback);
-                }, 1000);
-            }
-        } else {
-            times = 0;
-            callback(null);
-        }
-    }
-
-    return checkValue(url, key, value, onReady);
 }
 
 
@@ -699,7 +639,9 @@ exports.get_job = function (t) {
 
 
 exports.wait_provisioned_job = function (t) {
-    waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
+    waitForValue(jobLocation, 'execution', 'succeeded', {
+        client: client
+    }, function (err) {
         common.ifError(t, err);
         t.done();
     });
@@ -741,7 +683,9 @@ exports.stop_vm = function (t) {
 
 
 exports.wait_stopped_job = function (t) {
-    waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
+    waitForValue(jobLocation, 'execution', 'succeeded', {
+        client: client
+    }, function (err) {
         common.ifError(t, err);
         t.done();
     });
@@ -782,7 +726,9 @@ exports.start_vm = function (t) {
 
 
 exports.wait_started_job = function (t) {
-    waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
+    waitForValue(jobLocation, 'execution', 'succeeded', {
+        client: client
+    }, function (err) {
         common.ifError(t, err);
         t.done();
     });
@@ -822,7 +768,9 @@ exports.reboot_vm = function (t) {
 
 
 exports.wait_rebooted_job = function (t) {
-    waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
+    waitForValue(jobLocation, 'execution', 'succeeded', {
+        client: client
+    }, function (err) {
         common.ifError(t, err);
         t.done();
     });
@@ -879,7 +827,9 @@ exports.add_nics_with_networks = function (t) {
 
 
 exports.wait_add_nics_with_networks = function (t) {
-    waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
+    waitForValue(jobLocation, 'execution', 'succeeded', {
+        client: client
+    }, function (err) {
         common.ifError(t, err);
         t.done();
     });
@@ -936,7 +886,9 @@ exports.add_nics_with_macs = function (t) {
 
 
 exports.wait_add_nics_with_macs = function (t) {
-    waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
+    waitForValue(jobLocation, 'execution', 'succeeded', {
+        client: client
+    }, function (err) {
         common.ifError(t, err);
         t.done();
     });
@@ -998,7 +950,9 @@ exports.remove_nics = function (t) {
 
 
 exports.wait_remove_nics = function (t) {
-    waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
+    waitForValue(jobLocation, 'execution', 'succeeded', {
+        client: client
+    }, function (err) {
         common.ifError(t, err);
         t.done();
     });
@@ -1231,7 +1185,9 @@ exports.add_tags = function (t) {
 
 
 exports.wait_new_tag_job = function (t) {
-    waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
+    waitForValue(jobLocation, 'execution', 'succeeded', {
+        client: client
+    }, function (err) {
         common.ifError(t, err);
         t.done();
     });
@@ -1244,7 +1200,9 @@ exports.wait_new_tag = function (t) {
         group: 'deployment'
     };
 
-    waitForValue(vmLocation, 'tags', tags, function (err) {
+    waitForValue(vmLocation, 'tags', tags, {
+        client: client
+    }, function (err) {
         common.ifError(t, err);
         t.done();
     });
@@ -1283,7 +1241,9 @@ exports.delete_tag = function (t) {
 
 
 exports.wait_delete_tag_job = function (t) {
-    waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
+    waitForValue(jobLocation, 'execution', 'succeeded', {
+        client: client
+    }, function (err) {
         common.ifError(t, err);
         t.done();
     });
@@ -1295,7 +1255,9 @@ exports.wait_delete_tag = function (t) {
         group: 'deployment'
     };
 
-    waitForValue(vmLocation, 'tags', tags, function (err) {
+    waitForValue(vmLocation, 'tags', tags, {
+        client: client
+    }, function (err) {
         common.ifError(t, err);
         t.done();
     });
@@ -1320,7 +1282,9 @@ exports.delete_tags = function (t) {
 
 
 exports.wait_delete_tags_job = function (t) {
-    waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
+    waitForValue(jobLocation, 'execution', 'succeeded', {
+        client: client
+    }, function (err) {
         common.ifError(t, err);
         t.done();
     });
@@ -1328,7 +1292,9 @@ exports.wait_delete_tags_job = function (t) {
 
 
 exports.wait_delete_tags = function (t) {
-    waitForValue(vmLocation, 'tags', {}, function (err) {
+    waitForValue(vmLocation, 'tags', {}, {
+        client: client
+    }, function (err) {
         common.ifError(t, err);
         t.done();
     });
@@ -1361,7 +1327,9 @@ exports.set_tags = function (t) {
 
 
 exports.wait_set_tags_job = function (t) {
-    waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
+    waitForValue(jobLocation, 'execution', 'succeeded', {
+        client: client
+    }, function (err) {
         common.ifError(t, err);
         t.done();
     });
@@ -1377,7 +1345,9 @@ exports.wait_set_tags = function (t) {
         withequals: 'foo=bar'
     };
 
-    waitForValue(vmLocation, 'tags', tags, function (err) {
+    waitForValue(vmLocation, 'tags', tags, {
+        client: client
+    }, function (err) {
         common.ifError(t, err);
         t.done();
     });
@@ -1405,7 +1375,9 @@ exports.snapshot_vm = function (t) {
 
 
 exports.wait_snapshot_job = function (t) {
-    waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
+    waitForValue(jobLocation, 'execution', 'succeeded', {
+        client: client
+    }, function (err) {
         common.ifError(t, err);
         t.done();
     });
@@ -1433,7 +1405,9 @@ exports.rollback_vm = function (t) {
 
 
 exports.wait_rollback_job = function (t) {
-    waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
+    waitForValue(jobLocation, 'execution', 'succeeded', {
+        client: client
+    }, function (err) {
         common.ifError(t, err);
         t.done();
     });
@@ -1461,7 +1435,9 @@ exports.delete_snapshot = function (t) {
 
 
 exports.wait_delete_snapshot_job = function (t) {
-    waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
+    waitForValue(jobLocation, 'execution', 'succeeded', {
+        client: client
+    }, function (err) {
         common.ifError(t, err);
         t.done();
     });
@@ -1489,7 +1465,9 @@ exports.reprovision_vm = function (t) {
 
 
 exports.wait_reprovision_job = function (t) {
-    waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
+    waitForValue(jobLocation, 'execution', 'succeeded', {
+        client: client
+    }, function (err) {
         common.ifError(t, err);
         t.done();
     });
@@ -1512,7 +1490,9 @@ exports.destroy_vm = function (t) {
 
 
 exports.wait_destroyed_job = function (t) {
-    waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
+    waitForValue(jobLocation, 'execution', 'succeeded', {
+        client: client
+    }, function (err) {
         common.ifError(t, err);
         t.done();
     });
@@ -1616,7 +1596,9 @@ exports.get_nonautoboot_job = function (t) {
 
 
 exports.wait_nonautoboot_provisioned_job = function (t) {
-    waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
+    waitForValue(jobLocation, 'execution', 'succeeded', {
+        client: client
+    }, function (err) {
         common.ifError(t, err);
         t.done();
     });
@@ -1642,7 +1624,9 @@ exports.change_autoboot = function (t) {
 
 
 exports.wait_autoboot_update_job = function (t) {
-    waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
+    waitForValue(jobLocation, 'execution', 'succeeded', {
+        client: client
+    }, function (err) {
         common.ifError(t, err);
         t.done();
     });
@@ -1680,7 +1664,9 @@ exports.destroy_nonautoboot_vm = function (t) {
 
 
 exports.wait_nonautoboot_destroyed_job = function (t) {
-    waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
+    waitForValue(jobLocation, 'execution', 'succeeded', {
+        client: client
+    }, function (err) {
         common.ifError(t, err);
         t.done();
     });
@@ -1714,7 +1700,9 @@ exports.create_vm_with_package = function (t) {
 
 
 exports.wait_provisioned_with_package_job = function (t) {
-    waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
+    waitForValue(jobLocation, 'execution', 'succeeded', {
+        client: client
+    }, function (err) {
         common.ifError(t, err);
         t.done();
     });
@@ -1803,7 +1791,9 @@ exports.resize_package = function (t) {
 
 
 exports.wait_resize_package_job = function (t) {
-    waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
+    waitForValue(jobLocation, 'execution', 'succeeded', {
+        client: client
+    }, function (err) {
         common.ifError(t, err);
         t.done();
     });
@@ -1842,7 +1832,9 @@ exports.resize_package_down = function (t) {
 
 
 exports.wait_resize_package_job_2 = function (t) {
-    waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
+    waitForValue(jobLocation, 'execution', 'succeeded', {
+        client: client
+    }, function (err) {
         common.ifError(t, err);
         t.done();
     });
@@ -1865,7 +1857,9 @@ exports.destroy_vm_with_package = function (t) {
 
 
 exports.wait_destroyed_with_package_job = function (t) {
-    waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
+    waitForValue(jobLocation, 'execution', 'succeeded', {
+        client: client
+    }, function (err) {
         common.ifError(t, err);
         t.done();
     });
@@ -1903,7 +1897,9 @@ exports.provision_network_names = function (t) {
 
 
 exports.wait_provision_network_names = function (t) {
-    waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
+    waitForValue(jobLocation, 'execution', 'succeeded', {
+        client: client
+    }, function (err) {
         common.ifError(t, err);
         t.done();
     });
@@ -2038,7 +2034,9 @@ exports.create_docker_vm = function (t) {
 
 
 exports.wait_provisioned_docker_job = function (t) {
-    waitForValue(jobLocation, 'execution', 'succeeded', function (err) {
+    waitForValue(jobLocation, 'execution', 'succeeded', {
+        client: client
+    }, function (err) {
         common.ifError(t, err);
         t.done();
     });
