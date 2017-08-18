@@ -90,6 +90,7 @@ update time.
 | zfs_data_compression     | String                        | Specifies a compression algorithm used for the VM's data dataset                                                                                                                                                          | No                  | Yes    | Yes    |
 | zfs_io_priority          | Number                        | ZFS IO Priority                                                                                                                                                                                                           | Yes                 | Yes    | Yes    |
 | zlog_max_size            | Number                        | Sets the maximum size of the stdio.log file for a docker zone before rotation. NOTE: To be used by sdc-docker only.                                                                                                       | No                  | Yes    | Yes    |
+
 Furthermore, when dealing with KVM VMs there are additional attributes to know
 about and are specific to KVM being a different type of virtualization: cpu_type,
 disks, disk_driver, nic_driver and vcpus. KVM VMs require at least
