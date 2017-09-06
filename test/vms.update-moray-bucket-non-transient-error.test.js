@@ -164,7 +164,8 @@ exports.moray_init_non_transient_error = function (t) {
 
         vmapiClient.ping(function onVmapiPing(pingErr, obj, req, res) {
             var errBody = pingErr.body;
-            var expectedErrString = 'docker.type is invalid';
+            var expectedErrString = 'bucket.index[\'docker\'].type should be ' +
+                'equal to one of the allowed values';
             var expectedHealthiness = false;
             var expectedResponseHttpStatus = 503;
             var expectedStatus = 'some services are not ready';
