@@ -7,7 +7,7 @@
 -->
 
 <!--
-    Copyright (c) 2014, Joyent, Inc.
+    Copyright (c) 2017, Joyent, Inc.
 -->
 
 <service_bundle type="manifest" name="vmapi">
@@ -27,12 +27,12 @@
     <exec_method
       type="method"
       name="start"
-      exec="@@NODE@@ --abort_on_uncaught_exception @@PREFIX@@/server.js &amp;"
+      exec="/opt/smartdc/vmapi/build/node/bin/node --abort_on_uncaught_exception /opt/smartdc/vmapi/server.js &amp;"
       timeout_seconds="30">
       <method_context working_directory="/opt/smartdc/vmapi">
         <method_credential user="nobody" group="nobody" privileges="basic,net_privaddr"/>
         <method_environment>
-          <envvar name="PATH" value="/opt/nodejs/bin:/usr/local/bin:/opt/local/bin:/usr/bin:/usr/sbin:/bin"/>
+          <envvar name="PATH" value="/usr/local/bin:/opt/local/bin:/usr/bin:/usr/sbin:/bin"/>
           <envvar name="LD_PRELOAD_32" value="/usr/lib/extendedFILE.so.1" />
         </method_environment>
       </method_context>

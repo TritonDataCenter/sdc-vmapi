@@ -47,7 +47,7 @@ JSL_CONF_NODE	 = tools/jsl.node.conf
 JSL_FILES_NODE   = server.js $(JS_FILES)
 JSSTYLE_FILES	 = server.js $(JS_FILES)
 JSSTYLE_FLAGS    = -o indent=4,doxygen,unparenthesized-return=0
-SMF_MANIFESTS_IN	 = smf/manifests/vmapi.xml.in
+SMF_MANIFESTS	 = smf/manifests/vmapi.xml
 
 include ./tools/mk/Makefile.defs
 ifeq ($(shell uname -s),SunOS)

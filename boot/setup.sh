@@ -33,6 +33,8 @@ chown -R nobody:nobody /opt/smartdc/vmapi
 echo "" >>/root/.profile
 echo "export PATH=\$PATH:/opt/smartdc/vmapi/build/node/bin:/opt/smartdc/vmapi/node_modules/.bin" >>/root/.profile
 
+/usr/sbin/svccfg import /opt/smartdc/vmapi/smf/manifests/vmapi.xml
+
 echo "Adding log rotation"
 # Log rotation.
 sdc_log_rotation_add config-agent /var/svc/log/*config-agent*.log 1g
