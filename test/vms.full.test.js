@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright 2017 Joyent, Inc.
+ * Copyright (c) 2017, Joyent, Inc.
  */
 
 // var test = require('tap').test;
@@ -203,19 +203,24 @@ exports.setUp = function (callback) {
 };
 
 
-exports.find_headnode = function (t) {
-    client.cnapi.get('/servers', function (err, req, res, servers) {
+exports.find_server = function (t) {
+    client.cnapi.get({
+        path: '/servers',
+        query: {
+            headnode: true
+        }
+    }, function (err, req, res, servers) {
         common.ifError(t, err);
         t.equal(res.statusCode, 200, '200 OK');
         t.ok(servers, 'servers is set');
         t.ok(Array.isArray(servers), 'servers is Array');
         for (var i = 0; i < servers.length; i++) {
-            if (servers[i].headnode === true) {
+            if (servers[i].status === 'running') {
                 SERVER = servers[i];
                 break;
             }
         }
-        t.ok(SERVER, 'server found');
+        t.ok(SERVER, 'found a running headnode to use for test provisions');
         t.done();
     });
 };

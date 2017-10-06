@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright 2017 Joyent, Inc.
+ * Copyright (c) 2017, Joyent, Inc.
  */
 
 var assert = require('assert-plus');
@@ -181,19 +181,24 @@ exports.setUp = function (callback) {
     });
 };
 
-exports.find_headnode = function (t) {
-    client.cnapi.get('/servers', function (err, req, res, servers) {
+exports.find_server = function (t) {
+    client.cnapi.get({
+        path: '/servers',
+        query: {
+            headnode: true
+        }
+    }, function (err, req, res, servers) {
         common.ifError(t, err);
         t.equal(res.statusCode, 200, '200 OK');
         t.ok(servers, 'servers is set');
         t.ok(Array.isArray(servers), 'servers is Array');
         for (var i = 0; i < servers.length; i++) {
-            if (servers[i].headnode === true) {
+            if (servers[i].status === 'running') {
                 SERVER = servers[i];
                 break;
             }
         }
-        t.ok(SERVER, 'server found');
+        t.ok(SERVER, 'found a running headnode to use for test provisions');
         t.done();
     });
 };
@@ -219,6 +224,7 @@ exports.create_vm = function (t) {
     };
 
     var vm = {
+        alias: 'sdcvmapitest_create_vm',
         owner_uuid: CUSTOMER,
         image_uuid: IMAGE,
         server_uuid: SERVER.uuid,
@@ -312,7 +318,7 @@ exports.get_vm_ok = function (t) {
 
 exports.listen_for_alias = function (t) {
     t.expect(2);
-    VM.alias = 'listen_for_alias';
+    VM.alias = 'sdcvmapitest_listen_for_alias';
     var opts = { path: '/vms/' + VM.uuid + '?server_uuid=' + VM.server_uuid };
     var listener = changefeed.createListener(listenerOpts);
     listener.register();
@@ -601,7 +607,7 @@ exports.listen_for_destroy = function (t) {
 exports.put_new_vm = function (t) {
     t.expect(2);
     var vm = VM;
-    vm.alias = 'garbage' + uuid.create();
+    vm.alias = 'sdcvmapitest_garbage' + uuid.create();
     vm.uuid = uuid.create();
     var opts = { path: '/vms/' + vm.uuid };
 
@@ -619,7 +625,7 @@ exports.put_new_vm = function (t) {
 exports.put_new_vms = function (t) {
     t.expect(2);
     var vm = VM;
-    vm.alias = 'garbage' + uuid.create();
+    vm.alias = 'sdcvmapitest_garbage' + uuid.create();
     vm.uuid = uuid.create();
     var query = { server_uuid: SERVER.uuid };
     var opts = { path: '/vms', query: query };
@@ -655,6 +661,7 @@ exports.create_vm_that_fails_provisioning_workflow = function (t) {
     var nonExistentNetworkUuid = uuid.create();
     var testDone = false;
     var vmParams = {
+        alias: 'sdcvmapitest_vm_that_fails_provisioning_workflow',
         owner_uuid: CUSTOMER,
         image_uuid: IMAGE,
         server_uuid: SERVER.uuid,

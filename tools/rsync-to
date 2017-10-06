@@ -6,7 +6,7 @@
 #
 
 #
-# Copyright (c) 2015, Joyent, Inc.
+# Copyright (c) 2017, Joyent, Inc.
 #
 
 #
@@ -36,11 +36,16 @@ rsync -av ${TOP}/ \
     $NODE:/zones/$VMAPI_ZONE/root/opt/smartdc/vmapi/ \
     $extraOpts \
     --exclude .git/ \
+    --exclude /boot/ \
     --exclude /config.json \
     --exclude /deps/ \
     --exclude /doc/ \
     --exclude /tools/ \
     --exclude /tmp/
+
+rsync -av ${TOP}/boot/ \
+    $NODE:/zones/$VMAPI_ZONE/root/opt/smartdc/boot/ \
+    $extraOpts
 
 state=$(ssh ${NODE} svcs -z ${VMAPI_ZONE} -H -o state vmapi)
 if [[ "$state" == "maintenance" ]]; then
