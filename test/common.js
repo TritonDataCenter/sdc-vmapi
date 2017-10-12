@@ -187,12 +187,13 @@ function checkEqual(value, expected) {
 }
 
 function checkValue(client, url, key, value, callback) {
-    return client.get(url, function (err, req, res, body) {
+    client.get(url, function (err, req, res, body) {
         if (err) {
-            return callback(err);
+            callback(err);
+            return;
         }
 
-        return callback(null, checkEqual(body[key], value));
+        callback(null, checkEqual(body[key], value));
     });
 }
 

@@ -16,6 +16,7 @@ var async = require('async');
 var util = require('util');
 
 var common = require('./common');
+var testUuid = require('./lib/uuid');
 var waitForValue = common.waitForValue;
 
 // --- Globals
@@ -584,7 +585,7 @@ exports.create_vm = function (t) {
     };
 
     var vm = {
-        alias: 'vmapitest-full-' + uuid.create().split('-')[0],
+        alias: 'vmapitest-full-' + testUuid.generateShortUuid(),
         owner_uuid: CUSTOMER,
         image_uuid: IMAGE,
         server_uuid: SERVER.uuid,

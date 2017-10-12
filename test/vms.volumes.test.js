@@ -9,10 +9,11 @@
  */
 
 var assert = require('assert-plus');
-var uuid = require('libuuid');
 var vasync = require('vasync');
 
 var common = require('./common');
+var testUuid = require('./lib/uuid');
+
 var waitForValue = common.waitForValue;
 
 var client;
@@ -25,7 +26,7 @@ var TEST_VOLUMES_NAME_PREFIX = 'vmapitest-volumes-';
 
 function getVmPayloadTemplate() {
     return {
-        alias: 'vmapitest-volumes-' + uuid.create().split('-')[0],
+        alias: 'vmapitest-volumes-' + testUuid.generateShortUuid(),
         owner_uuid: ADMIN_USER_UUID,
         image_uuid: VMAPI_ORIGIN_IMAGE_UUID,
         server_uuid: SERVER.uuid,
@@ -173,20 +174,20 @@ exports.create_vm_with_valid_volumes_params = function (t) {
     var INVALID_VOLUMES_PARAMS = [
         [
             {
-                name: TEST_VOLUMES_NAME_PREFIX + uuid.create().substr(0, 7),
+                name: TEST_VOLUMES_NAME_PREFIX + testUuid.generateShortUuid(),
                 mountpoint: '/bar'
             }
         ],
         [
             {
-                name: TEST_VOLUMES_NAME_PREFIX + uuid.create().substr(0, 7),
+                name: TEST_VOLUMES_NAME_PREFIX + testUuid.generateShortUuid(),
                 mountpoint: '/bar',
                 mode: 'ro'
             }
         ],
         [
             {
-                name: TEST_VOLUMES_NAME_PREFIX + uuid.create().substr(0, 7),
+                name: TEST_VOLUMES_NAME_PREFIX + testUuid.generateShortUuid(),
                 mountpoint: '/bar',
                 mode: 'rw'
             }
@@ -271,7 +272,7 @@ exports.create_vm_with_valid_volumes_params = function (t) {
                     client.del({
                         path: '/vms/' + vmUuid
                     }, function onVmDeleted(vmDelErr) {
-                        t.ifError(vmDelErr, 'Deleting VM with UUID ' + uuid +
+                        t.ifError(vmDelErr, 'Deleting VM with UUID ' + vmUuid +
                             'should succeed');
 
                         next();

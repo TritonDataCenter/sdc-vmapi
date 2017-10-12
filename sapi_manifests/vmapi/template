@@ -62,7 +62,8 @@
     "volapi": {
         "url": "http://volapi.{{{datacenter_name}}}.{{{dns_domain}}}"
     },
-{{/experimental_docker_nfs_shared_volumes}}    "moray": {
+{{/experimental_docker_nfs_shared_volumes}}
+    "moray": {
         "srvDomain": "{{MORAY_SERVICE}}",
         "cueballOptions": {
             "resolvers": ["{{{BINDER_SERVICE}}}"]
