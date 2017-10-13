@@ -21,6 +21,8 @@ var VMAPI = require('sdc-clients').VMAPI;
 var changefeedUtils = require('../lib/changefeed');
 var common = require('./common');
 var morayInit = require('../lib/moray/moray-init');
+var NoopDataMigrationsController =
+    require('../lib/data-migrations/noop-controller');
 var testMoray = require('./lib/moray.js');
 var VmapiApp = require('../lib/vmapi');
 
@@ -122,21 +124,21 @@ var ROLE_TAGS_MORAY_BUCKET_CONFIG_V2 = {
 };
 
 var testBucketsConfigV0 = {
-    VMS: VMS_BUCKET_CONFIG_V0,
-    SERVER_VMS: SERVER_VMS_MORAY_BUCKET_CONFIG_V0,
-    VM_ROLE_TAGS: ROLE_TAGS_MORAY_BUCKET_CONFIG_V0
+    vms: VMS_BUCKET_CONFIG_V0,
+    server_vms: SERVER_VMS_MORAY_BUCKET_CONFIG_V0,
+    vm_role_tags: ROLE_TAGS_MORAY_BUCKET_CONFIG_V0
 };
 
 var testBucketsConfigV1 = {
-    VMS: VMS_BUCKET_CONFIG_V1,
-    SERVER_VMS: SERVER_VMS_MORAY_BUCKET_CONFIG_V1,
-    VM_ROLE_TAGS: ROLE_TAGS_MORAY_BUCKET_CONFIG_V1
+    vms: VMS_BUCKET_CONFIG_V1,
+    server_vms: SERVER_VMS_MORAY_BUCKET_CONFIG_V1,
+    vm_role_tags: ROLE_TAGS_MORAY_BUCKET_CONFIG_V1
 };
 
 var testBucketsConfigV2 = {
-    VMS: VMS_BUCKET_CONFIG_V2,
-    SERVER_VMS: SERVER_VMS_MORAY_BUCKET_CONFIG_V2,
-    VM_ROLE_TAGS: ROLE_TAGS_MORAY_BUCKET_CONFIG_V2
+    vms: VMS_BUCKET_CONFIG_V2,
+    server_vms: SERVER_VMS_MORAY_BUCKET_CONFIG_V2,
+    vm_role_tags: ROLE_TAGS_MORAY_BUCKET_CONFIG_V2
 };
 
 var NB_TEST_OBJECTS = 200;
@@ -321,6 +323,7 @@ function testMigrationToBucketsConfig(bucketsConfig, options, t, callback) {
                     wfapi: MOCKED_WFAPI_CLIENT
                 },
                 changefeedPublisher: changefeedUtils.createNoopCfPublisher(),
+                dataMigrationsCtrl: new NoopDataMigrationsController(),
                 morayBucketsInitializer: morayBucketsInitializer,
                 moray: storage
             });

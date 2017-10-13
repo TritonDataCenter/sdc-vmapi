@@ -30,6 +30,7 @@ BunyanNoopLogger.prototype.end = function () {};
 function createTestVm(moray, options, vmParams, callback) {
     assert.object(moray, 'moray');
     assert.object(options, 'options');
+    assert.optionalObject(options.log, 'options.log');
     assert.object(vmParams, 'vmParams must be an object');
 
     var log = options.log || new BunyanNoopLogger();

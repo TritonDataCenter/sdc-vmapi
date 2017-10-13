@@ -26,6 +26,8 @@ var vasync = require('vasync');
 var changefeedUtils = require('../lib/changefeed');
 var common = require('./common');
 var morayInit = require('../lib/moray/moray-init');
+var NoopDataMigrationsController =
+    require('../lib/data-migrations/noop-controller');
 var testMoray = require('./lib/moray');
 var VmapiApp = require('../lib/vmapi');
 
@@ -76,9 +78,9 @@ var ROLE_TAGS_MORAY_BUCKET_CONFIG = {
 };
 
 var morayBucketsConfigWithError = {
-    VMS: VMS_BUCKET_CONFIG_WITH_ERROR,
-    SERVER_VMS: SERVER_VMS_MORAY_BUCKET_CONFIG,
-    VM_ROLE_TAGS: ROLE_TAGS_MORAY_BUCKET_CONFIG
+    vms: VMS_BUCKET_CONFIG_WITH_ERROR,
+    server_vms: SERVER_VMS_MORAY_BUCKET_CONFIG,
+    vm_role_tags: ROLE_TAGS_MORAY_BUCKET_CONFIG
 };
 
 exports.moray_init_non_transient_error = function (t) {
@@ -97,9 +99,9 @@ exports.moray_init_non_transient_error = function (t) {
     vasync.pipeline({funcs: [
         function cleanLeftoverTestBuckets(arg, next) {
             testMoray.cleanupLeftoverBuckets([
-                morayBucketsConfigWithError.VMS.name,
-                morayBucketsConfigWithError.SERVER_VMS.name,
-                morayBucketsConfigWithError.VM_ROLE_TAGS.name
+                morayBucketsConfigWithError.vms.name,
+                morayBucketsConfigWithError.server_vms.name,
+                morayBucketsConfigWithError.vm_role_tags.name
             ],
             function onCleanupLeftoverBuckets(cleanupErr) {
                 t.ifError(cleanupErr,
@@ -131,6 +133,7 @@ exports.moray_init_non_transient_error = function (t) {
                     wfapi: mockedWfapiClient
                 },
                 changefeedPublisher: changefeedUtils.createNoopCfPublisher(),
+                dataMigrationsCtrl: new NoopDataMigrationsController(),
                 morayBucketsInitializer: morayBucketsInitializer,
                 moray: moray
             });

@@ -29,6 +29,8 @@ var vasync = require('vasync');
 var changefeedUtils = require('../lib/changefeed');
 var common = require('./common');
 var morayInit = require('../lib/moray/moray-init');
+var NoopDataMigrationsController =
+    require('../lib/data-migrations/noop-controller');
 var VmapiApp = require('../lib/vmapi');
 
 var TRANSIENT_ERROR_MSG = 'Mocked transient error';
@@ -57,9 +59,9 @@ var ROLE_TAGS_MORAY_BUCKET_CONFIG = {
 };
 
 var MORAY_BUCKETS_CONFIG = {
-    VMS: VMS_BUCKET_CONFIG,
-    SERVER_VMS: SERVER_VMS_MORAY_BUCKET_CONFIG,
-    VM_ROLE_TAGS: ROLE_TAGS_MORAY_BUCKET_CONFIG
+    vms: VMS_BUCKET_CONFIG,
+    server_vms: SERVER_VMS_MORAY_BUCKET_CONFIG,
+    vm_role_tags: ROLE_TAGS_MORAY_BUCKET_CONFIG
 };
 
 exports.moray_init_transient_error = function (t) {
@@ -100,6 +102,7 @@ exports.moray_init_transient_error = function (t) {
                     wfapi: mockedWfapiClient
                 },
                 changefeedPublisher: changefeedUtils.createNoopCfPublisher(),
+                dataMigrationsCtrl: new NoopDataMigrationsController(),
                 morayBucketsInitializer: morayBucketsInitializer,
                 moray: moray
             });
