@@ -1,7 +1,7 @@
 {
   "name": "vmapi",
   "description": "VMs API",
-  "version": "9.1.0",
+  "version": "9.2.0",
   "author": "Joyent (joyent.com)",
   "private": true,
   "dependencies": {
@@ -15,6 +15,7 @@
     "deep-diff": "0.3.3",
     "effluent-logger": "git+https://github.com/joshwilsdon/effluent-logger.git#d662f161a07f94045ad2afb45442931511c40e51",
     "jsprim": "^1.2.2",
+    "krill": "1.0.1",
     "ldap-filter": "0.3.3",
     "libuuid": "0.2.1",
     "moray": "3.1.1",
