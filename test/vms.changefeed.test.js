@@ -217,14 +217,15 @@ exports.napi_networks_ok = function (t) {
 };
 
 exports.create_vm = function (t) {
-    t.expect(8);
+    t.expect(5);
     var md = {
         foo: 'bar',
         credentials: JSON.stringify({ 'user_pw': '12345678' })
     };
 
-    var vm = {
+    VM = {
         alias: 'sdcvmapitest_create_vm',
+        uuid: uuid.create(),
         owner_uuid: CUSTOMER,
         image_uuid: IMAGE,
         server_uuid: SERVER.uuid,
@@ -238,13 +239,13 @@ exports.create_vm = function (t) {
         role_tags: ['fd48177c-d7c3-11e3-9330-28cfe91a33c9']
     };
 
-    var opts = createOpts('/vms', vm);
+    var opts = createOpts('/vms', VM);
 
     var listener = changefeed.createListener(listenerOpts);
     listener.register();
 
     listener.on('bootstrap', function () {
-        client.post(opts, vm, function (err, req, res, body) {
+        client.post(opts, VM, function (err, req, res, body) {
             common.ifError(t, err);
             t.equal(res.statusCode, 202, '202 Accepted');
             common.checkHeaders(t, res.headers);
@@ -252,33 +253,30 @@ exports.create_vm = function (t) {
             t.ok(body, 'vm ok');
 
             jobLocation = '/jobs/' + body.job_uuid;
-            var vmLocation = '/vms/' + body.vm_uuid;
-
-            // GetVm should not fail after provision has been queued
-            client.get(vmLocation, function (err2, req2, res2, body2) {
-                common.ifError(t, err2);
-                t.equal(res2.statusCode, 200, '200 OK');
-                common.checkHeaders(t, res2.headers);
-                t.ok(body2, 'provisioning vm ok');
-                VM = body2;
-            });
         });
     });
 
-    var noStateReceived = true;
     listener.on('readable', function () {
-        var changeItem = listener.read();
+        var changeItem;
+        while ((changeItem = listener.read())) {
+            processChangeItem(changeItem);
+        }
+    });
+
+    var stateReceived = false;
+    function processChangeItem(changeItem) {
         var changeKind = changeItem.changeKind;
-        if (noStateReceived &&
+        if (!stateReceived &&
             changeItem.changedResourceId === VM.uuid &&
             changeKind.subResources &&
             changeKind.subResources.indexOf('state') !== -1) {
+
             t.ok(true, 'state received');
-            noStateReceived = false;
+            stateReceived = true;
             listener._endSocket();
             t.done();
         }
-    });
+    }
 };
 
 exports.wait_provisioned_job = function (t) {
