@@ -23,6 +23,7 @@ var jsprim = require('jsprim');
 var path = require('path');
 var restify = require('restify');
 var sigyan = require('sigyan');
+var util = require('util');
 var vasync = require('vasync');
 
 var CNAPI = require('./lib/apis/cnapi');
@@ -33,8 +34,12 @@ var VmapiApp = require('./lib/vmapi');
 var WFAPI = require('./lib/apis/wfapi');
 
 var configLoader = require('./lib/config-loader');
+var DataMigrationsController = require('./lib/data-migrations/controller');
+var dataMigrationsLoader = require('./lib/data-migrations/loader');
 var morayInit = require('./lib/moray/moray-init.js');
 
+var DATA_MIGRATIONS;
+var dataMigrationCtrl;
 var morayBucketsInitializer;
 var morayClient;
 var moray;
@@ -122,13 +127,15 @@ function startVmapiService() {
     var changefeedPublisher;
     var configFilePath = path.join(__dirname, 'config.json');
     var config = configLoader.loadConfig(configFilePath);
-    config.version = version() || '7.0.0';
-
+    var dataMigrations;
+    var dataMigrationsCtrl;
     var vmapiLog = bunyan.createLogger({
         name: 'vmapi',
         level: config.logLevel,
         serializers: restify.bunyan.serializers
     });
+
+    config.version = version() || '7.0.0';
 
     // Increase/decrease loggers levels using SIGUSR2/SIGUSR1:
     sigyan.add([vmapiLog]);
@@ -152,7 +159,26 @@ function startVmapiService() {
                 next();
             });
         },
-        function initMorayApi(_, next) {
+        function loadDataMigrations(_, next) {
+            vmapiLog.info('Loading data migrations modules');
+
+            dataMigrationsLoader.loadMigrations({
+                log: vmapiLog.child({ component: 'migrations-loader' }, true)
+            }, function onMigrationsLoaded(migrationsLoadErr, migrations) {
+                if (migrationsLoadErr) {
+                    vmapiLog.error({err: migrationsLoadErr},
+                            'Error when loading data migrations modules');
+                } else {
+                    vmapiLog.info({migrations: migrations},
+                        'Loaded data migrations modules successfully!');
+                }
+
+                dataMigrations = migrations;
+                next(migrationsLoadErr);
+            });
+        },
+
+        function initMoray(_, next) {
             assert.object(changefeedPublisher, 'changefeedPublisher');
 
             var morayConfig = jsprim.deepCopy(config.moray);
@@ -169,15 +195,43 @@ function startVmapiService() {
             moray = moraySetup.moray;
 
             /*
-             * We don't want to wait for the Moray initialization process to
-             * be done before creating the HTTP server that will provide
-             * VMAPI's API endpoints, as:
+             * We don't set an 'error' event listener because we want the
+             * process to abort when there's a non-transient data migration
+             * error.
+             */
+            dataMigrationsCtrl = new DataMigrationsController({
+                log: vmapiLog.child({
+                    component: 'migrations-controller'
+                }, true),
+                migrations: dataMigrations,
+                moray: moray
+            });
+
+            /*
+             * We purposely start data migrations *only when all buckets are
+             * updated and reindexed*. Otherwise, if we we migrated records that
+             * have a value for a field for which a new index was just added,
+             * moray could discard that field when fetching the object using
+             * findObjects or getObject requests (See
+             * http://smartos.org/bugview/MORAY-104 and
+             * http://smartos.org/bugview/MORAY-428). We could thus migrate
+             * those records erroneously, and in the end write bogus data.
+             */
+            morayBucketsInitializer.on('done',
+                function onMorayBucketsInitialized() {
+                    dataMigrationsCtrl.start();
+                });
+
+            /*
+             * We don't want to wait for the Moray initialization process to be
+             * done before creating the HTTP server that will provide VMAPI's
+             * API endpoints, as:
              *
-             * 1. some endpoints can function properly without using
-             * the Moray storage layer.
+             * 1. some endpoints can function properly without using the Moray
+             *    storage layer.
              *
              * 2. some endpoints are needed to provide status information,
-             * including status information about the storage layer.
+             *    including status information about the storage layer.
              */
             next();
         },
@@ -197,21 +251,29 @@ function startVmapiService() {
                 error: err
             }, 'failed to initialize VMAPI\'s dependencies');
 
-            morayClient.close();
+            if (changefeedPublisher) {
+                changefeedPublisher.stop();
+            }
+
+            if (morayClient) {
+                morayClient.close();
+            }
+
             process.exitCode = 1;
         } else {
             var vmapiApp = new VmapiApp({
-                version: config.version,
+                apiClients: apiClients,
+                changefeedPublisher: changefeedPublisher,
+                dataMigrationsCtrl: dataMigrationsCtrl,
                 log: vmapiLog.child({ component: 'http-api' }, true),
+                moray: moray,
+                morayBucketsInitializer: morayBucketsInitializer,
+                overlay: config.overlay,
+                reserveKvmStorage: config.reserveKvmStorage,
                 serverConfig: {
                     bindPort: config.api.port
                 },
-                apiClients: apiClients,
-                changefeedPublisher: changefeedPublisher,
-                morayBucketsInitializer: morayBucketsInitializer,
-                moray: moray,
-                overlay: config.overlay,
-                reserveKvmStorage: config.reserveKvmStorage
+                version: config.version
             });
 
             vmapiApp.listen();

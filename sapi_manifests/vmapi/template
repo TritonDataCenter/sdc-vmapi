@@ -55,14 +55,9 @@
     "papi": {
         "url": "http://{{{PAPI_SERVICE}}}"
     },
-    "sapi": {
-        "url": "http://sapi.{{{datacenter_name}}}.{{{dns_domain}}}"
-    },
-{{#experimental_docker_nfs_shared_volumes}}
     "volapi": {
         "url": "http://volapi.{{{datacenter_name}}}.{{{dns_domain}}}"
     },
-{{/experimental_docker_nfs_shared_volumes}}
     "moray": {
         "srvDomain": "{{MORAY_SERVICE}}",
         "cueballOptions": {

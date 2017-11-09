@@ -23,6 +23,21 @@ var ADMIN_FABRIC_NETWORK;
 var VMAPI_ORIGIN_IMAGE_UUID;
 var SERVER;
 var TEST_VOLUMES_NAME_PREFIX = 'vmapitest-volumes-';
+var VOLAPI_SERVICE_PRESENT = false;
+
+function testIfVolapiPresent(testFunc) {
+    assert.func(testFunc, 'testFunc');
+
+    return function testWrapper(t) {
+        if (!VOLAPI_SERVICE_PRESENT) {
+            t.ok(true, 'VOLAPI core service not present, skipping tests');
+            t.done();
+            return;
+        }
+
+        testFunc(t);
+    };
+}
 
 function getVmPayloadTemplate() {
     return {
@@ -53,21 +68,19 @@ exports.setUp = function (callback) {
     });
 };
 
-exports.check_volapi_present = function (t) {
-    client.sapi.get('/services?name=volapi',
-        function onListServices(servicesListErr, req, res, services) {
-            if (servicesListErr || !services || services.length === 0) {
-                console.log('skipping tests suite since VOLAPI service is ' +
-                    'not present');
-                process.exit(0);
+exports.check_volapi_instance_present = function (t) {
+    client.get('/vms?tag.smartdc_role=volapi&state=running',
+        function onListVolapiVms(vmsListErr, req, res, volapiVms) {
+            if (vmsListErr || !volapiVms || volapiVms.length === 0) {
+                VOLAPI_SERVICE_PRESENT = false;
             } else {
-                t.ok(true, 'VOLAPI service present');
-                t.done();
+                VOLAPI_SERVICE_PRESENT = true;
             }
+            t.done();
         });
 };
 
-exports.get_vmapi_origin_image = function (t) {
+exports.get_vmapi_origin_image = testIfVolapiPresent(function (t) {
     var vmapiVmImgUuid;
 
     vasync.pipeline({funcs: [
@@ -100,9 +113,9 @@ exports.get_vmapi_origin_image = function (t) {
         t.ifError(err);
         t.done();
     });
-};
+});
 
-exports.get_admin_fabric_network = function (t) {
+exports.get_admin_fabric_network = testIfVolapiPresent(function (t) {
     client.napi.get('/networks?owner_uuid=' + ADMIN_USER_UUID + '&fabric=true',
         function (err, req, res, networks) {
         common.ifError(t, err);
@@ -117,9 +130,9 @@ exports.get_admin_fabric_network = function (t) {
 
         t.done();
     });
-};
+});
 
-exports.find_headnode = function (t) {
+exports.find_headnode = testIfVolapiPresent(function (t) {
     client.cnapi.get('/servers', function (err, req, res, servers) {
         common.ifError(t, err);
         t.equal(res.statusCode, 200, '200 OK');
@@ -134,9 +147,9 @@ exports.find_headnode = function (t) {
         t.ok(SERVER, 'server found');
         t.done();
     });
-};
+});
 
-exports.create_vm_with_invalid_volumes_params = function (t) {
+exports.create_vm_invalid_volumes_params = testIfVolapiPresent(function (t) {
     var INVALID_VOLUMES_PARAMS = [
         null,
         [],
@@ -168,9 +181,9 @@ exports.create_vm_with_invalid_volumes_params = function (t) {
     }, function onAllInvalidVolParamsTestsDone(err) {
         t.done();
     });
-};
+});
 
-exports.create_vm_with_valid_volumes_params = function (t) {
+exports.create_vm_with_valid_volumes_params = testIfVolapiPresent(function (t) {
     var INVALID_VOLUMES_PARAMS = [
         [
             {
@@ -306,4 +319,4 @@ exports.create_vm_with_valid_volumes_params = function (t) {
     }, function onAllInvalidVolParamsTestsDone(err) {
         t.done();
     });
-};
+});

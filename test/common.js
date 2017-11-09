@@ -39,7 +39,6 @@ var CNAPI_URL = config.cnapi.url || 'http://10.99.99.22';
 var IMGAPI_URL = config.imgapi.url || 'http://10.99.99.21';
 var NAPI_URL = config.napi.url || 'http://10.99.99.10';
 var VMAPI_URL = process.env.VMAPI_URL || 'http://localhost';
-var SAPI_URL = config.sapi.url || 'http://10.99.99.31';
 var VOLAPI_URL = config.volapi.url || 'http://10.99.99.42';
 
 var VMS_LIST_ENDPOINT = '/vms';
@@ -81,13 +80,6 @@ function setUp(callback) {
         agent: false
     });
 
-    var sapi = restify.createJsonClient({
-        url: SAPI_URL,
-        version: '*',
-        log: logger,
-        agent: false
-    });
-
     var volapi = restify.createJsonClient({
         url: VOLAPI_URL,
         /*
@@ -110,7 +102,6 @@ function setUp(callback) {
     client.cnapi = cnapi;
     client.imgapi = imgapi;
     client.napi = napi;
-    client.sapi = sapi;
     client.volapi = volapi;
 
     return callback(null, client);

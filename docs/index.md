@@ -388,6 +388,14 @@ following is the format of the ping response object.
             "error": "latest error encountered during moray buckets initialization"
           }
         }
+      },
+      "dataMigrations": {
+        "latestCompletedMigrations": {
+          "vms": 1
+        },
+        "latestErrors": {
+          "vms": "Error: error encountered during data migrations"
+        }
       }
     }
 
@@ -413,6 +421,18 @@ The `initialization.moray.status` property can have the following values:
 * `FAILED`: the moray buckets initialization has failed with a non transient
   error.
 
+The `dataMigrations` property is composed of two sub-properties:
+
+1. `latestCompletedMigrations`: an object that has properties whose names
+   identify data models (`vms`, `server_vms`, `vm_role_tags`) and whose values
+   indicate the sequence number of the latest migrations that completed
+   successfully for that model.
+
+2. `latestErrors`: an object structured similarly to
+   `latestCompletedMigrations`, but instead of values identifiying the latest
+   migration that completed successfully, they represent the latest error that
+   occured when migration the data for the corresponding data model.
+
 # VMs
 
 The Vms endpoint let us get information about VMs living on a SDC install; there is only one VMAPI instance per datacenter. VMAPI acts as an HTTP interface to VM data stored in Moray. VMAPI is used to obtain information about particular VMs, or when we need perform actions on them -- such as start, reboot, resize, etc.
@@ -428,22 +448,23 @@ will result in a request error.
 
 | Param            | Type                                             | Description                                     |
 | ---------------- | ------------------------------------------------ | ----------------------------------------------- |
-| uuid             | UUID                                             | VM uuid                                         |
-| owner_uuid       | UUID                                             | VM Owner                                        |
-| server_uuid      | UUID                                             | Server where the VM lives                       |
-| image_uuid       | UUID                                             | Image of the VM                                 |
+| alias            | String                                           | VM Alias|
 | billing_id       | UUID                                             | UUID of the package the VM was created with     |
 | brand            | String                                           | Brand of the VM (joyent, joyent-minimal or kvm) |
-| docker           | Boolean                                          | true if the VM is a docker VM, false otherwise  |
-| alias            | String                                           | VM Alias                                        |
-| state            | String                                           | running, stopped, active or destroyed           |
-| ram              | Number                                           | Amount of memory of the VM                      |
-| uuids            | String (comma-separated UUID values)             | List of VM UUIDs to match                       |
 | create_timestamp | Unix Time in milliseconds or UTC ISO Date String | VM creation timestamp                           |
+| docker           | Boolean                                          | true if the VM is a docker VM, false otherwise  |
+| fields           | String (comma-separated values)                  | Specify which VM fields to return, see below    |
+| image_uuid       | UUID                                             | Image of the VM                                 |
+| internal_metadata| String                                           | VM internal metadata, [see below](#internal-metadata)
+| owner_uuid       | UUID                                             | VM Owner                                        |
 | package_name     | String                                           | DEPRECATED: use billing_id                      |
 | package_version  | String                                           | DEPRECATED: use billing_id                      |
+| uuid             | UUID                                             | VM uuid                                         |
+| ram              | Number                                           | Amount of memory of the VM                      |
+| server_uuid      | UUID                                             | Server where the VM lives                       |
+| state            | String                                           | running, stopped, active or destroyed           |
+| uuids            | String (comma-separated UUID values)             | List of VM UUIDs to match                       |
 | tag.key          | String                                           | VM tags, see below                              |
-| fields           | String (comma-separated values)                  | Specify which VM fields to return, see below    |
 
 ### Specifying VM Fields to Return
 
@@ -677,6 +698,22 @@ result in a request error.
 ### Tags
 
 VMs can also be searched by tags. Tags are key/value pairs that let us identify a vm by client-specific criteria. If a VM is tagged as 'role=master', then the search filter to be added to the request params should be 'tag.role=master'. When a tag value is '*', the search is performed for VMs that are tagged with any value of the specified key. Any number of tags can be specified. See the examples section for sample searches of VMs by tags.
+
+### Internal metadata
+
+VMs can be searched by internal metadata. Internal metadata is an object with
+keys and values that are always strings. There are no nested objects/properties.
+Pattern matching is not available, so matching needs to be exact.
+
+For example, to search for VMs with a `docker:logdriver` internal metadata key
+with a value of `"json-file"`, one can send the following query:
+
+```
+GET /vms?internal_metadata.docker:logdriver=json-file
+```
+
+There is one limitation to keep in mind: matching a string in a given internal
+metadata key that is larger than 100 characters is not supported.
 
 ### ListVms Responses
 
