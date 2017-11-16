@@ -46,7 +46,11 @@ function getVmPayloadTemplate() {
         image_uuid: VMAPI_ORIGIN_IMAGE_UUID,
         server_uuid: SERVER.uuid,
         networks: [ { uuid: ADMIN_FABRIC_NETWORK.uuid } ],
-        brand: 'joyent-minimal',
+        /*
+         * We use the 'joyent' brand on purpose here since joyent-minimal
+         * doesn't support mounting NFS volumes.
+         */
+        brand: 'joyent',
         billing_id: '00000000-0000-0000-0000-000000000000',
         ram: 64,
         quota: 10,
@@ -248,7 +252,10 @@ exports.create_vm_with_valid_volumes_params = testIfVolapiPresent(function (t) {
 
                     waitForValue('/jobs/' + vmProvisioningJobUuid, 'execution',
                         'succeeded',
-                        { client: client, timeout: 4 * 60 * 1000 },
+                        /*
+                         * 4 minutes timeout.
+                         */
+                        { client: client, timeout: 4 * 60 },
                         function onVmProvisioned(provisionErr) {
                             t.ifError(provisionErr,
                                 'VM should be provisioned successfully');
