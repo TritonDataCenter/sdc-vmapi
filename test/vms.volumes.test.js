@@ -253,9 +253,16 @@ exports.create_vm_with_valid_volumes_params = testIfVolapiPresent(function (t) {
                     waitForValue('/jobs/' + vmProvisioningJobUuid, 'execution',
                         'succeeded',
                         /*
-                         * 4 minutes timeout.
+                         * 10 minutes timeout: we're provisioning a VM with the
+                         * "joyent" brand, which means that its boot process
+                         * includes running zoneinit and rebooting once. This
+                         * can unfortunately take a while (it almost always
+                         * takes > 4 minutes in nightly-1, and can take longer
+                         * depending on load and hardware). So we set the
+                         * timeout to a value large enough that timing out would
+                         * very likely indicate an actual problem.
                          */
-                        { client: client, timeout: 4 * 60 },
+                        { client: client, timeout: 10 * 60 },
                         function onVmProvisioned(provisionErr) {
                             t.ifError(provisionErr,
                                 'VM should be provisioned successfully');
