@@ -27,7 +27,7 @@
     "sprintf": "0.1.1",
     "strsplit": "1.0.0",
     "trace-event": "1.3.0",
-    "triton-tags": "^1.1.4",
+    "triton-tags": "git+https://github.com/joyent/node-triton-tags.git#9485976bc579411619fe2bb9536fdcbeef907c97",
     "vasync": "2.2.0",
     "verror": "1.10.0",
     "wf-client": "0.2.1"

@@ -1462,11 +1462,14 @@ has succeeded.
 
 ## DeleteVm (DELETE /vms/:uuid)
 
-Deletes a VM. If the VM exists and has a `server_uuid` that refers to an actual
-CN that is available, the VM will be physically destroyed and it will be marked
-as destroyed in the cache database.
+Deletes a VM. If the VM exists, has a `server_uuid` that refers to an actual
+CN that is available, and does not have the tag `triton.instance.protection` set
+true, the VM will be physically destroyed and it will be marked as destroyed in
+the cache database.
 
 If the VM doesn't have a `server_uuid`, the request will result in an error.
+Likewise, if the triton.instance.undeletable tag is true, the request will also
+result in an error -- in order to delete such a VM, the tag must be removed first.
 
 ### Inputs
 
@@ -1482,7 +1485,7 @@ If the VM doesn't have a `server_uuid`, the request will result in an error.
 | ---- | ---------------------------------------------------------------------------- | ------------------ |
 | 202  | New job created                                                              | VM response object |
 | 404  | VM Not Found. VM does not exist or VM does not belong to the specified owner | Error object       |
-| 409  | VM not allocated to a server yet                                             | Error object       |
+| 409  | VM not allocated to a server yet, or triton.instance.undeletable tag is true | Error object       |
 
 On a successful response, a [VM Job Response Object](#vm-job-response-object) is
 returned in the response body.

@@ -709,9 +709,15 @@ exports.create_vm_tags_not_ok = function (t) {
         callVmapi({ 'triton.cns.services': 'foo,$#foo.bar' }, msg, next);
     }
 
+    function checkBadTritonInstanceProtection(next) {
+        var msg = 'Triton tag "triton.instance.undeletable" value must be a ' +
+            'boolean: "true" (string)';
+        callVmapi({ 'triton.instance.undeletable': 'true' }, msg, next);
+    }
+
     async.series([
         checkBadTritonTag, checkBadTritonTagType1, checkBadTritonTagType2,
-        checkBadTritonDNS
+        checkBadTritonDNS, checkBadTritonInstanceProtection
     ], function () {
         t.done();
     });
@@ -1496,7 +1502,8 @@ exports.add_tags = function (t) {
 
     var query = {
         role: 'database',
-        group: 'deployment'
+        group: 'deployment',
+        'triton.instance.undeletable': true
     };
 
     var opts = createOpts(path, query);
@@ -1526,7 +1533,8 @@ exports.wait_new_tag_job = function (t) {
 exports.wait_new_tag = function (t) {
     var tags = {
         role: 'database',
-        group: 'deployment'
+        group: 'deployment',
+        'triton.instance.undeletable': true
     };
 
     waitForValue(vmLocation, 'tags', tags, {
@@ -1539,21 +1547,38 @@ exports.wait_new_tag = function (t) {
 
 
 exports.get_tag = function (t) {
-    var path = '/vms/' + newUuid + '/tags/role?owner_uuid=' + CUSTOMER;
+    var path = '/vms/' + newUuid +
+        '/tags/triton.instance.undeletable?owner_uuid=' + CUSTOMER;
 
     client.get(path, function (err, req, res, data) {
         common.ifError(t, err);
         t.equal(res.statusCode, 200, '200 OK');
         common.checkHeaders(t, res.headers);
-        t.ok(data);
-        t.equal(data, 'database');
+        t.equal(data, true);
         t.done();
     });
 };
 
 
+exports.cannot_destroy_vm_with_instance_protection = function (t) {
+    var opts = createOpts(vmLocation);
+
+    client.del(opts, function (err, req, res, body) {
+        t.ok(err, 'error expected');
+        t.equal(res.statusCode, 409, '409 Conflict');
+        t.deepEqual(body, {
+            code: 'CannotDeleteInstanceError',
+            message: 'Instance has "triton.instance.undeletable" tag'
+        }, 'error message');
+        t.done();
+    });
+};
+
+
+
 exports.delete_tag = function (t) {
-    var path = '/vms/' + newUuid + '/tags/role?owner_uuid=' + CUSTOMER;
+    var path = '/vms/' + newUuid +
+        '/tags/triton.instance.undeletable?owner_uuid=' + CUSTOMER;
 
     var opts = createOpts(path, { owner_uuid: CUSTOMER });
 
@@ -1581,6 +1606,7 @@ exports.wait_delete_tag_job = function (t) {
 
 exports.wait_delete_tag = function (t) {
     var tags = {
+        role: 'database',
         group: 'deployment'
     };
 
