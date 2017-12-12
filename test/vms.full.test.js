@@ -14,6 +14,7 @@ var uuid = require('libuuid');
 var qs = require('querystring');
 var async = require('async');
 var util = require('util');
+var jsprim = require('jsprim');
 
 var common = require('./common');
 var testUuid = require('./lib/uuid');
@@ -32,6 +33,8 @@ var pkgId;
 var IMAGE = 'fd2cc906-8938-11e3-beab-4359c665ac99';
 var CUSTOMER = common.config.ufdsAdminUuid;
 var NETWORKS = null;
+var FAKE_NETWORK_UUID = 'caaaf10c-a587-49c6-9cf6-9b0a14ba960b';
+var FAKE_NETWORK_NAME = 'fakeNetworkName';
 var SERVER = null;
 var CALLER = {
     type: 'signature',
@@ -578,6 +581,68 @@ exports.create_vm_tags_not_ok = function (t) {
 };
 
 
+exports.create_vm_with_unknown_network = function (t) {
+    var vm = {
+        owner_uuid: CUSTOMER,
+        image_uuid: IMAGE,
+        server_uuid: SERVER.uuid,
+        networks: [ { uuid: FAKE_NETWORK_UUID } ],
+        brand: 'joyent-minimal',
+        billing_id: '00000000-0000-0000-0000-000000000000',
+        ram: 64,
+        quota: 10,
+        creator_uuid: CUSTOMER,
+        origin: 'cloudapi'
+    };
+
+    var opts = createOpts('/vms', vm);
+
+    client.post(opts, vm, function (err, req, res, body) {
+        t.ok(err, 'error set');
+        t.equal(err.restCode, 'UnprocessableEntityError', 'err.restCode');
+        t.equal(res.statusCode, 422, '422 UnprocessableEntityError');
+
+        t.deepEqual(body, {
+            code: 'UnprocessableEntityError',
+            message: 'No such Network/Pool with id: "' + FAKE_NETWORK_UUID + '"'
+        });
+
+        t.done();
+    });
+};
+
+
+exports.create_vm_with_unknown_network_name = function (t) {
+    var vm = {
+        owner_uuid: CUSTOMER,
+        image_uuid: IMAGE,
+        server_uuid: SERVER.uuid,
+        networks: [ { name: FAKE_NETWORK_NAME } ],
+        brand: 'joyent-minimal',
+        billing_id: '00000000-0000-0000-0000-000000000000',
+        ram: 64,
+        quota: 10,
+        creator_uuid: CUSTOMER,
+        origin: 'cloudapi'
+    };
+
+    var opts = createOpts('/vms', vm);
+
+    client.post(opts, vm, function (err, req, res, body) {
+        t.ok(err, 'error set');
+        t.equal(err.restCode, 'UnprocessableEntityError', 'err.restCode');
+        t.equal(res.statusCode, 422, '422 UnprocessableEntityError');
+
+        t.deepEqual(body, {
+            code: 'UnprocessableEntityError',
+            message: 'No such Network or Pool with name: ' + FAKE_NETWORK_NAME
+        });
+
+        t.done();
+    });
+};
+
+
 exports.create_vm = function (t) {
     var md = {
         foo: 'bar',
@@ -807,6 +872,133 @@ exports.undefined_vm_action = function (t) {
     client.post(opts, params, function (err, req, res, body) {
         t.equal(res.statusCode, 409, '409 Conflict');
         t.done();
+    });
+};
+
+
+exports.add_nics_with_unknown_network = function (t) {
+    var params = {
+        action: 'add_nics',
+        networks: [ { uuid: FAKE_NETWORK_UUID } ]
+    };
+
+    var opts = createOpts(vmLocation, params);
+
+    client.post(opts, params, function (err, req, res, body) {
+        t.ok(err, 'error set');
+        t.equal(err.restCode, 'UnprocessableEntityError', 'err.restCode');
+        t.equal(res.statusCode, 422, '422 UnprocessableEntityError');
+
+        t.deepEqual(body, {
+            code: 'UnprocessableEntityError',
+            message: 'No such Network/Pool with id: "' + FAKE_NETWORK_UUID + '"'
+        });
+
+        t.done();
+    });
+};
+
+
+exports.add_nics_with_unknown_network_name = function (t) {
+    var params = {
+        action: 'add_nics',
+        networks: [ { name: FAKE_NETWORK_NAME } ]
+    };
+
+    var opts = createOpts(vmLocation, params);
+
+    client.post(opts, params, function (err, req, res, body) {
+        t.ok(err, 'error set');
+        t.equal(err.restCode, 'UnprocessableEntityError', 'err.restCode');
+        t.equal(res.statusCode, 422, '422 UnprocessableEntityError');
+
+        t.deepEqual(body, {
+            code: 'UnprocessableEntityError',
+            message: 'No such Network or Pool with name: ' + FAKE_NETWORK_NAME
+        });
+
+        t.done();
+    });
+};
+
+
+exports.create_vm_with_already_provisioned_ip = function (t) {
+    var zoneUuid;
+    var ips;
+
+    client.get(vmLocation, function (err, req, res, body) {
+        common.ifError(t, err);
+        t.equal(res.statusCode, 200, '200 OK');
+        common.checkHeaders(t, res.headers);
+        t.ok(body, 'got provisioned vm');
+
+        // This is depending on NETWORKS[0] being the admin network
+        ips = body.nics.filter(function (nic) {
+            return nic.nic_tag === NETWORKS[0].nic_tag;
+        }).map(function (nic) {
+            return nic.ip;
+        });
+        t.ok(ips[0], 'found ip on the admin network');
+
+        zoneUuid = body.uuid;
+
+        var vm = {
+            alias: 'vmapitest-full-' + testUuid.generateShortUuid(),
+            owner_uuid: CUSTOMER,
+            image_uuid: IMAGE,
+            server_uuid: SERVER.uuid,
+            brand: 'joyent-minimal',
+            billing_id: '00000000-0000-0000-0000-000000000000',
+            ram: 64,
+            quota: 10,
+            creator_uuid: CUSTOMER,
+            origin: 'cloudapi',
+            role_tags: ['fd48177c-d7c3-11e3-9330-28cfe91a33c9']
+        };
+
+        vm.networks = [
+            {
+                ipv4_uuid: NETWORKS[0].uuid,
+                ipv4_ips: [ ips[0] ]
+            }
+        ];
+
+        var opts = createOpts('/vms', vm);
+
+        client.post(opts, vm, function (err2, req2, res2, body2) {
+            t.ok(err2, 'error set');
+            t.equal(err2.restCode, 'InvalidParameters', 'err.restCode');
+            t.equal(res2.statusCode, 422, '409 InvalidParametersError');
+
+            /*
+             * Since this test is relying on an error from napi we are going
+             * to delete the message associated with the error to not trip
+             * up the test when a change in napi gets made.
+             * For example: NAPI-438
+             *
+             * Also we check for the presence of an errors array first so we are
+             * careful not to crash the entire test suite.
+             */
+            var modifiedBody = jsprim.deepCopy(body2);
+            if (modifiedBody.errors) {
+                modifiedBody.errors.forEach(function deleteMessage(error) {
+                    delete error.message;
+                });
+            }
+
+            t.deepEqual(modifiedBody, {
+                code: 'InvalidParameters',
+                message: 'Invalid parameters',
+                errors: [ {
+                    type: 'zone',
+                    id: zoneUuid,
+                    code: 'UsedBy',
+                    field: 'ip'
+                } ]
+            }, 'expected error matches');
+
+            t.done();
+        });
     });
 };
 

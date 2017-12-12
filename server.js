@@ -26,9 +26,9 @@ var sigyan = require('sigyan');
 var util = require('util');
 var vasync = require('vasync');
 
+var sdc = require('sdc-clients');
 var CNAPI = require('./lib/apis/cnapi');
 var IMGAPI = require('./lib/apis/imgapi');
-var NAPI = require('./lib/apis/napi');
 var PAPI = require('./lib/apis/papi');
 var VmapiApp = require('./lib/vmapi');
 var WFAPI = require('./lib/apis/wfapi');
@@ -96,10 +96,12 @@ function createApiClients(config, parentLog) {
     var imgapiClient = new IMGAPI(imgapiClientOpts);
 
     assert.object(config.napi, 'config.napi');
-    var napiClientOpts = jsprim.deepCopy(config.napi);
-    napiClientOpts.log = parentLog.child({ component: 'napi' }, true);
-    napiClientOpts.agent = agent;
-    var napiClient = new NAPI(napiClientOpts);
+    var napiLog = parentLog.child({ component: 'napi' }, true);
+    var napiClient = new sdc.NAPI({
+        log: napiLog,
+        url: config.napi.url,
+        agent: agent
+    });
 
     assert.object(config.papi, 'config.papi');
     var papiClientOpts = jsprim.deepCopy(config.papi);
