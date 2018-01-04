@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright 2017 Joyent, Inc.
+ * Copyright 2018 Joyent, Inc.
  */
 
 var assert = require('assert-plus');
@@ -276,7 +276,8 @@ exports.create_vm_with_valid_volumes_params = testIfVolapiPresent(function (t) {
                         function onListVolumes(listVolErr, req, res, body) {
                             t.ifError(listVolErr, 'Listing volumes with name ' +
                                 volumeName + ' should succeed');
-                            if (body) {
+                            t.ok(body, 'response should not be empty');
+                            if (body && body.length > 0) {
                                 volumeUuid = body[0].uuid;
                             }
 
@@ -285,6 +286,13 @@ exports.create_vm_with_valid_volumes_params = testIfVolapiPresent(function (t) {
                 },
 
                 function checkVolumeProvisioned(ctx, next) {
+                    if (volumeUuid === undefined) {
+                        t.ok(false,
+                            'volumeUuid not found, cannot check volume state');
+                        next();
+                        return;
+                    }
+
                     waitForValue('/volumes/' + volumeUuid, 'state', 'ready',
                         { client: client.volapi },
                         function onVolCreated(volCreatErr) {
@@ -296,6 +304,12 @@ exports.create_vm_with_valid_volumes_params = testIfVolapiPresent(function (t) {
                 },
 
                 function deleteVm(ctx, next) {
+                    if (!vmUuid) {
+                        t.ok(false, 'vmUuid not found, cannot delete VM');
+                        next();
+                        return;
+                    }
+
                     client.del({
                         path: '/vms/' + vmUuid
                     }, function onVmDeleted(vmDelErr) {
@@ -307,6 +321,14 @@ exports.create_vm_with_valid_volumes_params = testIfVolapiPresent(function (t) {
                 },
 
                 function waitForVmDeleted(ctx, next) {
+                    if (!vmUuid) {
+                        t.ok(false,
+                            'vmUuid not found, cannot wait for VM to be ' +
+                                'deleted');
+                        next();
+                        return;
+                    }
+
                     waitForValue('/vms/' + vmUuid, 'state', 'destroyed', {
                         client: client
                     }, function onVmDeleted(vmDelErr) {
@@ -318,6 +340,13 @@ exports.create_vm_with_valid_volumes_params = testIfVolapiPresent(function (t) {
                 },
 
                 function deleteVolume(ctx, next) {
+                    if (!volumeUuid) {
+                        t.ok(false,
+                            'volumeUuid not found, cannot delete volume');
+                        next();
+                        return;
+                    }
+
                     client.volapi.del('/volumes/' + volumeUuid + '?force=true',
                         function onVolDeleted(volDelErr) {
                             t.ifError(volDelErr);
