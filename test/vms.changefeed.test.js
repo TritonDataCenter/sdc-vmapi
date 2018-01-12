@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright (c) 2017, Joyent, Inc.
+ * Copyright (c) 2018, Joyent, Inc.
  */
 
 var assert = require('assert-plus');
@@ -97,7 +97,7 @@ function waitForValue(url, key, value, callback) {
             times++;
 
             if (times === TIMEOUT) {
-                throw new Error('Timeout waiting on ' + url);
+                callback(new Error('Timeout waiting on ' + url));
             } else {
                 setTimeout(function () {
                     waitForValue(url, key, value, callback);
