@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright (c) 2017, Joyent, Inc.
+ * Copyright (c) 2018, Joyent, Inc.
  */
 
 // var test = require('tap').test;
@@ -15,6 +15,7 @@ var qs = require('querystring');
 var async = require('async');
 var util = require('util');
 var jsprim = require('jsprim');
+var vasync = require('vasync');
 
 var common = require('./common');
 var testUuid = require('./lib/uuid');
@@ -41,8 +42,13 @@ var CALLER = {
     ip: '127.0.0.68',
     keyId: '/foo@joyent.com/keys/id_rsa'
 };
+var VM_ALIAS_BASE = 'vmapitest-full';
 
 // --- Helpers
+function makeVmAlias(id) {
+    assert.string(id, 'id');
+    return util.format('%s-%d-%s', VM_ALIAS_BASE, process.pid, id);
+}
 
 function checkMachine(t, vm) {
     t.ok(vm.uuid, 'uuid');
@@ -134,6 +140,112 @@ function createOpts(path, params) {
 }
 
 
+function createTestVms(cb) {
+    assert.func(cb, 'cb');
+
+    var NUM_VMS = 3;
+    var i = 0;
+    var ret = {
+        createdVms: 0
+    };
+
+    var VM = {
+        autoboot: false,
+        owner_uuid: CUSTOMER,
+        image_uuid: IMAGE,
+        server_uuid: SERVER.uuid,
+        networks: [ { uuid: NETWORKS[0].uuid } ],
+        brand: 'joyent-minimal',
+        billing_id: '00000000-0000-0000-0000-000000000000',
+        ram: 128,
+        quota: 10,
+        customer_metadata: {},
+        creator_uuid: CUSTOMER
+    };
+
+    vasync.whilst(
+        function () {
+            return i < NUM_VMS;
+        },
+        function (next) {
+            var vm = jsprim.deepCopy(VM);
+            vm.alias = makeVmAlias(i.toString());
+
+            var opts = createOpts('/vms', vm);
+
+            client.post(opts, vm, function (err, req, res, body) {
+                if (err) {
+                    next(err);
+                    return;
+                }
+
+                var job = '/jobs/' + body.job_uuid;
+
+                i++;
+                ret.createdVms++;
+                waitForValue(job, 'execution', 'succeeded', {
+                    client: client
+                }, next);
+            });
+        },
+        function (err) {
+            cb(err, ret);
+        });
+}
+
+
+function destroyTestVms(cb) {
+    assert.func(cb, 'cb');
+
+    var path = '/vms?' + qs.stringify({
+        alias: VM_ALIAS_BASE + '-',
+        owner_uuid: CUSTOMER
+    });
+    var aliasBaseRegex = new RegExp('^' + VM_ALIAS_BASE + '-');
+    var ret = {
+        destroyedVms: 0
+    };
+
+    client.get(path, function (err, req, res, body) {
+        if (err) {
+            cb(err);
+            return;
+        }
+        assert.arrayOfObject(body, 'body is Array');
+
+        body = body.filter(function (vm) {
+            return ['destroyed', 'failed'].indexOf(vm.state) === -1;
+        });
+
+        vasync.whilst(
+            function () {
+                return body.length > 0;
+            },
+            function (next) {
+                var vm = body.pop();
+                assert.object(vm, 'vm');
+                assert.uuid(vm.uuid, 'vm.uuid');
+                assert.string(vm.alias, 'vm.alias');
+                assert.ok(vm.alias.match(aliasBaseRegex), 'vm.alias regex');
+
+                var opts = createOpts('/vms/' + vm.uuid);
+
+                client.del(opts, function (delErr, delReq, delRes, delBody) {
+                    if (delErr) {
+                        next(delErr);
+                        return;
+                    }
+
+                    ret.destroyedVms++;
+                    next();
+                });
+
+            }, function (delVmsErr) {
+                cb(delVmsErr, ret);
+            });
+    });
+}
+
 
 // --- Tests
 
@@ -179,6 +291,33 @@ exports.napi_networks_ok = function (t) {
         t.ok(networks.length > 1, 'more than 1 network found');
         NETWORKS = networks;
         t.done();
+    });
+};
+
+
+exports.initialize_test_vms = function (t) {
+    destroyTestVms(function (destroyErr, destroyObj) {
+        common.ifError(t, destroyErr);
+
+        if (!destroyErr) {
+            assert.object(destroyObj, 'destroyObj');
+            assert.number(destroyObj.destroyedVms, 'destroyObj.destroyedVms');
+            t.ok(true, util.format('destroyed %d test vms',
+                destroyObj.destroyedVms));
+        }
+
+        createTestVms(function (createErr, createObj) {
+            common.ifError(t, createErr);
+
+            if (!createErr) {
+                assert.object(createObj, 'createObj');
+                assert.number(createObj.createdVms, 'createObj.createdVms');
+                t.ok(true, util.format('created %d test vms',
+                    createObj.createdVms));
+            }
+
+            t.done();
+        });
     });
 };
 
@@ -523,8 +662,6 @@ exports.create_vm_tags_not_ok = function (t) {
             ram: 64,
             quota: 10,
             creator_uuid: CUSTOMER,
-            origin: 'cloudapi',
-            role_tags: ['fd48177c-d7c3-11e3-9330-28cfe91a33c9'],
             tags: tags
         };
 
@@ -591,8 +728,7 @@ exports.create_vm_with_unknown_network = function (t) {
         billing_id: '00000000-0000-0000-0000-000000000000',
         ram: 64,
         quota: 10,
-        creator_uuid: CUSTOMER,
-        origin: 'cloudapi'
+        creator_uuid: CUSTOMER
     };
 
     var opts = createOpts('/vms', vm);
@@ -622,8 +758,7 @@ exports.create_vm_with_unknown_network_name = function (t) {
         billing_id: '00000000-0000-0000-0000-000000000000',
         ram: 64,
         quota: 10,
-        creator_uuid: CUSTOMER,
-        origin: 'cloudapi'
+        creator_uuid: CUSTOMER
     };
 
     var opts = createOpts('/vms', vm);
@@ -650,7 +785,7 @@ exports.create_vm = function (t) {
     };
 
     var vm = {
-        alias: 'vmapitest-full-' + testUuid.generateShortUuid(),
+        alias: makeVmAlias(testUuid.generateShortUuid()),
         owner_uuid: CUSTOMER,
         image_uuid: IMAGE,
         server_uuid: SERVER.uuid,
@@ -660,9 +795,7 @@ exports.create_vm = function (t) {
         ram: 64,
         quota: 10,
         customer_metadata: md,
-        creator_uuid: CUSTOMER,
-        origin: 'cloudapi',
-        role_tags: ['fd48177c-d7c3-11e3-9330-28cfe91a33c9']
+        creator_uuid: CUSTOMER
     };
 
     var opts = createOpts('/vms', vm);
@@ -943,7 +1076,7 @@ exports.create_vm_with_already_provisioned_ip = function (t) {
         zoneUuid = body.uuid;
 
         var vm = {
-            alias: 'vmapitest-full-' + testUuid.generateShortUuid(),
+            alias: makeVmAlias(testUuid.generateShortUuid()),
             owner_uuid: CUSTOMER,
             image_uuid: IMAGE,
             server_uuid: SERVER.uuid,
@@ -951,9 +1084,7 @@ exports.create_vm_with_already_provisioned_ip = function (t) {
             billing_id: '00000000-0000-0000-0000-000000000000',
             ram: 64,
             quota: 10,
-            creator_uuid: CUSTOMER,
-            origin: 'cloudapi',
-            role_tags: ['fd48177c-d7c3-11e3-9330-28cfe91a33c9']
+            creator_uuid: CUSTOMER
         };
 
         vm.networks = [
@@ -2074,8 +2205,7 @@ exports.provision_network_names = function (t) {
         billing_id: '00000000-0000-0000-0000-000000000000',
         ram: 64,
         quota: 10,
-        creator_uuid: CUSTOMER,
-        origin: 'cloudapi'
+        creator_uuid: CUSTOMER
     };
 
     var opts = createOpts('/vms', vm);
@@ -2170,7 +2300,6 @@ exports.invalid_firewall_rules = function (t) {
             ram: 64,
             quota: 10,
             creator_uuid: CUSTOMER,
-            origin: 'cloudapi',
             firewall_rules: params[0]
         };
 
@@ -2209,7 +2338,6 @@ exports.create_docker_vm = function (t) {
         ram: 64,
         quota: 10,
         creator_uuid: CUSTOMER,
-        origin: 'cloudapi',
         tags: {
            'docker:label:com.docker.blah': 'quux'
         }
@@ -2426,6 +2554,22 @@ exports.destroy_docker_vm = function (t) {
         t.ok(body, 'body is set');
         jobLocation = '/jobs/' + body.job_uuid;
         t.ok(true, 'jobLocation: ' + jobLocation);
+        t.done();
+    });
+};
+
+
+exports.destroy_test_vms_final = function (t) {
+    destroyTestVms(function (destroyErr, destroyObj) {
+        common.ifError(t, destroyErr);
+
+        if (!destroyErr) {
+            assert.object(destroyObj, 'destroyObj');
+            assert.number(destroyObj.destroyedVms, 'destroyObj.destroyedVms');
+            t.ok(true, util.format('destroyed %d test vms',
+                destroyObj.destroyedVms));
+        }
+
         t.done();
     });
 };
