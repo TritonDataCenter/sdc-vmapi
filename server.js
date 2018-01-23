@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright (c) 2017, Joyent, Inc.
+ * Copyright (c) 2018, Joyent, Inc.
  */
 
 /*
@@ -31,6 +31,7 @@ var CNAPI = require('./lib/apis/cnapi');
 var IMGAPI = require('./lib/apis/imgapi');
 var PAPI = require('./lib/apis/papi');
 var VmapiApp = require('./lib/vmapi');
+var VOLAPI = require('sdc-clients').VOLAPI;
 var WFAPI = require('./lib/apis/wfapi');
 
 var configLoader = require('./lib/config-loader');
@@ -109,6 +110,14 @@ function createApiClients(config, parentLog) {
     papiClientOpts.agent = agent;
     var papiClient = new PAPI(papiClientOpts);
 
+    assert.object(config.volapi, 'config.volapi');
+    var volapiClientOpts = jsprim.deepCopy(config.volapi);
+    var volapiClient = new VOLAPI({
+        agent: agent,
+        url: volapiClientOpts.url,
+        userAgent: 'sdc-vmapi'
+    });
+
     assert.object(config.wfapi, 'config.wfapi');
     var wfapiClientOpts = jsprim.deepCopy(config.wfapi);
     wfapiClientOpts.log = parentLog.child({ component: 'wfapi' }, true);
@@ -120,6 +129,7 @@ function createApiClients(config, parentLog) {
         imgapi: imgapiClient,
         napi: napiClient,
         papi: papiClient,
+        volapi: volapiClient,
         wfapi: wfapiClient
     };
 }
