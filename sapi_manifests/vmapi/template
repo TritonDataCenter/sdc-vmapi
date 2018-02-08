@@ -4,6 +4,11 @@
     "useVmAgent": true,
     "ufdsAdminUuid": "{{{ufds_admin_uuid}}}",
     "reserveKvmStorage": "{{reserveKvmStorage}}",
+    "datacenterName": "{{datacenter_name}}",
+    "serviceName": "{{SERVICE_NAME}}",
+    "instanceUuid": "{{auto.ZONENAME}}",
+    "serverUuid": "{{auto.SERVER_UUID}}",
+    "adminIp": "{{auto.ADMIN_IP}}",
 {{#experimental_fluentd_host}}
     "fluentd_host": "{{{experimental_fluentd_host}}}",
 {{/experimental_fluentd_host}}

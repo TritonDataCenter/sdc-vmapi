@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright (c) 2017, Joyent, Inc.
+ * Copyright (c) 2018, Joyent, Inc.
  */
 
 /*
@@ -84,6 +84,10 @@ exports.moray_init_invalid_index_removal = function (t) {
     var moray;
     var vmapiApp;
 
+    var mockedMetricsManager = {
+        update: function () {}
+    };
+
     var mockedWfapiClient = {
         connected: true,
         connect: function mockedWfapiConnect(callback) {
@@ -156,6 +160,7 @@ exports.moray_init_invalid_index_removal = function (t) {
                 },
                 changefeedPublisher: changefeedUtils.createNoopCfPublisher(),
                 dataMigrationsCtrl: new NoopDataMigrationsController(),
+                metricsManager: mockedMetricsManager,
                 morayBucketsInitializer: morayBucketsInitializer,
                 moray: moray
             });

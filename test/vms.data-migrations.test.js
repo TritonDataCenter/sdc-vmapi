@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright (c) 2017, Joyent, Inc.
+ * Copyright (c) 2018, Joyent, Inc.
  */
 
 var assert = require('assert-plus');
@@ -27,6 +27,10 @@ var dataMigrationsLoader = require('../lib/data-migrations/loader');
 var morayInit = require('../lib/moray/moray-init');
 var testMoray = require('./lib/moray.js');
 var VmapiApp = require('../lib/vmapi');
+
+var MOCKED_METRICS_MANAGER = {
+    update: function () {}
+};
 
 var MOCKED_WFAPI_CLIENT = {
     connected: true,
@@ -264,6 +268,7 @@ exports.data_migrations = function (t) {
                 },
                 changefeedPublisher: changefeedUtils.createNoopCfPublisher(),
                 dataMigrationsCtrl: ctx.dataMigrationsCtrl,
+                metricsManager: MOCKED_METRICS_MANAGER,
                 morayBucketsInitializer: ctx.morayBucketsInitializer,
                 moray: ctx.moray
             });

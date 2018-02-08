@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright (c) 2017, Joyent, Inc.
+ * Copyright (c) 2018, Joyent, Inc.
  */
 
 var libuuid = require('libuuid');
@@ -23,6 +23,10 @@ var UNIQUE_ENDPOINT_PATH = '/' + libuuid.create();
 function throwingRestifyHandler(req, res, next) {
     throw new Error('boom');
 }
+
+var mockedMetricsManager = {
+    update: function () {}
+};
 
 var mockedWfapiClient = {
     connected: true,
@@ -46,6 +50,7 @@ vasync.pipeline({funcs: [
             },
             changefeedPublisher: changefeedUtils.createNoopCfPublisher(),
             dataMigrationsCtrl: new NoopDataMigrationsController(),
+            metricsManager: mockedMetricsManager,
             morayBucketsInitializer: {
                 status: function status() { return 'BUCKETS_REINDEX_DONE'; },
                 lastInitError: function lastInitError() { return null; }

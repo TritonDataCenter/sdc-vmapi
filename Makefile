@@ -118,7 +118,7 @@ publish: release
 COAL=root@10.99.99.7
 test-coal:
 	./tools/rsync-to coal
-	ssh $(COAL) "/zones/\$$(vmadm lookup -1 alias=vmapi0)/root/opt/smartdc/vmapi/test/runtests"
+	ssh $(COAL) "/opt/smartdc/bin/sdc-login -l vmapi "/opt/smartdc/vmapi/test/runtests""
 
 
 include ./tools/mk/Makefile.deps

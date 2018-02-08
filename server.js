@@ -35,6 +35,7 @@ var VOLAPI = require('sdc-clients').VOLAPI;
 var WFAPI = require('./lib/apis/wfapi');
 
 var configLoader = require('./lib/config-loader');
+var createMetricsManager = require('./lib/metrics').createMetricsManager;
 var DataMigrationsController = require('./lib/data-migrations/controller');
 var dataMigrationsLoader = require('./lib/data-migrations/loader');
 var morayInit = require('./lib/moray/moray-init.js');
@@ -141,6 +142,7 @@ function startVmapiService() {
     var config = configLoader.loadConfig(configFilePath);
     var dataMigrations;
     var dataMigrationsCtrl;
+    var metricsManager;
     var vmapiLog = bunyan.createLogger({
         name: 'vmapi',
         level: config.logLevel,
@@ -256,6 +258,26 @@ function startVmapiService() {
              * API client's connection status appropriately and differently.
              */
             next();
+        },
+        function createMetricsCollector(_, next) {
+            var metricsLog = vmapiLog.child({component: 'metrics'});
+
+            var metricsConfig = {
+                address: config.adminIp,
+                log: metricsLog,
+                labels: {
+                    datacenter: config.datacenterName,
+                    instance: config.instanceUuid,
+                    server: config.serverUuid,
+                    service: config.serviceName
+                },
+                port: 8881
+            };
+
+            metricsManager = createMetricsManager(metricsConfig);
+            metricsManager.listen(function metricsServerStarted() {
+                next();
+            });
         }
     ]}, function dependenciesInitDone(err) {
         if (err) {
@@ -278,6 +300,7 @@ function startVmapiService() {
                 changefeedPublisher: changefeedPublisher,
                 dataMigrationsCtrl: dataMigrationsCtrl,
                 log: vmapiLog.child({ component: 'http-api' }, true),
+                metricsManager: metricsManager,
                 moray: moray,
                 morayBucketsInitializer: morayBucketsInitializer,
                 overlay: config.overlay,
