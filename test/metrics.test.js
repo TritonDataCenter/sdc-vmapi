@@ -9,17 +9,20 @@
  */
 
 var assert = require('assert-plus');
+var format = require('util').format;
 var restify = require('restify');
 var url = require('url');
 var vasync = require('vasync');
 
 var common = require('./common');
+var config = common.config;
 
 var metricsClient;
+var promLabels;
 var vmapiClient;
 
 function createMetricsClient() {
-    var vmapiUrl = process.env.VMAPI_URL || 'http://localhost';
+    var vmapiUrl = process.env.VMAPI_URL;
     var parsedUrl = url.parse(vmapiUrl);
     parsedUrl.port = 8881;
     parsedUrl.host = null;
@@ -37,29 +40,37 @@ function createMetricsClient() {
 
 /*
  * The metrics endpoint returns metrics in the Prometheus v0.0.4 format.
- * This function takes the metrics response and a regular expression
- * to match the metric line you want to match as input and returns the
- * count of that metric.
+ * This function takes the metrics response and a metric to match the metric
+ * line you want to match as input and returns the count of that metric.
  */
-function getMetricCount(metricsRes, metricRegExp) {
+function getMetricCount(metricsRes, metricsLabels) {
+    var labels = promLabels.concat(metricsLabels);
     var metricsLines = metricsRes.split('\n');
     var metricLine = metricsLines.filter(function (line) {
-        return metricRegExp.test(line);
+        var match = true;
+        labels.forEach(function (label) {
+            var lineMatch = line.indexOf(label);
+            if (lineMatch === -1) {
+                match = false;
+            }
+        });
+
+        return match;
     });
     var count = parseInt(metricLine[0].split('} ')[1]);
     return count;
 }
 
+function fetchMetricCount(metricsLabels, callback) {
+    metricsClient.get('/metrics', function getMetrics(err, req, res, data) {
+        var count = getMetricCount(data, metricsLabels);
+        callback(err, count);
+    });
+}
+
 function incrementListVmCount(_, callback) {
     var endpoint = '/vms?limit=1';
     vmapiClient.get(endpoint, callback);
-}
-
-function fetchMetricCount(metricRegExp, callback) {
-    metricsClient.get('/metrics', function getMetrics(err, req, res, data) {
-        var count = getMetricCount(data, metricRegExp);
-        callback(err, count);
-    });
 }
 
 exports.setUp = function (callback) {
@@ -68,7 +79,19 @@ exports.setUp = function (callback) {
         assert.ok(_client, 'restify client');
         vmapiClient = _client;
         metricsClient = createMetricsClient();
-        callback();
+
+        var shortUserAgent = vmapiClient.headers['user-agent'].split(' ')[0];
+        promLabels = [
+            format('datacenter="%s"', config.datacenterName),
+            format('instance="%s"', config.instanceUuid),
+            format('route="%s"', 'listvms'),
+            format('server="%s"', config.serverUuid),
+            format('service="%s"', config.serviceName),
+            format('status_code="%d"', 200),
+            format('user_agent="%s"', shortUserAgent)
+        ];
+
+       callback();
     });
 };
 
@@ -85,16 +108,14 @@ exports.metrics_handler = function (t) {
 exports.metrics_counter = function (t) {
     var listVmCount;
     var updatedListVmCount;
-    var listVmRegExpString = 'http_requests_completed.*' +
-                             'route="listvms".*method="GET".*' +
-                             'status_code="200"';
-    var listVmRegExp = new RegExp(listVmRegExpString);
+
+    var metricsLabels = [ 'http_requests_completed' ];
 
     vasync.pipeline({
         funcs: [
             incrementListVmCount,
             function getVmCount(ctx, next) {
-                fetchMetricCount(listVmRegExp, function (err, count) {
+                fetchMetricCount(metricsLabels, function (err, count) {
                     common.ifError(t, err);
                     listVmCount = count;
                     next();
@@ -102,7 +123,7 @@ exports.metrics_counter = function (t) {
             },
             incrementListVmCount,
             function getUpdatedVmCount(ctx, next) {
-                fetchMetricCount(listVmRegExp, function (err, count) {
+                fetchMetricCount(metricsLabels, function (err, count) {
                     common.ifError(t, err);
                     updatedListVmCount = count;
                     next();
@@ -122,16 +143,17 @@ exports.metrics_counter = function (t) {
 exports.metrics_histogram_counter = function (t) {
     var listVmDurationCount;
     var updatedListVmDurationCount;
-    var listVmDurationRegExpString = 'http_request_duration_seconds.*' +
-                                     'le="\\+Inf".*route="listvms".*' +
-                                     'method="GET".*status_code="200"';
-    var listVmDurationRegExp = new RegExp(listVmDurationRegExpString);
+
+    var metricsLabels = [
+        format('le="%s"', '+Inf'),
+        'http_request_duration_seconds'
+    ];
 
     vasync.pipeline({
         funcs: [
             incrementListVmCount,
             function getListDurationCount(ctx, next) {
-                fetchMetricCount(listVmDurationRegExp, function (err, count) {
+                fetchMetricCount(metricsLabels, function (err, count) {
                     common.ifError(t, err);
                     listVmDurationCount = count;
                     next();
@@ -139,7 +161,7 @@ exports.metrics_histogram_counter = function (t) {
             },
             incrementListVmCount,
             function getUpdatedListDurationCount(ctx, next) {
-                fetchMetricCount(listVmDurationRegExp, function (err, count) {
+                fetchMetricCount(metricsLabels, function (err, count) {
                     common.ifError(t, err);
                     updatedListVmDurationCount = count;
                     next();
