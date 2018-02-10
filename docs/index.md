@@ -44,7 +44,7 @@ update time.
 | alias                    | String                        | VM alias (max length 189 chars, and must match `/^[a-zA-Z0-9][a-zA-Z0-9\_\.\-]*$/`)                                                                                                                                       | Yes                 | Yes    | Yes    |
 | autoboot                 | Boolean                       | Controls whether or not a VM is booted when the system is rebooted.                                                                                                                                                       | Yes                 | Yes    | Yes    |
 | billing_id               | UUID                          | UUID of the PAPI package associated with this VM                                                                                                                                                                          | Yes                 | Yes    | Yes    |
-| brand                    | String                        | Brand of the VM (joyent, joyent-minimal, kvm or sngl)                                                                                                                                                                     | Yes                 | Yes    | No     |
+| brand                    | String                        | Brand of the VM (joyent, joyent-minimal, bhyve or kvm)                                                                                                                                                                    | Yes                 | Yes    | No     |
 | cpu_cap                  | Number                        | CPU Cap                                                                                                                                                                                                                   | No                  | Yes    | Yes    |
 | cpu_shares               | Number                        | CPU Shares                                                                                                                                                                                                                | Yes                 | Yes    | Yes    |
 | create_timestamp         | Date                          | The time at which the VM was created in ISO 8601 format                                                                                                                                                                   | Yes                 | No     | No     |
@@ -482,25 +482,25 @@ Returns a list of VMs according the specified search filter.
 All inputs are optional. Inputs that are not listed below are invalid, and
 will result in a request error.
 
-| Param            | Type                                             | Description                                     |
-| ---------------- | ------------------------------------------------ | ----------------------------------------------- |
-| alias            | String                                           | VM Alias|
-| billing_id       | UUID                                             | UUID of the package the VM was created with     |
-| brand            | String                                           | Brand of the VM (joyent, joyent-minimal or kvm) |
-| create_timestamp | Unix Time in milliseconds or UTC ISO Date String | VM creation timestamp                           |
-| docker           | Boolean                                          | true if the VM is a docker VM, false otherwise  |
-| fields           | String (comma-separated values)                  | Specify which VM fields to return, see below    |
-| image_uuid       | UUID                                             | Image of the VM                                 |
-| internal_metadata| String                                           | VM internal metadata, [see below](#internal-metadata)
-| owner_uuid       | UUID                                             | VM Owner                                        |
-| package_name     | String                                           | DEPRECATED: use billing_id                      |
-| package_version  | String                                           | DEPRECATED: use billing_id                      |
-| uuid             | UUID                                             | VM uuid                                         |
-| ram              | Number                                           | Amount of memory of the VM                      |
-| server_uuid      | UUID                                             | Server where the VM lives                       |
-| state            | String                                           | running, stopped, active or destroyed           |
-| uuids            | String (comma-separated UUID values)             | List of VM UUIDs to match                       |
-| tag.key          | String                                           | VM tags, see below                              |
+| Param            | Type                                             | Description                                            |
+| ---------------- | ------------------------------------------------ | ------------------------------------------------------ |
+| alias            | String                                           | VM Alias                                               |
+| billing_id       | UUID                                             | UUID of the package the VM was created with            |
+| brand            | String                                           | Brand of the VM (joyent, joyent-minimal, bhyve or kvm) |
+| create_timestamp | Unix Time in milliseconds or UTC ISO Date String | VM creation timestamp                                  |
+| docker           | Boolean                                          | true if the VM is a docker VM, false otherwise         |
+| fields           | String (comma-separated values)                  | Specify which VM fields to return, see below           |
+| image_uuid       | UUID                                             | Image of the VM                                        |
+| internal_metadata| String                                           | VM internal metadata, [see below](#internal-metadata)  |
+| owner_uuid       | UUID                                             | VM Owner                                               |
+| package_name     | String                                           | DEPRECATED: use billing_id                             |
+| package_version  | String                                           | DEPRECATED: use billing_id                             |
+| uuid             | UUID                                             | VM uuid                                                |
+| ram              | Number                                           | Amount of memory of the VM                             |
+| server_uuid      | UUID                                             | Server where the VM lives                              |
+| state            | String                                           | running, stopped, active or destroyed                  |
+| uuids            | String (comma-separated UUID values)             | List of VM UUIDs to match                              |
+| tag.key          | String                                           | VM tags, see below                                     |
 
 ### Specifying VM Fields to Return
 
@@ -921,7 +921,7 @@ the same as a GET to /vms/:uuid, however some VM attributes might not be present
 | ----------- | ------ | -------------------------------------------------------------------------------------------------------- |
 | owner_uuid  | UUID   | VM Owner                                                                                                 |
 | networks*   | Array* | List of networks. See 'Specifying Networks for a VM' below.                                              |
-| brand       | String | 'joyent', 'joyent-minimal' or 'kvm'                                                                      |
+| brand       | String | 'joyent', 'joyent-minimal', 'bhvve' or 'kvm'                                                             |
 | ram*        | Number | VM RAM. Not required if billing_id is present                                                            |
 | billing_id* | UUID   | SDC Package UUID. Not required if at least ram is present. See 'Provisioning with an SDC Package' below. |
 
