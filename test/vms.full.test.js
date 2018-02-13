@@ -30,12 +30,15 @@ var jobLocation;
 var vmLocation;
 var vmCount;
 var pkgId;
+var nicMac;
 
 var IMAGE = 'fd2cc906-8938-11e3-beab-4359c665ac99';
 var CUSTOMER = common.config.ufdsAdminUuid;
 var NETWORKS = null;
+var VALID_NIC; // Create a new NIC with valid parameters for a later test
 var FAKE_NETWORK_UUID = 'caaaf10c-a587-49c6-9cf6-9b0a14ba960b';
 var FAKE_NETWORK_NAME = 'fakeNetworkName';
+var VM_UUID = uuid.create(); // Needs to be different everytime the test runs
 var SERVER = null;
 var CALLER = {
     type: 'signature',
@@ -1194,6 +1197,8 @@ exports.add_nics_with_macs = function (t) {
     client.napi.post(opts, params, function (err, req, res, nic) {
         common.ifError(t, err);
 
+        VALID_NIC = nic;
+
         var params2 = {
             action: 'add_nics',
             macs: [ nic.mac ]
@@ -1993,6 +1998,118 @@ exports.destroy_nonautoboot_vm = function (t) {
 
 
 exports.wait_nonautoboot_destroyed_job = function (t) {
+    waitForValue(jobLocation, 'execution', 'succeeded', {
+        client: client
+    }, function (err) {
+        common.ifError(t, err);
+        t.done();
+    });
+};
+
+
+// Support for NICs that are created first and then passed into vmapi.
+// For example manta-adm does this
+exports.create_vm_from_existing_nics = function (t) {
+    // Make sure this test is ran after we have known working parameters
+    assert.object(VALID_NIC, 'VALID_NIC');
+
+    var params = {
+        owner_uuid: CUSTOMER,
+        network_uuid: VALID_NIC.network_uuid,
+        ip: VALID_NIC.ip,
+        nic_tag: VALID_NIC.nic_tag,
+        belongs_to_type: 'zone',
+        belongs_to_uuid: VM_UUID,
+        state: 'provisioning'
+    };
+
+    var opts = createOpts('/nics', params);
+
+    client.napi.post(opts, params, function (err, req, res, nic) {
+        common.ifError(t, err);
+        t.equal(nic.ip, VALID_NIC.ip, 'ip');
+        t.equal(nic.nic_tag, VALID_NIC.nic_tag, 'owner_uuid');
+        t.equal(nic.network_uuid, VALID_NIC.network_uuid, 'network_uuid');
+        t.equal(nic.owner_uuid, CUSTOMER, 'owner_uuid');
+        t.equal(nic.state, 'provisioning', 'nic state provisioning');
+
+        nicMac = nic.mac;
+
+        var vm = {
+            alias: 'vmapi-existing-nics-test',
+            uuid: VM_UUID,
+            owner_uuid: CUSTOMER,
+            image_uuid: IMAGE,
+            server_uuid: SERVER.uuid,
+            networks: [ { uuid: VALID_NIC.network_uuid } ],
+            brand: 'joyent-minimal',
+            billing_id: '00000000-0000-0000-0000-000000000000',
+            ram: 64,
+            quota: 10,
+            creator_uuid: CUSTOMER
+        };
+
+        var vmOpts = createOpts('/vms', vm);
+
+        client.post(vmOpts, vm, function (createErr, createReq, createRes,
+            createBody) {
+            common.ifError(t, createErr);
+            t.equal(createRes.statusCode, 202, '202 Accepted');
+            common.checkHeaders(t, createRes.headers);
+            t.ok(createRes.headers['workflow-api'], 'workflow-api header');
+            t.ok(createBody, 'vm ok');
+
+            jobLocation = '/jobs/' + createBody.job_uuid;
+            t.ok(true, 'jobLocation: ' + jobLocation);
+            newUuid = createBody.vm_uuid;
+            vmLocation = '/vms/' + newUuid;
+            t.done();
+        });
+    });
+};
+
+exports.wait_provisioned_vm_from_existing_nics = function (t) {
+    waitForValue(jobLocation, 'execution', 'succeeded', {
+        client: client
+    }, function (err) {
+        common.ifError(t, err);
+        t.done();
+    });
+};
+
+exports.check_vm_from_existing_nics = function (t) {
+    client.get(vmLocation, function (err, req, res, body) {
+        common.ifError(t, err);
+        t.equal(res.statusCode, 200, '200 OK');
+        common.checkHeaders(t, res.headers);
+        t.ok(body, 'got provisioned vm');
+        t.equal(body.nics.length, 1, 'single nic');
+        t.equal(body.nics[0].ip, VALID_NIC.ip, 'found expected IP');
+        t.equal(body.nics[0].mac, nicMac, 'found expected mac addr');
+        t.equal(body.nics[0].nic_tag, VALID_NIC.nic_tag, 'found expected' +
+            ' nic_tag');
+        t.equal(body.nics[0].network_uuid, VALID_NIC.network_uuid, 'found' +
+            ' expected network uuid');
+        t.done();
+    });
+};
+
+exports.destroy_vm_from_existing_nics = function (t) {
+    var opts = createOpts(vmLocation);
+
+    client.del(opts, function (err, req, res, body) {
+        common.ifError(t, err);
+        t.equal(res.statusCode, 202, '202 Accepted');
+        common.checkHeaders(t, res.headers);
+        t.ok(body, 'body is set');
+        jobLocation = '/jobs/' + body.job_uuid;
+        t.ok(true, 'jobLocation: ' + jobLocation);
+        t.done();
+    });
+};
+
+
+exports.wait_destroyed_vm_from_existing_nics = function (t) {
     waitForValue(jobLocation, 'execution', 'succeeded', {
         client: client
     }, function (err) {
