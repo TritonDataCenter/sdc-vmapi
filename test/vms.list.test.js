@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright (c) 2017, Joyent, Inc.
+ * Copyright (c) 2018, Joyent, Inc.
  */
 
 var assert = require('assert-plus');
@@ -112,11 +112,11 @@ exports.list_param_valid_uuid = function (t) {
 };
 
 var VALID_VM_BRANDS = [
+    'bhyve',
+    'lx',
     'joyent-minimal',
     'joyent',
-    'lx',
-    'kvm',
-    'sngl'
+    'kvm'
 ];
 
 exports.list_param_valid_brands = function (t) {
