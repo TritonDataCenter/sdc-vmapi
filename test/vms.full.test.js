@@ -24,7 +24,9 @@ var waitForValue = common.waitForValue;
 // --- Globals
 
 var client;
+var fabricNetwork;
 var muuid;
+var natZoneUuid;
 var newUuid;
 var jobLocation;
 var vmLocation;
@@ -2686,6 +2688,229 @@ exports.destroy_test_vms_final = function (t) {
             t.ok(true, util.format('destroyed %d test vms',
                 destroyObj.destroyedVms));
         }
+
+        t.done();
+    });
+};
+
+
+/**
+ * Fabric NAT provision and destroy testing.
+ *
+ * Start off with no NAT provisioned, create a vm that uses a fabric NAT,
+ * test that a NAT zone was provisioned as part of the vm provisioning process.
+ * Destroy the vm, then check back to ensure the NAT zone was also destroyed.
+ */
+
+exports.find_fabric_network = function (t) {
+    assert.arrayOfObject(NETWORKS, 'NETWORKS');
+
+    fabricNetwork = NETWORKS.find(function _findFabricNetwork(n) {
+        return n.fabric === true;
+    });
+
+    t.ok(fabricNetwork, 'found a fabric network');
+    t.done();
+};
+
+
+exports.ensure_no_fabric_nat_provisioned = function (t) {
+    if (!fabricNetwork) {
+        t.fail('No fabric network available');
+        t.done();
+        return;
+    }
+
+    var opts = createOpts('/vms');
+    opts.query = {
+        alias: 'nat-' + fabricNetwork.uuid,
+        state: 'active'
+    };
+
+    client.get(opts, function (err, req, res, vms) {
+        /**
+         * We exect that vms is an empty array.
+         */
+        common.ifError(t, err);
+        t.equal(res.statusCode, 200, 'expected a 200 status');
+        t.equal(vms.length, 0, 'should be no NAT vm found');
+
+        t.done();
+    });
+};
+
+
+exports.find_fabric_vm_package = function (t) {
+    fabricNetwork = NETWORKS.find(function _findFabricNetwork(n) {
+        return n.fabric === true;
+    });
+
+    t.ok(fabricNetwork, 'found a fabric network');
+    t.done();
+};
+
+
+exports.create_vm_on_fabric_network = function (t) {
+    if (!fabricNetwork) {
+        t.fail('No fabric network available');
+        t.done();
+        return;
+    }
+
+    var vm = {
+        owner_uuid: CUSTOMER,
+        image_uuid: IMAGE,
+        server_uuid: SERVER.uuid,
+        networks: [ { uuid: fabricNetwork.uuid } ],
+        brand: 'joyent-minimal',
+        billing_id: pkgId
+    };
+
+    var opts = createOpts('/vms', vm);
+
+    client.post(opts, vm, function (err, req, res, body) {
+        common.ifError(t, err);
+        t.equal(res.statusCode, 202, '202 Accepted');
+
+        jobLocation = '/jobs/' + body.job_uuid;
+        t.ok(true, 'jobLocation: ' + jobLocation);
+        newUuid = body.vm_uuid;
+        vmLocation = '/vms/' + newUuid;
+
+        t.done();
+    });
+};
+
+
+exports.wait_provisioned_fabric_vm_job = function (t) {
+    if (!fabricNetwork) {
+        t.fail('No fabric network available');
+        t.done();
+        return;
+    }
+
+    waitForValue(jobLocation, 'execution', 'succeeded',  {client: client},
+            function (err) {
+        common.ifError(t, err);
+        t.done();
+    });
+};
+
+
+exports.ensure_fabric_nat_provisioned = function (t) {
+    if (!fabricNetwork) {
+        t.fail('No fabric network available');
+        t.done();
+        return;
+    }
+
+    var opts = createOpts('/vms');
+    opts.query = {
+        alias: 'nat-' + fabricNetwork.uuid,
+        state: 'active'
+    };
+
+    client.get(opts, function (err, req, res, vms) {
+        /**
+         * We expect to get back an array containing one running vm.
+         */
+        common.ifError(t, err);
+        t.equal(res.statusCode, 200, 'expected a 200 status');
+        t.ok(Array.isArray(vms), 'should get vms array object');
+
+        if (Array.isArray(vms)) {
+            t.equal(vms.length, 1, 'should have found one NAT vm');
+            t.equal(vms[0].state, 'running', 'should have found one NAT vm');
+
+            natZoneUuid = vms[0].uuid;
+        }
+
+        t.done();
+    });
+};
+
+
+exports.destroy_fabric_vm = function (t) {
+    if (!fabricNetwork) {
+        t.fail('No fabric network available');
+        t.done();
+        return;
+    }
+
+    var opts = createOpts(vmLocation);
+
+    client.del(opts, function (err, req, res, body) {
+        common.ifError(t, err);
+        t.equal(res.statusCode, 202, '202 Accepted');
+        common.checkHeaders(t, res.headers);
+        t.ok(body, 'body is set');
+        jobLocation = '/jobs/' + body.job_uuid;
+        t.ok(true, 'jobLocation: ' + jobLocation);
+        t.done();
+    });
+};
+
+
+exports.wait_destroyed_fabric_vm_job = function (t) {
+    if (!fabricNetwork) {
+        t.fail('No fabric network available');
+        t.done();
+        return;
+    }
+
+    waitForValue(jobLocation, 'execution', 'succeeded', {client: client},
+            function (err) {
+        common.ifError(t, err);
+        t.done();
+    });
+};
+
+
+exports.ensure_fabric_nat_destroyed = function (t) {
+    if (!fabricNetwork) {
+        t.fail('No fabric network available');
+        t.done();
+        return;
+    }
+
+    var opts = createOpts('/vms/' + natZoneUuid);
+
+    client.get(opts, function (err, req, res, vm) {
+        /**
+         * We expect to get back a destroyed vm.
+         */
+        common.ifError(t, err);
+        t.equal(res.statusCode, 200, 'expected a 200 status');
+        t.ok(vm, 'expected a vm');
+        if (vm) {
+            t.equal(vm.state, 'destroyed', 'vm should be in destroyed state');
+        }
+
+        t.done();
+    });
+};
+
+
+exports.ensure_no_fabric_nat_zone = function (t) {
+    if (!fabricNetwork) {
+        t.fail('No fabric network available');
+        t.done();
+        return;
+    }
+
+    var opts = createOpts('/vms');
+    opts.query = {
+        alias: 'nat-' + fabricNetwork.uuid,
+        state: 'active'
+    };
+
+    client.get(opts, function (err, req, res, vms) {
+        /**
+         * There should get no vms returned.
+         */
+        common.ifError(t, err);
+        t.equal(res.statusCode, 200, 'expected a 200 status');
+        t.equal(vms.length, 0, 'should be no NAT vm found');
 
         t.done();
     });
