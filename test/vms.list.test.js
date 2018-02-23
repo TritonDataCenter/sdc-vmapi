@@ -117,7 +117,7 @@ var VALID_VM_BRANDS = [
     'joyent-minimal',
     'joyent',
     'kvm'
-];
+].sort();
 
 exports.list_param_valid_brands = function (t) {
     async.each(VALID_VM_BRANDS, function (vmBrand, next) {
@@ -218,7 +218,7 @@ var VALID_VM_STATES = [
     'stopped',
     'active',
     'destroyed'
-];
+].sort();
 
 exports.list_param_valid_state = function (t) {
     async.each(VALID_VM_STATES, function (vmState, next) {
