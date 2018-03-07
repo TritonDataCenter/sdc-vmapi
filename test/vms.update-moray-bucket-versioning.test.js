@@ -392,38 +392,6 @@ function testMigrationToBucketsConfig(bucketsConfig, options, t, callback) {
     });
 }
 
-function writeObjects(morayClient, bucketName, valueTemplate, nbObjects,
-    callback) {
-    assert.object(morayClient, 'morayClient');
-    assert.string(bucketName, 'bucketName');
-    assert.object(valueTemplate, 'valueTemplate');
-    assert.number(nbObjects, 'nbObjects');
-    assert.func(callback, 'callback');
-
-    var i;
-
-    var objectKeys = [];
-    for (i = 0; i < nbObjects; ++i) {
-        objectKeys.push(libuuid.create());
-    }
-
-    vasync.forEachParallel({
-        func: function writeObject(objectUuid, done) {
-            var newObjectValue = jsprim.deepCopy(valueTemplate);
-            newObjectValue.uuid = objectUuid;
-            /*
-             * noBucketCache: true is needed so that when putting objects in
-             * moray after a bucket has been deleted and recreated, it doesn't
-             * use an old bucket schema and determine that it needs to update an
-             * _rver column that doesn't exist anymore.
-             */
-            morayClient.putObject(bucketName, objectUuid, newObjectValue,
-                {noBucketCache: true}, done);
-        },
-        inputs: objectKeys
-    }, callback);
-}
-
 exports.moray_init_bucket_versioning = function (t) {
     vasync.pipeline({funcs: [
         function cleanup(arg, next) {
@@ -491,7 +459,7 @@ exports.moray_init_bucket_versioning = function (t) {
 
             morayBucketsInitializer.on('done',
                 function onMorayBucketsInitialized() {
-                    writeObjects(morayClient, VMS_BUCKET_NAME, {
+                    testMoray.writeObjects(morayClient, VMS_BUCKET_NAME, {
                         indexed_property: 'foo'
                     }, NB_TEST_OBJECTS, function onTestObjectsWritten(err) {
                         t.ok(!err, 'writing test objects should not error');
