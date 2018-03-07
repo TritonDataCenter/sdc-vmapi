@@ -43,13 +43,33 @@ var VMS_BUCKET_NAME = 'test_vmapi_vms_data_migrations';
 var SERVER_VMS_BUCKET_NAME = 'test_vmapi_server_vms_data_migrations';
 var ROLE_TAGS_BUCKET_NAME = 'test_vmapi_vm_role_tags_data_migrations';
 
-var VMS_BUCKET_CONFIG = {
+/*
+ * We use two versions for the VMS_BUCKET_CONFIG (VMS_BUCKET_CONFIG_V1 and
+ * VMS_BUCKET_CONFIG_V2) to exercise the code path where finding objects to
+ * migrate fails with an InvalidQueryError due to the fact that some Moray
+ * instances do not have the data_version field indexed in their bucket cache.
+ * See https://smartos.org/bugview/TRITON-214 for context.
+ */
+var VMS_BUCKET_CONFIG_V1 = {
+    name: VMS_BUCKET_NAME,
+    schema: {
+        index: {
+            foo: { type: 'string' },
+            bar: { type: 'string' }
+        }
+    }
+};
+
+var VMS_BUCKET_CONFIG_V2 = {
     name: VMS_BUCKET_NAME,
     schema: {
         index: {
             foo: { type: 'string' },
             bar: { type: 'string' },
             data_version: { type: 'number' }
+        },
+        options: {
+            version: 1
         }
     }
 };
@@ -65,8 +85,14 @@ var ROLE_TAGS_MORAY_BUCKET_CONFIG = {
     }
 };
 
-var TEST_BUCKETS_CONFIG = {
-    vms: VMS_BUCKET_CONFIG,
+var TEST_BUCKETS_CONFIG_V1 = {
+    vms: VMS_BUCKET_CONFIG_V1,
+    server_vms: SERVER_VMS_MORAY_BUCKET_CONFIG,
+    vm_role_tags: ROLE_TAGS_MORAY_BUCKET_CONFIG
+};
+
+var TEST_BUCKETS_CONFIG_V2 = {
+    vms: VMS_BUCKET_CONFIG_V2,
     server_vms: SERVER_VMS_MORAY_BUCKET_CONFIG,
     vm_role_tags: ROLE_TAGS_MORAY_BUCKET_CONFIG
 };
@@ -109,31 +135,6 @@ function findAllObjects(morayClient, bucketName, filter, callback) {
         findAllObjectsReq.removeAllListeners('record');
         findAllObjectsReq.removeAllListeners('end');
     }
-}
-
-function writeObjects(morayClient, bucketName, valueTemplate, nbObjects,
-    callback) {
-    assert.object(morayClient, 'morayClient');
-    assert.string(bucketName, 'bucketName');
-    assert.object(valueTemplate, 'valueTemplate');
-    assert.number(nbObjects, 'nbObjects');
-    assert.func(callback, 'callback');
-
-    var i;
-
-    var objectKeys = [];
-    for (i = 0; i < nbObjects; ++i) {
-        objectKeys.push(libuuid.create());
-    }
-
-    vasync.forEachParallel({
-        func: function writeObject(objectUuid, done) {
-            var newObjectValue = jsprim.deepCopy(valueTemplate);
-            newObjectValue.uuid = objectUuid;
-            morayClient.putObject(bucketName, objectUuid, newObjectValue, done);
-        },
-        inputs: objectKeys
-    }, callback);
 }
 
 exports.data_migrations_invalid_filenames = function (t) {
@@ -184,7 +185,7 @@ exports.data_migrations = function (t) {
             var morayClient;
             var moraySetup = morayInit.startMorayInit({
                 morayConfig: common.config.moray,
-                morayBucketsConfig: TEST_BUCKETS_CONFIG,
+                morayBucketsConfig: TEST_BUCKETS_CONFIG_V1,
                 changefeedPublisher: changefeedUtils.createNoopCfPublisher()
             });
             var nextOnce = once(next);
@@ -221,13 +222,52 @@ exports.data_migrations = function (t) {
         function writeTestObjects(ctx, next) {
             assert.object(ctx.morayClient, 'ctx.morayClient');
 
-            writeObjects(ctx.morayClient, VMS_BUCKET_NAME, {
+            testMoray.writeObjects(ctx.morayClient, VMS_BUCKET_NAME, {
                 foo: 'foo'
             }, NUM_TEST_OBJECTS, function onTestObjectsWritten(writeErr) {
+                ctx.morayClient.close();
+
                 t.ok(!writeErr, 'writing test objects should not error, got: ' +
                     util.inspect(writeErr));
                 next(writeErr);
             });
+        },
+        function migrateSchemaForDataMigrations(ctx, next) {
+            var morayBucketsInitializer;
+            var morayClient;
+            var moraySetup = morayInit.startMorayInit({
+                morayConfig: common.config.moray,
+                morayBucketsConfig: TEST_BUCKETS_CONFIG_V2,
+                changefeedPublisher: changefeedUtils.createNoopCfPublisher()
+            });
+            var nextOnce = once(next);
+
+            ctx.moray = moraySetup.moray;
+            ctx.morayBucketsInitializer = morayBucketsInitializer =
+                moraySetup.morayBucketsInitializer;
+            ctx.morayClient = morayClient = moraySetup.morayClient;
+
+            function cleanUp() {
+                morayBucketsInitializer.removeAllListeners('error');
+                morayBucketsInitializer.removeAllListeners('done');
+            }
+
+            morayBucketsInitializer.on('done', function onMorayBucketsInit() {
+                t.ok(true, 'migration of moray buckets should be successful');
+
+                cleanUp();
+                nextOnce();
+            });
+
+            morayBucketsInitializer.on('error',
+                function onMorayBucketsInitError(morayBucketsInitErr) {
+                    t.ok(!morayBucketsInitErr,
+                        'moray buckets migration should not error, got: ' +
+                            morayBucketsInitErr);
+
+                    cleanUp();
+                    nextOnce(morayBucketsInitErr);
+                });
         },
         function loadDataMigrations(ctx, next) {
             var dataMigrationsLoaderLogger = bunyan.createLogger({
@@ -337,9 +377,19 @@ exports.data_migrations = function (t) {
                 next();
         },
         function checkDataMigrationsTransientError(ctx, next) {
-            var MAX_NUM_TRIES = 20;
+            var MAX_NUM_TRIES;
+            /*
+             * We wait for the moray bucket cache to be refreshed on all Moray
+             * instances, which can be up to 5 minutes currently, and then some.
+             * This is the maximum delay during which InvalidQueryError can
+             * occur due to stale buckets cache, after which only the transient
+             * error injected by this test should surface.
+             */
+            var MAX_TRIES_DURATION_IN_MS = 6 * 60 * 1000;
             var NUM_TRIES = 0;
-            var RETRY_DELAY_IN_MS = 1000;
+            var RETRY_DELAY_IN_MS = 10000;
+
+            MAX_NUM_TRIES = MAX_TRIES_DURATION_IN_MS / RETRY_DELAY_IN_MS;
 
             assert.object(ctx.vmapiClient, 'ctx.vmapiClient');
 
@@ -480,9 +530,17 @@ exports.data_migrations = function (t) {
     ]}, function allMigrationsDone(allMigrationsErr) {
         t.ok(!allMigrationsErr, 'data migrations test should not error');
 
-        context.morayClient.close();
-        context.vmapiClient.close();
-        context.vmapiApp.close();
+        if (context.morayClient) {
+            context.morayClient.close();
+        }
+
+        if (context.vmapiClient) {
+            context.vmapiClient.close();
+        }
+
+        if (context.vmapiApp) {
+            context.vmapiApp.close();
+        }
 
         t.done();
     });
@@ -509,7 +567,7 @@ exports.data_migrations_non_transient_error = function (t) {
             var morayClient;
             var moraySetup = morayInit.startMorayInit({
                 morayConfig: common.config.moray,
-                morayBucketsConfig: TEST_BUCKETS_CONFIG,
+                morayBucketsConfig: TEST_BUCKETS_CONFIG_V1,
                 changefeedPublisher: changefeedUtils.createNoopCfPublisher()
             });
             var nextOnce = once(next);
@@ -546,13 +604,52 @@ exports.data_migrations_non_transient_error = function (t) {
         function writeTestObjects(ctx, next) {
             assert.object(ctx.morayClient, 'ctx.morayClient');
 
-            writeObjects(ctx.morayClient, VMS_BUCKET_NAME, {
+            testMoray.writeObjects(ctx.morayClient, VMS_BUCKET_NAME, {
                 foo: 'foo'
             }, NUM_TEST_OBJECTS, function onTestObjectsWritten(writeErr) {
+                ctx.morayClient.close();
+
                 t.ok(!writeErr, 'writing test objects should not error, got: ' +
                     util.inspect(writeErr));
                 next(writeErr);
             });
+        },
+        function migrateSchemaForDataMigrations(ctx, next) {
+            var morayBucketsInitializer;
+            var morayClient;
+            var moraySetup = morayInit.startMorayInit({
+                morayConfig: common.config.moray,
+                morayBucketsConfig: TEST_BUCKETS_CONFIG_V2,
+                changefeedPublisher: changefeedUtils.createNoopCfPublisher()
+            });
+            var nextOnce = once(next);
+
+            ctx.moray = moraySetup.moray;
+            ctx.morayBucketsInitializer = morayBucketsInitializer =
+                moraySetup.morayBucketsInitializer;
+            ctx.morayClient = morayClient = moraySetup.morayClient;
+
+            function cleanUp() {
+                morayBucketsInitializer.removeAllListeners('error');
+                morayBucketsInitializer.removeAllListeners('done');
+            }
+
+            morayBucketsInitializer.on('done', function onMorayBucketsInit() {
+                t.ok(true, 'migration of moray buckets should be successful');
+
+                cleanUp();
+                nextOnce();
+            });
+
+            morayBucketsInitializer.on('error',
+                function onMorayBucketsInitError(morayBucketsInitErr) {
+                    t.ok(!morayBucketsInitErr,
+                        'moray buckets migration should not error, got: ' +
+                            morayBucketsInitErr);
+
+                    cleanUp();
+                    nextOnce(morayBucketsInitErr);
+                });
         },
         function loadDataMigrations(ctx, next) {
             var dataMigrationsLoaderLogger = bunyan.createLogger({
@@ -616,8 +713,12 @@ exports.data_migrations_non_transient_error = function (t) {
         }
     ]}, function allMigrationsDone(allMigrationsErr) {
         t.equal(allMigrationsErr, undefined,
-                'data migrations test should not error');
-        context.morayClient.close();
+            'data migrations test should not error');
+
+        if (context.morayClient) {
+            context.morayClient.close();
+        }
+
         t.done();
     });
 };
