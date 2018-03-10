@@ -75,7 +75,7 @@ vasync.pipeline({funcs: [
                 next(morayBucketsInitErr);
             });
 
-        morayBucketsInitializer.on('done', next);
+        morayBucketsInitializer.on('buckets-setup-done', next);
     },
     function initWfApi(ctx, next) {
         wfapi = new WFAPI(config.wfapi);
