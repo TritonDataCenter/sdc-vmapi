@@ -36,8 +36,6 @@ var WFAPI = require('./lib/apis/wfapi');
 
 var configLoader = require('./lib/config-loader');
 var createMetricsManager = require('./lib/metrics').createMetricsManager;
-var DataMigrationsController = require('./lib/data-migrations/controller');
-var dataMigrationsLoader = require('./lib/data-migrations/loader');
 var morayInit = require('./lib/moray/moray-init.js');
 
 var DATA_MIGRATIONS;
@@ -140,8 +138,6 @@ function startVmapiService() {
     var changefeedPublisher;
     var configFilePath = path.join(__dirname, 'config.json');
     var config = configLoader.loadConfig(configFilePath);
-    var dataMigrations;
-    var dataMigrationsCtrl;
     var metricsManager;
     var vmapiLog = bunyan.createLogger({
         name: 'vmapi',
@@ -173,24 +169,6 @@ function startVmapiService() {
                 next();
             });
         },
-        function loadDataMigrations(_, next) {
-            vmapiLog.info('Loading data migrations modules');
-
-            dataMigrationsLoader.loadMigrations({
-                log: vmapiLog.child({ component: 'migrations-loader' }, true)
-            }, function onMigrationsLoaded(migrationsLoadErr, migrations) {
-                if (migrationsLoadErr) {
-                    vmapiLog.error({err: migrationsLoadErr},
-                            'Error when loading data migrations modules');
-                } else {
-                    vmapiLog.info({migrations: migrations},
-                        'Loaded data migrations modules successfully!');
-                }
-
-                dataMigrations = migrations;
-                next(migrationsLoadErr);
-            });
-        },
 
         function initMoray(_, next) {
             assert.object(changefeedPublisher, 'changefeedPublisher');
@@ -199,42 +177,16 @@ function startVmapiService() {
             morayConfig.changefeedPublisher = changefeedPublisher;
 
             var moraySetup = morayInit.startMorayInit({
-                morayConfig: morayConfig,
+                changefeedPublisher: changefeedPublisher,
+                dataMigrationsPath: path.join(__dirname, 'lib',
+                    'data-migrations', 'migrations'),
                 log: vmapiLog.child({ component: 'moray-init' }, true),
-                changefeedPublisher: changefeedPublisher
+                morayConfig: morayConfig
             });
 
             morayBucketsInitializer = moraySetup.morayBucketsInitializer;
             morayClient = moraySetup.morayClient;
             moray = moraySetup.moray;
-
-            /*
-             * We don't set an 'error' event listener because we want the
-             * process to abort when there's a non-transient data migration
-             * error.
-             */
-            dataMigrationsCtrl = new DataMigrationsController({
-                log: vmapiLog.child({
-                    component: 'migrations-controller'
-                }, true),
-                migrations: dataMigrations,
-                moray: moray
-            });
-
-            /*
-             * We purposely start data migrations *only when all buckets are
-             * updated and reindexed*. Otherwise, if we we migrated records that
-             * have a value for a field for which a new index was just added,
-             * moray could discard that field when fetching the object using
-             * findObjects or getObject requests (See
-             * http://smartos.org/bugview/MORAY-104 and
-             * http://smartos.org/bugview/MORAY-428). We could thus migrate
-             * those records erroneously, and in the end write bogus data.
-             */
-            morayBucketsInitializer.on('done',
-                function onMorayBucketsInitialized() {
-                    dataMigrationsCtrl.start();
-                });
 
             /*
              * We don't want to wait for the Moray initialization process to be
@@ -298,7 +250,6 @@ function startVmapiService() {
             var vmapiApp = new VmapiApp({
                 apiClients: apiClients,
                 changefeedPublisher: changefeedPublisher,
-                dataMigrationsCtrl: dataMigrationsCtrl,
                 log: vmapiLog.child({ component: 'http-api' }, true),
                 metricsManager: metricsManager,
                 moray: moray,

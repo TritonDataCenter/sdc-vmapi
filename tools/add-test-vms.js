@@ -101,7 +101,7 @@ function addTestVms(nbVms, concurrency, data) {
     moray = moraySetup.moray;
     morayBucketsInitializer = moraySetup.morayBucketsInitializer;
 
-    morayBucketsInitializer.on('done',
+    morayBucketsInitializer.on('buckets-setup-done',
         function onMorayBucketsSetup() {
             log.debug('Number of test VMs to create:', nbVms);
             assert.number(nbVms);

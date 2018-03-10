@@ -10,12 +10,10 @@
 
 /*
  * This test is about making sure that, when a transient error is encountered by
- * the moray buckets reindexing process, the process is retried until that error
- * is resolved. This test also makes sure that, in the meantime, VMAPI's /ping
- * endpoint responds with an "OK" status, but still includes the reindexing
- * error in its moray initialization status. Finally, it also makes sure that
- * listing VMs succeeds while the reindexing process encounters transient
- * errors.
+ * the moray buckets reindexing process, VMAPI's /ping endpoint responds with an
+ * "OK" status, but still includes the reindexing error in its moray
+ * initialization status. Finally, it also makes sure that listing VMs succeeds
+ * while the reindexing process encounters transient errors.
  */
 
 var assert = require('assert-plus');
@@ -29,46 +27,15 @@ var vasync = require('vasync');
 var changefeedUtils = require('../lib/changefeed');
 var common = require('./common');
 var morayInit = require('../lib/moray/moray-init');
-var NoopDataMigrationsController =
-    require('../lib/data-migrations/noop-controller');
 var VmapiApp = require('../lib/vmapi');
 
 var TRANSIENT_ERROR_MSG = 'Mocked transient error';
 
-var VMS_BUCKET_CONFIG = {
-    name: 'test_vmapi_vms_reindex_transient_error',
-    schema: {
-        index: {
-            uuid: { type: 'string', unique: true}
-        }
-    }
-};
-
-var SERVER_VMS_MORAY_BUCKET_CONFIG = {
-    name: 'test_vmapi_server_vms_reindex_transient_error',
-    schema: {}
-};
-
-var ROLE_TAGS_MORAY_BUCKET_CONFIG = {
-    name: 'test_vmapi_vm_role_tags_reindex_transient_error',
-    schema: {
-        index: {
-            role_tags: { type: '[string]' }
-        }
-    }
-};
-
-var MORAY_BUCKETS_CONFIG = {
-    vms: VMS_BUCKET_CONFIG,
-    server_vms: SERVER_VMS_MORAY_BUCKET_CONFIG,
-    vm_role_tags: ROLE_TAGS_MORAY_BUCKET_CONFIG
-};
-
 exports.moray_init_transient_error = function (t) {
+    var moray;
     var morayBucketsInitializer;
     var morayClient;
-    var moray;
-    var origMorayReindexBucket;
+    var origMorayReindexObjects;
 
     var mockedMetricsManager = {
         update: function () {}
@@ -85,58 +52,29 @@ exports.moray_init_transient_error = function (t) {
     var vmapiClient;
 
     vasync.pipeline({funcs: [
-        function initMorayStorage(arg, next) {
+        function initMorayWithTransientError(arg, next) {
             var moraySetup = morayInit.startMorayInit({
                 morayConfig: common.config.moray,
-                morayBucketsConfig: MORAY_BUCKETS_CONFIG,
                 changefeedPublisher: changefeedUtils.createNoopCfPublisher()
             });
 
+            moray = moraySetup.moray;
             morayBucketsInitializer = moraySetup.morayBucketsInitializer;
             morayClient = moraySetup.morayClient;
 
-            moray = moraySetup.moray;
-            origMorayReindexBucket = moray._reindexBucket;
+            origMorayReindexObjects = morayClient.reindexObjects;
 
-            next();
-        },
-        function initVmapi(arg, next) {
-             vmapiApp = new VmapiApp({
-                apiClients: {
-                    wfapi: mockedWfapiClient
-                },
-                changefeedPublisher: changefeedUtils.createNoopCfPublisher(),
-                dataMigrationsCtrl: new NoopDataMigrationsController(),
-                metricsManager: mockedMetricsManager,
-                morayBucketsInitializer: morayBucketsInitializer,
-                moray: moray
-            });
-
-            next();
-        },
-        function listenOnVmapiServer(arg, next) {
-            vmapiApp.listen({
-                port: 0
-            }, function onVmapiListen() {
-                var vmapiServerAddress = vmapiApp.server.address();
-                var vmapiServerUrl = 'http://' + vmapiServerAddress.address +
-                    ':' + vmapiServerAddress.port;
-
-                vmapiClient = new VMAPI({
-                    url: vmapiServerUrl
-                });
-
-                next();
-            });
-        },
-        function initMorayWithTransientError(arg, next) {
             /*
-             * Monkey patch VMAPI's moray layer "_reindexBucket" method to
-             * inject a transient error, so that we can test that the moray
-             * initializer and the VMAPI API behave correctly in that case.
+             * Monkey patch the Moray client's "reindexObjects" method to inject
+             * a transient error, so that we can test that VMAPI API behave
+             * correctly in that case.
              */
-            moray._reindexBucket =
-                function _reindexBucket(bucketName, callback) {
+            morayClient.reindexObjects =
+                function _mockedReindexObjects(bucketName, nbObjs, callback) {
+                    assert.string(bucketName, 'bucketName');
+                    assert.number(nbObjs, 'nbObjs');
+                    assert.func(callback, 'callback');
+
                     callback(new Error(TRANSIENT_ERROR_MSG));
                 };
 
@@ -157,6 +95,34 @@ exports.moray_init_transient_error = function (t) {
 
             next();
         },
+        function initVmapi(arg, next) {
+             vmapiApp = new VmapiApp({
+                apiClients: {
+                    wfapi: mockedWfapiClient
+                },
+                changefeedPublisher: changefeedUtils.createNoopCfPublisher(),
+                metricsManager: mockedMetricsManager,
+                moray: moray,
+                morayBucketsInitializer: morayBucketsInitializer
+            });
+
+            next();
+        },
+        function listenOnVmapiServer(arg, next) {
+            vmapiApp.listen({
+                port: 0
+            }, function onVmapiListen() {
+                var vmapiServerAddress = vmapiApp.server.address();
+                var vmapiServerUrl = 'http://' + vmapiServerAddress.address +
+                    ':' + vmapiServerAddress.port;
+
+                vmapiClient = new VMAPI({
+                    url: vmapiServerUrl
+                });
+
+                next();
+            });
+        },
         function checkMorayStatusWithTransientErr(arg, next) {
             var nbVmapiStatusCheckSoFar = 0;
             var MAX_NB_VMAPI_STATUS_CHECKS = 10;
@@ -172,15 +138,22 @@ exports.moray_init_transient_error = function (t) {
                      * we expect the "healthiness" to be false.
                      */
                     var expectedHealthiness = false;
-                    var expectedMorayInitStatus = 'BUCKETS_SETUP_DONE';
                     var expectedStatus = 'OK';
+                    var morayInitStatus;
+                    var overallHealthy;
+                    var overallStatus;
 
-                    if (obj &&
-                        obj.status === expectedStatus &&
-                        obj.healthy === expectedHealthiness &&
-                        obj.initialization.moray.status ===
-                            expectedMorayInitStatus &&
-                        obj.initialization.moray.error ===
+                    if (obj) {
+                        morayInitStatus = obj.initialization.moray;
+                        overallHealthy = obj.healthy;
+                        overallStatus = obj.status;
+                    }
+
+                    if (overallStatus === expectedStatus &&
+                        overallHealthy === expectedHealthiness &&
+                        morayInitStatus.bucketsSetup.state === 'DONE' &&
+                        morayInitStatus.bucketsReindex.state === 'ERROR' &&
+                        morayInitStatus.bucketsReindex.latestError ===
                             expectedErrString) {
                         callback(true);
                     } else {
@@ -244,12 +217,12 @@ exports.moray_init_transient_error = function (t) {
             morayBucketsInitializer.once('error',
                 onMockedMorayBucketsInitFailed);
 
-            moray._reindexBucket = origMorayReindexBucket;
+            morayClient.reindexObjects = origMorayReindexObjects;
 
             function onMockedMorayBucketsInitDone() {
                 vmapiClient.ping(function onVmapiPing(pingErr, obj, req, res) {
-                    var actualMorayInitStatus = obj.initialization.moray.status;
-                    var expectedMorayInitStatus = 'BUCKETS_REINDEX_DONE';
+                    var actualMorayInitStatus = obj.initialization.moray;
+                    var expectedMorayReindexStatus = 'DONE';
                     var expectedResponseHttpStatus = 200;
 
                     t.equal(res.statusCode, expectedResponseHttpStatus,
@@ -258,11 +231,13 @@ exports.moray_init_transient_error = function (t) {
                     t.equal(pingErr, null, 'ping endpoint should not ' +
                         'error when no error injected in moray ' +
                         'initialization');
-                    t.equal(actualMorayInitStatus, expectedMorayInitStatus,
+                    t.equal(actualMorayInitStatus.bucketsReindex.state,
+                        expectedMorayReindexStatus,
                         'Moray initialization status should be: ' +
-                            expectedMorayInitStatus + ' and is: ' +
-                            actualMorayInitStatus);
-                    t.equal(obj.initialization.moray.error, undefined,
+                            expectedMorayReindexStatus + ' and is: ' +
+                            actualMorayInitStatus.bucketsReindex.state);
+                    t.equal(actualMorayInitStatus.bucketsReindex.latestError,
+                        undefined,
                         'Moray initialization status should have no error');
 
                     morayBucketsInitializer.removeAllListeners('error');

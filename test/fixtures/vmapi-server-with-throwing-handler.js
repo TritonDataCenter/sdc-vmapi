@@ -14,8 +14,6 @@ var path = require('path');
 var vasync = require('vasync');
 
 var changefeedUtils = require('../../lib/changefeed');
-var NoopDataMigrationsController =
-    require('../../lib/data-migrations/noop-controller');
 var VmapiApp = require('../../lib/vmapi');
 
 var UNIQUE_ENDPOINT_PATH = '/' + libuuid.create();
@@ -49,10 +47,20 @@ vasync.pipeline({funcs: [
                 bucketsSetup: function bucketsSetup() { return true; }
             },
             changefeedPublisher: changefeedUtils.createNoopCfPublisher(),
-            dataMigrationsCtrl: new NoopDataMigrationsController(),
             metricsManager: mockedMetricsManager,
             morayBucketsInitializer: {
-                status: function status() { return 'BUCKETS_REINDEX_DONE'; },
+                status: function status() {
+                    return {
+                        /*
+                         * This needs to be 'DONE' so that the restify
+                         * middleware/interceptor that makes all requests error
+                         * _before_ their custom handler runs does not kick in.
+                         */
+                        bucketsSetup: { state: 'DONE' },
+                        bucketsReindex: { state: 'NOT_STARTED' },
+                        dataMigrations: { state: 'NOT_STARTED' }
+                    };
+                },
                 lastInitError: function lastInitError() { return null; }
             }
         });
