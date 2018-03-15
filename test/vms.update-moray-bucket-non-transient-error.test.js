@@ -85,7 +85,7 @@ var morayBucketsConfigWithError = {
 
 exports.moray_init_non_transient_error = function (t) {
     var mockedMetricsManager = {
-        update: function () {}
+        collectRestifyMetrics: function () {}
     };
 
     var mockedWfapiClient = {

@@ -29,7 +29,7 @@ var testMoray = require('./lib/moray.js');
 var VmapiApp = require('../lib/vmapi');
 
 var MOCKED_METRICS_MANAGER = {
-    update: function () {}
+    collectRestifyMetrics: function () {}
 };
 
 var MOCKED_WFAPI_CLIENT = {

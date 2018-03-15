@@ -85,7 +85,7 @@ exports.moray_init_invalid_index_removal = function (t) {
     var vmapiApp;
 
     var mockedMetricsManager = {
-        update: function () {}
+        collectRestifyMetrics: function () {}
     };
 
     var mockedWfapiClient = {

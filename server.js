@@ -35,7 +35,7 @@ var VOLAPI = require('sdc-clients').VOLAPI;
 var WFAPI = require('./lib/apis/wfapi');
 
 var configLoader = require('./lib/config-loader');
-var createMetricsManager = require('./lib/metrics').createMetricsManager;
+var createMetricsManager = require('triton-metrics').createMetricsManager;
 var DataMigrationsController = require('./lib/data-migrations/controller');
 var dataMigrationsLoader = require('./lib/data-migrations/loader');
 var morayInit = require('./lib/moray/moray-init.js');
@@ -46,6 +46,7 @@ var morayBucketsInitializer;
 var morayClient;
 var moray;
 
+var METRICS_SERVER_PORT = 8881;
 var VERSION = false;
 
 /*
@@ -260,21 +261,20 @@ function startVmapiService() {
             next();
         },
         function createMetricsCollector(_, next) {
-            var metricsLog = vmapiLog.child({component: 'metrics'});
-
-            var metricsConfig = {
+            metricsManager = createMetricsManager({
                 address: config.adminIp,
-                log: metricsLog,
-                labels: {
+                log: vmapiLog.child({component: 'metrics'}),
+                port: METRICS_SERVER_PORT,
+                restify: restify,
+                staticLabels: {
                     datacenter: config.datacenterName,
                     instance: config.instanceUuid,
                     server: config.serverUuid,
                     service: config.serviceName
-                },
-                port: 8881
-            };
+                }
+            });
 
-            metricsManager = createMetricsManager(metricsConfig);
+            metricsManager.createRestifyMetrics();
             metricsManager.listen(function metricsServerStarted() {
                 next();
             });

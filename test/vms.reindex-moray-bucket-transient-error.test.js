@@ -71,7 +71,7 @@ exports.moray_init_transient_error = function (t) {
     var origMorayReindexBucket;
 
     var mockedMetricsManager = {
-        update: function () {}
+        collectRestifyMetrics: function () {}
     };
 
     var mockedWfapiClient = {

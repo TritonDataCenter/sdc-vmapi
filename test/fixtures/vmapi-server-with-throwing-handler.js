@@ -25,7 +25,7 @@ function throwingRestifyHandler(req, res, next) {
 }
 
 var mockedMetricsManager = {
-    update: function () {}
+    collectRestifyMetrics: function () {}
 };
 
 var mockedWfapiClient = {
