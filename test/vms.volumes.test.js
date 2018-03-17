@@ -54,12 +54,7 @@ function getVmPayloadTemplate() {
         billing_id: '00000000-0000-0000-0000-000000000000',
         ram: 64,
         quota: 10,
-        /*
-         * Not setting a cpu_cap here would break the ability for Triton to
-         * provision any VM with a non-null cpu_cap, since a mix of capped and
-         * cap-less VMs is not allowed by the allocation system.
-         */
-        cpu_cap: 10
+        cpu_cap: 100
     };
 }
 
