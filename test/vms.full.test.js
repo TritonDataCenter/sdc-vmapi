@@ -184,6 +184,9 @@ function createTestVms(cb) {
                     return;
                 }
 
+                assert.object(body, 'body');
+                assert.uuid(body.job_uuid, 'body.job_uuid');
+
                 var job = '/jobs/' + body.job_uuid;
 
                 i++;
@@ -241,8 +244,22 @@ function destroyTestVms(cb) {
                         return;
                     }
 
-                    ret.destroyedVms++;
-                    next();
+                    assert.object(delBody, 'delBody');
+                    assert.uuid(delBody.job_uuid, 'delBody.job_uuid');
+
+                    var job = '/jobs/' + delBody.job_uuid;
+
+                    waitForValue(job, 'execution', 'succeeded', {
+                        client: client
+                    }, function (waitForValueErr) {
+                        if (waitForValueErr) {
+                            next(waitForValueErr);
+                            return;
+                        }
+
+                        ret.destroyedVms++;
+                        next();
+                    });
                 });
 
             }, function (delVmsErr) {
