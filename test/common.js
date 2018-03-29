@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright 2017 Joyent, Inc.
+ * Copyright (c) 2018, Joyent, Inc.
  */
 
 var assert = require('assert-plus');
@@ -230,6 +230,31 @@ function waitForValue(url, key, value, options, callback) {
     performCheck();
 }
 
+/*
+ * Given an array of networks (most likely returned from napi GET /networks),
+ * find the admin and external network and return them as an object.  This
+ * function will throw if neither network is found, or multiple networks with
+ * the name external or admin are found.
+ */
+function extractAdminAndExternalNetwork(networks) {
+    assert.arrayOfObject(networks, 'networks');
+
+    var ret = {};
+    networks.forEach(function forEachNetwork(network) {
+        assert.string(network.name, 'network.name');
+
+        if (['admin', 'external'].indexOf(network.name) >= 0) {
+            assert(!ret.hasOwnProperty(network.name), util.format(
+                'network defined more than once: "%s"', network.name));
+            ret[network.name] = network;
+        }
+    });
+    assert.object(ret.admin, 'admin network not found');
+    assert.object(ret.external, 'external network not found');
+
+    return ret;
+}
+
 module.exports = {
     setUp: setUp,
     checkHeaders: checkHeaders,
@@ -238,5 +263,6 @@ module.exports = {
     config: config,
     ifError: ifError,
     VMS_LIST_ENDPOINT: VMS_LIST_ENDPOINT,
-    waitForValue: waitForValue
+    waitForValue: waitForValue,
+    extractAdminAndExternalNetwork: extractAdminAndExternalNetwork
 };

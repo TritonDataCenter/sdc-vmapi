@@ -37,6 +37,8 @@ var nicMac;
 var IMAGE = 'fd2cc906-8938-11e3-beab-4359c665ac99';
 var CUSTOMER = common.config.ufdsAdminUuid;
 var NETWORKS = null;
+var ADMIN_NETWORK = null;
+var EXTERNAL_NETWORK = null;
 var VALID_NIC; // Create a new NIC with valid parameters for a later test
 var FAKE_NETWORK_UUID = 'caaaf10c-a587-49c6-9cf6-9b0a14ba960b';
 var FAKE_NETWORK_NAME = 'fakeNetworkName';
@@ -159,7 +161,7 @@ function createTestVms(cb) {
         owner_uuid: CUSTOMER,
         image_uuid: IMAGE,
         server_uuid: SERVER.uuid,
-        networks: [ { uuid: NETWORKS[0].uuid } ],
+        networks: [ { uuid: ADMIN_NETWORK.uuid } ],
         brand: 'joyent-minimal',
         billing_id: '00000000-0000-0000-0000-000000000000',
         ram: 128,
@@ -312,6 +314,9 @@ exports.napi_networks_ok = function (t) {
         t.ok(Array.isArray(networks), 'networks is Array');
         t.ok(networks.length > 1, 'more than 1 network found');
         NETWORKS = networks;
+        var adminExtNetworks = common.extractAdminAndExternalNetwork(networks);
+        ADMIN_NETWORK = adminExtNetworks.admin;
+        EXTERNAL_NETWORK = adminExtNetworks.external;
         t.done();
     });
 };
@@ -645,7 +650,7 @@ exports.create_vm_locality_not_ok = function (t) {
         owner_uuid: CUSTOMER,
         image_uuid: IMAGE,
         server_uuid: SERVER.uuid,
-        networks: [ { uuid: NETWORKS[0].uuid } ],
+        networks: [ { uuid: ADMIN_NETWORK.uuid } ],
         brand: 'joyent-minimal',
         billing_id: '00000000-0000-0000-0000-000000000000',
         ram: 64,
@@ -678,7 +683,7 @@ exports.create_vm_tags_not_ok = function (t) {
             owner_uuid: CUSTOMER,
             image_uuid: IMAGE,
             server_uuid: SERVER.uuid,
-            networks: [ { uuid: NETWORKS[0].uuid } ],
+            networks: [ { uuid: ADMIN_NETWORK.uuid } ],
             brand: 'joyent-minimal',
             billing_id: '00000000-0000-0000-0000-000000000000',
             ram: 64,
@@ -811,7 +816,7 @@ exports.create_vm = function (t) {
         owner_uuid: CUSTOMER,
         image_uuid: IMAGE,
         server_uuid: SERVER.uuid,
-        networks: [ { uuid: NETWORKS[0].uuid } ],
+        networks: [ { uuid: ADMIN_NETWORK.uuid } ],
         brand: 'joyent-minimal',
         billing_id: '00000000-0000-0000-0000-000000000000',
         ram: 64,
@@ -1087,9 +1092,8 @@ exports.create_vm_with_already_provisioned_ip = function (t) {
         common.checkHeaders(t, res.headers);
         t.ok(body, 'got provisioned vm');
 
-        // This is depending on NETWORKS[0] being the admin network
         ips = body.nics.filter(function (nic) {
-            return nic.nic_tag === NETWORKS[0].nic_tag;
+            return nic.nic_tag === ADMIN_NETWORK.nic_tag;
         }).map(function (nic) {
             return nic.ip;
         });
@@ -1111,7 +1115,7 @@ exports.create_vm_with_already_provisioned_ip = function (t) {
 
         vm.networks = [
             {
-                ipv4_uuid: NETWORKS[0].uuid,
+                ipv4_uuid: ADMIN_NETWORK.uuid,
                 ipv4_ips: [ ips[0] ]
             }
         ];
@@ -1159,7 +1163,7 @@ exports.create_vm_with_already_provisioned_ip = function (t) {
 exports.add_nics_with_networks = function (t) {
     var params = {
         action: 'add_nics',
-        networks: [ { uuid: NETWORKS[1].uuid } ]
+        networks: [ { uuid: EXTERNAL_NETWORK.uuid } ]
     };
 
     var opts = createOpts(vmLocation, params);
@@ -1191,7 +1195,7 @@ exports.check_add_nics_with_network_nics_running = function (t) {
     var query = {
         belongs_to_uuid: newUuid,
         belongs_to_type: 'zone',
-        nic_tag: NETWORKS[1].nic_tag
+        nic_tag: EXTERNAL_NETWORK.nic_tag
     };
 
     waitForNicState(t, query, 'running', function (err) {
@@ -1206,8 +1210,8 @@ exports.add_nics_with_macs = function (t) {
         belongs_to_uuid: newUuid,
         belongs_to_type: 'zone',
         owner_uuid: CUSTOMER,
-        network_uuid: NETWORKS[1].uuid,
-        nic_tag: NETWORKS[1].nic_tag,
+        network_uuid: EXTERNAL_NETWORK.uuid,
+        nic_tag: EXTERNAL_NETWORK.nic_tag,
         status: 'provisioning'
     };
 
@@ -1252,7 +1256,7 @@ exports.check_add_nics_with_macs_nics_running = function (t) {
     var query = {
         belongs_to_uuid: newUuid,
         belongs_to_type: 'zone',
-        nic_tag: NETWORKS[1].nic_tag
+        nic_tag: EXTERNAL_NETWORK.nic_tag
     };
 
     waitForNicState(t, query, 'running', function (err) {
@@ -1275,7 +1279,7 @@ exports.remove_nics = function (t) {
         t.equal(body.nics.length, 3, 'body.nics has length 3');
 
         var macs = body.nics.filter(function (nic) {
-            return nic.nic_tag === NETWORKS[1].nic_tag;
+            return nic.nic_tag === EXTERNAL_NETWORK.nic_tag;
         }).map(function (nic) {
             return nic.mac;
         });
@@ -1318,7 +1322,7 @@ exports.check_remove_nics_removed = function (t) {
         query: {
             belongs_to_uuid: newUuid,
             belongs_to_type: 'zone',
-            nic_tag: NETWORKS[1].nic_tag
+            nic_tag: EXTERNAL_NETWORK.nic_tag
         }
     }, function (err, req, res, nics) {
         common.ifError(t, err);
@@ -1912,7 +1916,7 @@ exports.create_nonautoboot_vm = function (t) {
         owner_uuid: CUSTOMER,
         image_uuid: IMAGE,
         server_uuid: SERVER.uuid,
-        networks: [ { uuid: NETWORKS[0].uuid } ],
+        networks: [ { uuid: ADMIN_NETWORK.uuid } ],
         brand: 'joyent-minimal',
         billing_id: '00000000-0000-0000-0000-000000000000',
         ram: 64,
@@ -2143,7 +2147,7 @@ exports.create_vm_with_package = function (t) {
         owner_uuid: CUSTOMER,
         image_uuid: IMAGE,
         server_uuid: SERVER.uuid,
-        networks: [ { uuid: NETWORKS[0].uuid } ],
+        networks: [ { uuid: ADMIN_NETWORK.uuid } ],
         brand: 'joyent-minimal',
         billing_id: pkgId
     };
@@ -2336,7 +2340,7 @@ exports.provision_network_names = function (t) {
         owner_uuid: CUSTOMER,
         image_uuid: IMAGE,
         server_uuid: SERVER.uuid,
-        networks: [ { name: NETWORKS[0].name } ],
+        networks: [ { name: ADMIN_NETWORK.name } ],
         brand: 'joyent-minimal',
         billing_id: '00000000-0000-0000-0000-000000000000',
         ram: 64,
@@ -2430,7 +2434,7 @@ exports.invalid_firewall_rules = function (t) {
             owner_uuid: CUSTOMER,
             image_uuid: IMAGE,
             server_uuid: SERVER.uuid,
-            networks: [ { name: NETWORKS[0].uuid } ],
+            networks: [ { name: ADMIN_NETWORK.uuid } ],
             brand: 'joyent-minimal',
             billing_id: '00000000-0000-0000-0000-000000000000',
             ram: 64,
@@ -2468,7 +2472,7 @@ exports.create_docker_vm = function (t) {
         owner_uuid: CUSTOMER,
         image_uuid: IMAGE,
         server_uuid: SERVER.uuid,
-        networks: [ { uuid: NETWORKS[0].uuid } ],
+        networks: [ { uuid: ADMIN_NETWORK.uuid } ],
         brand: 'joyent-minimal',
         billing_id: '00000000-0000-0000-0000-000000000000',
         ram: 64,

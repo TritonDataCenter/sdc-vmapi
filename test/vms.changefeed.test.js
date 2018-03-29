@@ -21,6 +21,8 @@ var client;
 var IMAGE = 'fd2cc906-8938-11e3-beab-4359c665ac99';
 var CUSTOMER = common.config.ufdsAdminUuid;
 var NETWORKS = null;
+var ADMIN_NETWORK = null;
+var EXTERNAL_NETWORK = null;
 var SERVER = null;
 var VM = null;
 var CALLER = {
@@ -212,6 +214,9 @@ exports.napi_networks_ok = function (t) {
         t.ok(Array.isArray(networks), 'networks is Array');
         t.ok(networks.length > 1, 'more than 1 network found');
         NETWORKS = networks;
+        var adminExtNetworks = common.extractAdminAndExternalNetwork(networks);
+        ADMIN_NETWORK = adminExtNetworks.admin;
+        EXTERNAL_NETWORK = adminExtNetworks.external;
         t.done();
     });
 };
@@ -229,7 +234,7 @@ exports.create_vm = function (t) {
         owner_uuid: CUSTOMER,
         image_uuid: IMAGE,
         server_uuid: SERVER.uuid,
-        networks: [ { uuid: NETWORKS[0].uuid } ],
+        networks: [ { uuid: ADMIN_NETWORK.uuid } ],
         brand: 'joyent-minimal',
         billing_id: '00000000-0000-0000-0000-000000000000',
         ram: 64,
@@ -432,7 +437,7 @@ exports.listen_for_nics = function (t) {
     t.expect(5);
     var params = {
         action: 'add_nics',
-        networks: [ { uuid: NETWORKS[1].uuid } ]
+        networks: [ { uuid: EXTERNAL_NETWORK.uuid } ]
     };
 
     var opts = createOpts('/vms/' + VM.uuid + '?action=add_nics', params);
