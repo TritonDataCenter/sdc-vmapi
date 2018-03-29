@@ -2710,6 +2710,15 @@ exports.find_fabric_network = function (t) {
     });
 
     t.ok(fabricNetwork, 'found a fabric network');
+
+    if (fabricNetwork) {
+        assert.object(fabricNetwork, 'fabricNetwork');
+        assert.string(fabricNetwork.name, 'fabricNetwork.name');
+        assert.uuid(fabricNetwork.uuid, 'fabricNetwork.uuid');
+        t.ok(true, util.format('using fabric network "%s": %s',
+            fabricNetwork.name, fabricNetwork.uuid));
+    }
+
     t.done();
 };
 
@@ -2801,19 +2810,34 @@ exports.ensure_fabric_nat_provisioned = function (t) {
     };
 
     client.get(opts, function (err, req, res, vms) {
+        var vm;
+
         /**
          * We expect to get back an array containing one running vm.
          */
         common.ifError(t, err);
         t.equal(res.statusCode, 200, 'expected a 200 status');
+
         t.ok(Array.isArray(vms), 'should get vms array object');
-
-        if (Array.isArray(vms)) {
-            t.equal(vms.length, 1, 'should have found one NAT vm');
-            t.equal(vms[0].state, 'running', 'should have found one NAT vm');
-
-            natZoneUuid = vms[0].uuid;
+        if (!Array.isArray(vms)) {
+            t.done();
+            return;
         }
+
+        t.equal(vms.length, 1, 'should have found one NAT vm');
+        if (vms.length !== 1) {
+            t.done();
+            return;
+        }
+
+        vm = vms[0];
+        assert.object(vm, 'vm');
+        assert.uuid(vm.uuid, 'vm.uuid');
+
+        t.equal(vm.state, 'running', 'NAT vm should be running');
+        natZoneUuid = vm.uuid;
+
+        t.ok(true, 'NAT vm uuid: ' + natZoneUuid);
 
         t.done();
     });
@@ -2859,6 +2883,12 @@ exports.wait_destroyed_fabric_vm_job = function (t) {
 exports.ensure_fabric_nat_destroyed = function (t) {
     if (!fabricNetwork) {
         t.fail('No fabric network available');
+        t.done();
+        return;
+    }
+
+    if (!natZoneUuid) {
+        t.fail('NAT zone not created');
         t.done();
         return;
     }
