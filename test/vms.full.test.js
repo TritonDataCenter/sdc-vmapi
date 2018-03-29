@@ -2740,16 +2740,6 @@ exports.ensure_no_fabric_nat_provisioned = function (t) {
 };
 
 
-exports.find_fabric_vm_package = function (t) {
-    fabricNetwork = NETWORKS.find(function _findFabricNetwork(n) {
-        return n.fabric === true;
-    });
-
-    t.ok(fabricNetwork, 'found a fabric network');
-    t.done();
-};
-
-
 exports.create_vm_on_fabric_network = function (t) {
     if (!fabricNetwork) {
         t.fail('No fabric network available');
