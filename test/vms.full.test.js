@@ -781,7 +781,8 @@ exports.create_vm_with_unknown_network = function (t) {
 
         t.deepEqual(body, {
             code: 'UnprocessableEntityError',
-            message: 'No such Network/Pool with id: "' + FAKE_NETWORK_UUID + '"'
+            message: 'No such Network or Pool with id/name: "' +
+                FAKE_NETWORK_UUID + '"'
         });
 
         t.done();
@@ -811,7 +812,8 @@ exports.create_vm_with_unknown_network_name = function (t) {
 
         t.deepEqual(body, {
             code: 'UnprocessableEntityError',
-            message: 'No such Network or Pool with name: ' + FAKE_NETWORK_NAME
+            message: 'No such Network or Pool with id/name: "' +
+                FAKE_NETWORK_NAME + '"'
         });
 
         t.done();
@@ -1123,7 +1125,8 @@ exports.add_nics_with_unknown_network = function (t) {
 
         t.deepEqual(body, {
             code: 'UnprocessableEntityError',
-            message: 'No such Network/Pool with id: "' + FAKE_NETWORK_UUID + '"'
+            message: 'No such Network or Pool with id/name: "' +
+                FAKE_NETWORK_UUID + '"'
         });
 
         t.done();
@@ -1146,7 +1149,8 @@ exports.add_nics_with_unknown_network_name = function (t) {
 
         t.deepEqual(body, {
             code: 'UnprocessableEntityError',
-            message: 'No such Network or Pool with name: ' + FAKE_NETWORK_NAME
+            message: 'No such Network or Pool with id/name: "' +
+                FAKE_NETWORK_NAME + '"'
         });
 
         t.done();

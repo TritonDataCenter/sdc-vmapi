@@ -52,7 +52,15 @@ Typically VMAPI development is done by:
 
 # Testing
 
-To sync local changes to a running COAL and run the test suite there try:
+* Prerequisites:
+    * Set up fabrics on the Triton deployment.
+    * Ensure there are no existing NAT zones provisioned.
+    * Execute `sdcadm post-setup dev-headnode-prov`.
+
+* To sync local changes to a running COAL and run the test suite there use:
 
     make test-coal
 
+* To run tests while logged into a running VMAPI instance:
+
+    /opt/smartdc/vmapi/test/runtests
