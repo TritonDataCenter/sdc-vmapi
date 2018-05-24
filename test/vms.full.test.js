@@ -84,6 +84,20 @@ function checkJob(t, job) {
     t.ok(job.params, 'params');
 }
 
+function getJobOk(t) {
+    assert.object(t, 't');
+
+    client.get(jobLocation, function (err, req, res, body) {
+        common.ifError(t, err);
+        t.equal(res.statusCode, 200, 'GetJob 200 OK');
+        common.checkHeaders(t, res.headers);
+        t.ok(body, 'job ok');
+        checkJob(t, body);
+        t.done();
+    });
+}
+
+
 
 function waitForNicState(t, query, state, waitCallback) {
     var stop = false;
@@ -804,6 +818,71 @@ exports.create_vm_with_unknown_network_name = function (t) {
     });
 };
 
+// Test that pre-provisioned NICs get cleaned up properly (TRITON-394)
+exports.create_vm_dapi_failure = function (t) {
+    var vm = {
+        alias: makeVmAlias(testUuid.generateShortUuid()),
+        owner_uuid: CUSTOMER,
+        image_uuid: IMAGE,
+        networks: [ { uuid: ADMIN_NETWORK.uuid } ],
+        brand: 'joyent-minimal',
+        billing_id: '00000000-0000-0000-0000-000000000000',
+        ram: 64000000, // Something way too large
+        quota: 10,
+        creator_uuid: CUSTOMER
+    };
+
+    var opts = createOpts('/vms', vm);
+
+    client.post(opts, vm, function onCreateVm(err, req, res, body) {
+        common.ifError(t, err);
+        t.equal(res.statusCode, 202, '202 Accepted');
+        common.checkHeaders(t, res.headers);
+        t.ok(res.headers['workflow-api'], 'workflow-api header');
+        t.ok(body, 'vm ok');
+
+        jobLocation = '/jobs/' + body.job_uuid;
+        t.ok(true, 'jobLocation: ' + jobLocation);
+        newUuid = body.vm_uuid;
+        t.ok(true, 'vmUuid: ' + newUuid);
+        vmLocation = '/vms/' + newUuid;
+
+        t.done();
+    });
+};
+
+exports.get_eventual_fail_job = function (t) {
+    getJobOk(t);
+};
+
+
+exports.wait_provisioned_job_failed = function (t) {
+    waitForValue(jobLocation, 'execution', 'failed', {
+        client: client
+    }, function (err) {
+        common.ifError(t, err);
+        t.done();
+    });
+};
+
+// verify create_vm_dapi_failure VM has no NICs
+exports.failed_provision_has_no_nics = function (t) {
+    var vmUuid = vmLocation.split('/')[2];
+
+    var params = {
+        belongs_to_uuid: vmUuid,
+        belongs_to_type: 'zone',
+        owner_uuid: CUSTOMER
+    };
+
+    client.napi.get({path: '/nics', query:  params},
+        function onGetNics(err, req, res, nics) {
+        common.ifError(t, err);
+        t.ok(Array.isArray(nics), 'nics array');
+        t.equal(nics.length, 0, 'failed provision has no nics');
+        t.done();
+    });
+};
 
 exports.create_vm = function (t) {
     var md = {
@@ -858,14 +937,7 @@ exports.create_vm = function (t) {
 
 
 exports.get_job = function (t) {
-    client.get(jobLocation, function (err, req, res, body) {
-        common.ifError(t, err);
-        t.equal(res.statusCode, 200, 'GetJob 200 OK');
-        common.checkHeaders(t, res.headers);
-        t.ok(body, 'job ok');
-        checkJob(t, body);
-        t.done();
-    });
+    getJobOk(t);
 };
 
 
