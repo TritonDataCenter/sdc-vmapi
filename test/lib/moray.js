@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright 2017 Joyent, Inc.
+ * Copyright (c) 2018, Joyent, Inc.
  */
 
 var assert = require('assert-plus');
@@ -79,26 +79,30 @@ function writeObjects(morayClient, bucketName, valueTemplate, nbObjects,
 
     var i;
 
-    var objectKeys = [];
+    var requests = [];
     for (i = 0; i < nbObjects; ++i) {
-        objectKeys.push(libuuid.create());
+        var newObjectValue = jsprim.deepCopy(valueTemplate);
+        var newObjectUuid = libuuid.create();
+        newObjectValue.uuid = newObjectUuid;
+        requests.push({
+            bucket: bucketName,
+            key: newObjectUuid,
+            operation: 'put',
+            value: newObjectValue,
+            option: {
+                etag: null
+            }
+        });
     }
 
-    vasync.forEachParallel({
-        func: function writeObject(objectUuid, done) {
-            var newObjectValue = jsprim.deepCopy(valueTemplate);
-            newObjectValue.uuid = objectUuid;
-            /*
-             * noBucketCache: true is needed so that when putting objects in
-             * moray after a bucket has been deleted and recreated, it doesn't
-             * use an old bucket schema and determine that it needs to update an
-             * _rver column that doesn't exist anymore.
-             */
-            morayClient.putObject(bucketName, objectUuid, newObjectValue, {
-                noBucketCache: true
-            }, done);
-        },
-        inputs: objectKeys
+    /*
+     * noBucketCache: true is needed so that when putting objects in
+     * moray after a bucket has been deleted and recreated, it doesn't
+     * use an old bucket schema and determine that it needs to update an
+     * _rver column that doesn't exist anymore.
+     */
+    morayClient.batch(requests, {
+        noBucketCache: true
     }, callback);
 }
 
