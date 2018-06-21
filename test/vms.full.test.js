@@ -2798,8 +2798,10 @@ exports.destroy_test_vms_final = function (t) {
 exports.find_fabric_network = function (t) {
     assert.arrayOfObject(NETWORKS, 'NETWORKS');
 
+    // Find a fabric network that is owned by CUSTOMER.
     fabricNetwork = NETWORKS.find(function _findFabricNetwork(n) {
-        return n.fabric === true;
+        return n.fabric === true && Array.isArray(n.owner_uuids) &&
+            n.owner_uuids.indexOf(CUSTOMER) >= 0;
     });
 
     t.ok(fabricNetwork, 'found a fabric network');
