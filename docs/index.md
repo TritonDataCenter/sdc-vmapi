@@ -878,6 +878,33 @@ the moment, role_tags is the only non-default field supported.
     GET /vms/00956725-4689-4e2c-9d25-f2172f496f9c?fields=*
     GET /vms/00956725-4689-4e2c-9d25-f2172f496f9c?sync=true
 
+
+
+## GetVmProc /proc data (GET /vms/:uuid/proc)
+
+Returns a specific VM's `/proc` data. Specifically it returns a list of JSON
+structs that each contain `psinfo` and `prusage` data extracted from `/proc`.
+
+### Inputs
+
+| Param      | Type    | Description                                                                                                                                                                                      | Required? |
+| ---------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------- |
+| uuid       | UUID    | VM UUID                                                                                                                                                                                          | Yes       |
+
+
+### Responses
+
+| Code | Description                                                                  | Response     |
+| ---- | ---------------------------------------------------------------------------- | ------------ |
+| 200  | Response OK                                                                  | VM object    |
+| 404  | VM Not Found. VM does not exist or VM does not belong to the specified owner | Error object |
+
+### Examples
+
+    GET /vms/00956725-4689-4e2c-9d25-f2172f496f9c/proc
+
+
+
 ## CreateVm (POST /vms)
 
 Queues a VM provision. This will validate all parameters and create a new job on workflow API when the request is considered to be valid. The response is
