@@ -2185,6 +2185,27 @@ When one of the UUIDs in the request parameters corresponds to a machine that do
     }
 
 
+# Miscellaneous / Internal
+
+There are some VMAPI endpoints that are intended for internal use by other
+Triton services such as `vm-agent` and `workflow`, and are not intended for use
+by operators. We document them here for the benefit of other developers.
+
+## PutVm (PUT /vms/:uuid)
+
+Typically used by `vm-agent` and `workflow` to tell VMAPI to update the
+Moray object that represents the VM in question.
+
+## PutVms (PUT /vms?vms=vms)
+
+Just like `PutVm` but operates on a list of VMs.
+
+## JobResults (POST /job_results)
+
+This is used by `workflow` pass the results of a job _back_ to VMAPI. In other
+words, it is the moral equivalent of a `return` statement.
+
+
 
 # Operator Guide
 
@@ -2387,27 +2408,27 @@ utility is just the lower case version of the API action that can be found on
 this documentation. Note that some routes accept a vm_uuid parameter when they
 are actions specific to a single VM and not a collection of VMs.
 
-| API Action       | Route Name        | Accepts vm_uuid? |
-| ---------------- | ----------------- | ---------------- |
-| ListVms          | listvms           | No               |
-| CreateVm         | createvm          | No               |
-| GetVm            | getvm             | Yes              |
-| StartVm          | startvm           | Yes              |
-| StopVm           | stopvm            | Yes              |
-| RebootVm         | rebootvm          | Yes              |
-| ChangeVm         | changevm          | Yes              |
-| DeleteVm         | deletevm          | Yes              |
-| AddNics          | addnics           | Yes              |
-| RemoveNics       | removenics        | Yes              |
-| CreateSnapshot   | createsnapshot    | Yes              |
-| RollbackSnapshot | rollbacksnapshot  | Yes              |
-| DeleteSnapshot   | deletesnapshot    | Yes              |
-| ListMetadata     | listmetadata      | Yes              |
-| GetMetadata      | getmetadata       | Yes              |
-| AddMetadata      | addmetadata       | Yes              |
-| SetMetadata      | setmetadata       | Yes              |
-| DeleteMetadata   | deletemetadata    | Yes              |
-| DeleteMetadata   | deleteallmetadata | Yes              |
+| API Action        | Route Name        | Accepts vm_uuid? |
+| ----------------- | ----------------- | ---------------- |
+| ListVms           | listvms           | No               |
+| CreateVm          | createvm          | No               |
+| GetVm             | getvm             | Yes              |
+| StartVm           | startvm           | Yes              |
+| StopVm            | stopvm            | Yes              |
+| RebootVm          | rebootvm          | Yes              |
+| ChangeVm          | changevm          | Yes              |
+| DeleteVm          | deletevm          | Yes              |
+| AddNics           | addnics           | Yes              |
+| RemoveNics        | removenics        | Yes              |
+| CreateSnapshot    | createsnapshot    | Yes              |
+| RollbackSnapshot  | rollbacksnapshot  | Yes              |
+| DeleteSnapshot    | deletesnapshot    | Yes              |
+| ListMetadata      | listmetadata      | Yes              |
+| GetMetadata       | getmetadata       | Yes              |
+| AddMetadata       | addmetadata       | Yes              |
+| SetMetadata       | setmetadata       | Yes              |
+| DeleteMetadata    | deletemetadata    | Yes              |
+| DeleteAllMetadata | deleteallmetadata | Yes              |
 
 As an example, we can run this command to get the logs of all the GetVm calls to
 VMAPI:
