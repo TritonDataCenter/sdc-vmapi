@@ -9,7 +9,7 @@
     "async": "0.7.0",
     "backoff": "2.5.0",
     "bunyan": "1.8.12",
-    "changefeed": "1.3.0",
+    "changefeed": "git+https://github.com/joyent/node-sdc-changefeed.git#new-registration",
     "cueball": "2.2.7",
     "dashdash": "1.14.1",
     "deep-diff": "0.3.3",
