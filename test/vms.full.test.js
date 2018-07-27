@@ -889,6 +889,7 @@ exports.failed_provision_has_no_nics = function (t) {
 exports.create_vm = function (t) {
     var md = {
         foo: 'bar',
+        nonascii: 'TRITON-635 test with non-ascii ¥ string',
         credentials: JSON.stringify({ 'user_pw': '12345678' })
     };
 
