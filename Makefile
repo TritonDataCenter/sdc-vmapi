@@ -24,7 +24,7 @@
 
 # The prebuilt sdcnode version we want. See
 # "tools/mk/Makefile.node_prebuilt.targ" for details.
-NODE_PREBUILT_VERSION=v6.14.0
+NODE_PREBUILT_VERSION=v4.9.0
 ifeq ($(shell uname -s),SunOS)
 	NODE_PREBUILT_TAG=zone
 	# Allow building on other than sdc-minimal-multiarch-lts@15.4.1
