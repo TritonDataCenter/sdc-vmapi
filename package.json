@@ -1,7 +1,7 @@
 {
   "name": "vmapi",
   "description": "VMs API",
-  "version": "9.6.1",
+  "version": "9.6.2",
   "author": "Joyent (joyent.com)",
   "private": true,
   "dependencies": {
