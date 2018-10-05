@@ -35,13 +35,22 @@ try {
     config = JSON.parse(fs.readFileSync(DEFAULT_CFG, 'utf8'));
 } catch (e) {}
 
-var CNAPI_URL = config.cnapi.url || 'http://10.99.99.22';
-var IMGAPI_URL = config.imgapi.url || 'http://10.99.99.21';
-var NAPI_URL = config.napi.url || 'http://10.99.99.10';
+var CNAPI_URL = config.cnapi.url;
+var IMGAPI_URL = config.imgapi.url;
+var NAPI_URL = config.napi.url;
+var PAPI_URL = config.papi.url;
 var VMAPI_URL = process.env.VMAPI_URL || 'http://localhost';
-var VOLAPI_URL = config.volapi.url || 'http://10.99.99.42';
+var VOLAPI_URL = config.volapi.url;
 
 var VMS_LIST_ENDPOINT = '/vms';
+
+assert.string(CNAPI_URL, 'config.cnapi.url');
+assert.string(IMGAPI_URL, 'config.imgapi.url');
+assert.string(NAPI_URL, 'config.napi.url');
+assert.string(PAPI_URL, 'config.papi.url');
+assert.string(VMAPI_URL, 'process.env.VMAPI_URL');
+assert.optionalString(VOLAPI_URL, 'config.volapi.url');
+
 
 // --- Library
 
@@ -73,6 +82,13 @@ function setUp(callback) {
         agent: false
     });
 
+    var papi = restify.createJsonClient({
+        url: PAPI_URL,
+        version: '*',
+        log: logger,
+        agent: false
+    });
+
     var cnapi = restify.createJsonClient({
         url: CNAPI_URL,
         version: '*',
@@ -80,17 +96,22 @@ function setUp(callback) {
         agent: false
     });
 
-    var volapi = restify.createJsonClient({
-        url: VOLAPI_URL,
-        /*
-         * Use a specific version and not the latest one (with "*"") to avoid
-         * breakage when VOLAPI's API changes in a way that is not backward
-         * compatible.
-         */
-        version: '^1',
-        log: logger,
-        agent: false
-    });
+    var volapi;
+    if (VOLAPI_URL) {
+        volapi = restify.createJsonClient({
+            url: VOLAPI_URL,
+            /*
+             * Use a specific version and not the latest one (with "*"") to avoid
+             * breakage when VOLAPI's API changes in a way that is not backward
+             * compatible.
+             */
+            version: '^1',
+            log: logger,
+            agent: false
+        });
+
+        client.volapi = volapi;
+    }
 
     var imgapi = restify.createJsonClient({
         url: IMGAPI_URL,
@@ -102,7 +123,7 @@ function setUp(callback) {
     client.cnapi = cnapi;
     client.imgapi = imgapi;
     client.napi = napi;
-    client.volapi = volapi;
+    client.papi = papi;
 
     return callback(null, client);
 }
@@ -182,6 +203,20 @@ function checkValue(client, url, key, value, callback) {
         if (err) {
             callback(err);
             return;
+        }
+
+        // If we hit a permanent state that's incompatible with what we
+        // expected, we can fail right away instead of waiting for the timeout.
+        if (url.indexOf('/jobs/') === 0) {
+            if (value === 'succeeded' && body[key] === 'failed') {
+                callback(new Error(url +
+                    ' failed when we expected "succeeded"'));
+                return;
+            } else if (value === 'failed' && body[key] === 'succeeded') {
+                callback(new Error(url +
+                    ' succeeded when we expected "failed"'));
+                return;
+            }
         }
 
         callback(null, checkEqual(body[key], value));

@@ -43,7 +43,6 @@ var VALID_NIC; // Create a new NIC with valid parameters for a later test
 var FAKE_NETWORK_UUID = 'caaaf10c-a587-49c6-9cf6-9b0a14ba960b';
 var FAKE_NETWORK_NAME = 'fakeNetworkName';
 var VM_UUID = uuid.create(); // Needs to be different everytime the test runs
-var SERVER = null;
 var CALLER = {
     type: 'signature',
     ip: '127.0.0.68',
@@ -58,7 +57,7 @@ function makeVmAlias(id) {
 }
 
 function checkMachine(t, vm) {
-    t.ok(vm.uuid, 'uuid');
+    t.ok(vm.uuid, 'uuid ' + vm.uuid);
     t.ok(vm.brand, 'brand');
     t.ok(vm.ram, 'ram');
     t.ok(vm.max_swap, 'swap');
@@ -174,7 +173,6 @@ function createTestVms(cb) {
         autoboot: false,
         owner_uuid: CUSTOMER,
         image_uuid: IMAGE,
-        server_uuid: SERVER.uuid,
         networks: [ { uuid: ADMIN_NETWORK.uuid } ],
         brand: 'joyent-minimal',
         billing_id: '00000000-0000-0000-0000-000000000000',
@@ -297,29 +295,8 @@ exports.setUp = function (callback) {
 };
 
 
-exports.find_server = function (t) {
-    client.cnapi.get({
-        path: '/servers',
-        query: {
-            headnode: true
-        }
-    }, function (err, req, res, servers) {
-        common.ifError(t, err);
-        t.equal(res.statusCode, 200, '200 OK');
-        t.ok(servers, 'servers is set');
-        t.ok(Array.isArray(servers), 'servers is Array');
-        for (var i = 0; i < servers.length; i++) {
-            if (servers[i].status === 'running') {
-                SERVER = servers[i];
-                break;
-            }
-        }
-        t.ok(SERVER, 'found a running headnode to use for test provisions');
-        t.done();
-    });
-};
-
-
+// Other tests depend on there being both an 'admin' and 'external' network.
+// This test loads these and ensures we have both.
 exports.napi_networks_ok = function (t) {
     client.napi.get('/networks', function (err, req, res, networks) {
         common.ifError(t, err);
@@ -331,11 +308,16 @@ exports.napi_networks_ok = function (t) {
         var adminExtNetworks = common.extractAdminAndExternalNetwork(networks);
         ADMIN_NETWORK = adminExtNetworks.admin;
         EXTERNAL_NETWORK = adminExtNetworks.external;
+        t.ok(ADMIN_NETWORK, 'admin network is ' +
+            (ADMIN_NETWORK ? ADMIN_NETWORK.uuid : ADMIN_NETWORK));
+        t.ok(EXTERNAL_NETWORK, 'external network is ' +
+            (EXTERNAL_NETWORK ? EXTERNAL_NETWORK.uuid : EXTERNAL_NETWORK));
         t.done();
     });
 };
 
 
+// Create 3 test VMs for later use
 exports.initialize_test_vms = function (t) {
     destroyTestVms(function (destroyErr, destroyObj) {
         common.ifError(t, destroyErr);
@@ -363,8 +345,15 @@ exports.initialize_test_vms = function (t) {
 };
 
 
+//
+// Ensure that we have no VMs that have 32MB of DRAM
+//
+// ARCHEOLOGICAL NOTE: It seems that the assumption here is that 32M is too
+// small for any package, and as such this is a "safe" value to query to test
+// that a search that has an empty result succeeds.
+//
 exports.filter_vms_empty = function (t) {
-    var path = '/vms?ram=32&owner_uuid=' + CUSTOMER;
+    var path = '/vms?ram=32&owner_uuid=' + CUSTOMER + '&state=active';
 
     client.get(path, function (err, req, res, body) {
         common.ifError(t, err);
@@ -379,7 +368,7 @@ exports.filter_vms_empty = function (t) {
 
 
 exports.filter_vms_ok = function (t) {
-    var path = '/vms?ram=' + 128 + '&owner_uuid=' + CUSTOMER;
+    var path = '/vms?ram=' + 128 + '&owner_uuid=' + CUSTOMER + '&state=active';
 
     client.get(path, function (err, req, res, body) {
         common.ifError(t, err);
@@ -422,7 +411,7 @@ exports.filter_vms_advanced = function (t) {
 
 exports.filter_vms_predicate = function (t) {
     var pred  = JSON.stringify({ eq: [ 'brand', 'joyent-minimal' ] });
-    var path = '/vms?predicate=' + pred;
+    var path = '/vms?predicate=' + pred + '&state=active';
 
     client.get(path, function (err, req, res, body) {
         common.ifError(t, err);
@@ -448,7 +437,7 @@ exports.filter_vms_predicate = function (t) {
 exports.filter_vms_mixed = function (t) {
     var query = qs.escape('(ram=128)');
     var pred  = JSON.stringify({ eq: [ 'brand', 'joyent-minimal' ] });
-    var args  = 'owner_uuid=' + CUSTOMER;
+    var args  = 'owner_uuid=' + CUSTOMER + '&state=active';
 
     var path = '/vms?query=' + query + '&predicate=' + pred + '&' + args;
 
@@ -490,7 +479,7 @@ exports.filter_vms_mixed = function (t) {
 
 
 exports.limit_vms_ok = function (t) {
-    var path = '/vms?limit=5';
+    var path = '/vms?limit=5&state=active';
 
     client.get(path, function (err, req, res, body) {
         common.ifError(t, err);
@@ -506,7 +495,7 @@ exports.limit_vms_ok = function (t) {
 
 
 exports.head_vms_ok = function (t) {
-    var path = '/vms?ram=' + 128 + '&owner_uuid=' + CUSTOMER;
+    var path = '/vms?ram=' + 128 + '&owner_uuid=' + CUSTOMER + '&state=active';
     client.head(path, function (err, req, res) {
         common.ifError(t, err);
         t.equal(res.statusCode, 200, '200 OK');
@@ -520,7 +509,7 @@ exports.head_vms_ok = function (t) {
 
 
 exports.offset_vms_ok = function (t) {
-    var path = '/vms?ram=' + 128 + '&owner_uuid=' + CUSTOMER + '&offset=2';
+    var path = '/vms?ram=' + 128 + '&owner_uuid=' + CUSTOMER + '&offset=2&state=active';
 
     client.get(path, function (err, req, res, body) {
         common.ifError(t, err);
@@ -538,7 +527,7 @@ exports.offset_vms_ok = function (t) {
 
 exports.offset_vms_at_end = function (t) {
     var path = '/vms?ram=' + 128 + '&owner_uuid=' + CUSTOMER +
-        '&offset=' + vmCount;
+        '&offset=' + vmCount + '&state=active';
 
     client.get(path, function (err, req, res, body) {
         common.ifError(t, err);
@@ -554,7 +543,7 @@ exports.offset_vms_at_end = function (t) {
 
 exports.offset_vms_beyond = function (t) {
     var path = '/vms?ram=' + 128 + '&owner_uuid=' + CUSTOMER +
-        '&offset=' + vmCount + 5;
+        '&offset=' + vmCount + 5 + '&state=active';
 
     client.get(path, function (err, req, res, body) {
         common.ifError(t, err);
@@ -572,7 +561,7 @@ exports.offset_fields_vms_ok = function (t) {
     // Currently we get lucky because the dhcpd0 and assets0 zones
     // are 128MBs zones
     var path = '/vms?ram=' + 128 + '&owner_uuid=' + CUSTOMER +
-        '&fields=uuid,alias&offset=1';
+        '&fields=uuid,alias&offset=1&state=active';
 
     client.get(path, function (err, req, res, body) {
         common.ifError(t, err);
@@ -598,7 +587,7 @@ exports.offset_fields_vms_ok = function (t) {
 
 exports.offset_fields_vms_beyond = function (t) {
     var path = '/vms?ram=' + 128 + '&owner_uuid=' + CUSTOMER +
-        '&fields=uuid,alias&offset=' + vmCount + 5;
+        '&fields=uuid,alias&offset=' + vmCount + 5 + '&state=active';
 
     client.get(path, function (err, req, res, body) {
         common.ifError(t, err);
@@ -625,7 +614,7 @@ exports.get_vm_not_found = function (t) {
 
 
 exports.get_vm_ok = function (t) {
-    var path = '/vms/' + muuid + '?owner_uuid=' + CUSTOMER;
+    var path = '/vms/' + muuid + '?owner_uuid=' + CUSTOMER + '&state=active';
 
     client.get(path, function (err, req, res, body) {
         common.ifError(t, err);
@@ -639,7 +628,7 @@ exports.get_vm_ok = function (t) {
 
 
 exports.head_vm_ok = function (t) {
-    var path = '/vms/' + muuid + '?owner_uuid=' + CUSTOMER;
+    var path = '/vms/' + muuid + '?owner_uuid=' + CUSTOMER + '&state=active';
     client.head(path, function (err, req, res) {
         common.ifError(t, err);
         t.equal(res.statusCode, 200, '200 OK');
@@ -663,7 +652,6 @@ exports.create_vm_locality_not_ok = function (t) {
     var vm = {
         owner_uuid: CUSTOMER,
         image_uuid: IMAGE,
-        server_uuid: SERVER.uuid,
         networks: [ { uuid: ADMIN_NETWORK.uuid } ],
         brand: 'joyent-minimal',
         billing_id: '00000000-0000-0000-0000-000000000000',
@@ -696,7 +684,6 @@ exports.create_vm_tags_not_ok = function (t) {
         var vm = {
             owner_uuid: CUSTOMER,
             image_uuid: IMAGE,
-            server_uuid: SERVER.uuid,
             networks: [ { uuid: ADMIN_NETWORK.uuid } ],
             brand: 'joyent-minimal',
             billing_id: '00000000-0000-0000-0000-000000000000',
@@ -763,7 +750,6 @@ exports.create_vm_with_unknown_network = function (t) {
     var vm = {
         owner_uuid: CUSTOMER,
         image_uuid: IMAGE,
-        server_uuid: SERVER.uuid,
         networks: [ { uuid: FAKE_NETWORK_UUID } ],
         brand: 'joyent-minimal',
         billing_id: '00000000-0000-0000-0000-000000000000',
@@ -794,7 +780,6 @@ exports.create_vm_with_unknown_network_name = function (t) {
     var vm = {
         owner_uuid: CUSTOMER,
         image_uuid: IMAGE,
-        server_uuid: SERVER.uuid,
         networks: [ { name: FAKE_NETWORK_NAME } ],
         brand: 'joyent-minimal',
         billing_id: '00000000-0000-0000-0000-000000000000',
@@ -824,12 +809,15 @@ exports.create_vm_with_unknown_network_name = function (t) {
 exports.create_vm_dapi_failure = function (t) {
     var vm = {
         alias: makeVmAlias(testUuid.generateShortUuid()),
+        cpu_cap: 100,
         owner_uuid: CUSTOMER,
         image_uuid: IMAGE,
         networks: [ { uuid: ADMIN_NETWORK.uuid } ],
         brand: 'joyent-minimal',
         billing_id: '00000000-0000-0000-0000-000000000000',
-        ram: 64000000, // Something way too large
+        internal_metadata: {
+            force_designation_failure: true // to force DAPI to fail this provision
+        },
         quota: 10,
         creator_uuid: CUSTOMER
     };
@@ -897,7 +885,6 @@ exports.create_vm = function (t) {
         alias: makeVmAlias(testUuid.generateShortUuid()),
         owner_uuid: CUSTOMER,
         image_uuid: IMAGE,
-        server_uuid: SERVER.uuid,
         networks: [ { uuid: ADMIN_NETWORK.uuid } ],
         brand: 'joyent-minimal',
         billing_id: '00000000-0000-0000-0000-000000000000',
@@ -1182,7 +1169,6 @@ exports.create_vm_with_already_provisioned_ip = function (t) {
             alias: makeVmAlias(testUuid.generateShortUuid()),
             owner_uuid: CUSTOMER,
             image_uuid: IMAGE,
-            server_uuid: SERVER.uuid,
             brand: 'joyent-minimal',
             billing_id: '00000000-0000-0000-0000-000000000000',
             ram: 64,
@@ -1644,7 +1630,7 @@ exports.wait_new_tag = function (t) {
 
 
 exports.get_tag = function (t) {
-    var path = '/vms/' + newUuid + '/tags/role?owner_uuid=' + CUSTOMER;
+    var path = '/vms/' + newUuid + '/tags/role?owner_uuid=' + CUSTOMER + '&state=active';
 
     client.get(path, function (err, req, res, data) {
         common.ifError(t, err);
@@ -1992,7 +1978,6 @@ exports.create_nonautoboot_vm = function (t) {
     var vm = {
         owner_uuid: CUSTOMER,
         image_uuid: IMAGE,
-        server_uuid: SERVER.uuid,
         networks: [ { uuid: ADMIN_NETWORK.uuid } ],
         brand: 'joyent-minimal',
         billing_id: '00000000-0000-0000-0000-000000000000',
@@ -2140,7 +2125,6 @@ exports.create_vm_from_existing_nics = function (t) {
             uuid: VM_UUID,
             owner_uuid: CUSTOMER,
             image_uuid: IMAGE,
-            server_uuid: SERVER.uuid,
             networks: [ { uuid: VALID_NIC.network_uuid } ],
             brand: 'joyent-minimal',
             billing_id: '00000000-0000-0000-0000-000000000000',
@@ -2223,7 +2207,6 @@ exports.create_vm_with_package = function (t) {
     var vm = {
         owner_uuid: CUSTOMER,
         image_uuid: IMAGE,
-        server_uuid: SERVER.uuid,
         networks: [ { uuid: ADMIN_NETWORK.uuid } ],
         brand: 'joyent-minimal',
         billing_id: pkgId
@@ -2416,7 +2399,6 @@ exports.provision_network_names = function (t) {
     var vm = {
         owner_uuid: CUSTOMER,
         image_uuid: IMAGE,
-        server_uuid: SERVER.uuid,
         networks: [ { name: ADMIN_NETWORK.name } ],
         brand: 'joyent-minimal',
         billing_id: '00000000-0000-0000-0000-000000000000',
@@ -2510,7 +2492,6 @@ exports.invalid_firewall_rules = function (t) {
         var vm = {
             owner_uuid: CUSTOMER,
             image_uuid: IMAGE,
-            server_uuid: SERVER.uuid,
             networks: [ { name: ADMIN_NETWORK.uuid } ],
             brand: 'joyent-minimal',
             billing_id: '00000000-0000-0000-0000-000000000000',
@@ -2548,7 +2529,6 @@ exports.create_docker_vm = function (t) {
     var vm = {
         owner_uuid: CUSTOMER,
         image_uuid: IMAGE,
-        server_uuid: SERVER.uuid,
         networks: [ { uuid: ADMIN_NETWORK.uuid } ],
         brand: 'joyent-minimal',
         billing_id: '00000000-0000-0000-0000-000000000000',
@@ -2859,7 +2839,6 @@ exports.create_vm_on_fabric_network = function (t) {
     var vm = {
         owner_uuid: CUSTOMER,
         image_uuid: IMAGE,
-        server_uuid: SERVER.uuid,
         networks: [ { uuid: fabricNetwork.uuid } ],
         brand: 'joyent-minimal',
         billing_id: pkgId
