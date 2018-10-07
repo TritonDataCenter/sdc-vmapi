@@ -178,8 +178,10 @@ function checkHeaders(t, headers) {
 /*
  * like t.ifError with a printed message
  */
-function ifError(t, err) {
-    t.ok(!err, err ? ('error: ' + err.message) : 'no error');
+function ifError(t, err, prefix) {
+    t.ok(!err,
+        (prefix ? prefix + ': ' : '') +
+        (err ? ('error: ' + err.message) : 'no error'));
 }
 
 

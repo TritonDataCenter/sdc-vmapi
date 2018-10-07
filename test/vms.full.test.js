@@ -2238,45 +2238,113 @@ exports.wait_provisioned_with_package_job = function (t) {
 };
 
 
-// if there's not enough spare RAM on a server, and we're resizing upwards, we
-// want it to fail
+//
+// If there's not enough spare RAM on a server, and we're resizing upwards, we
+// want the provision to fail. Failure should be the normal case for this
+// feature, since ideally it will never work if we've done a good job of packing
+// VMs.
+//
 exports.resize_package_up_fail = function (t) {
-    if (SERVER.datacenter !== 'coal' || !SERVER.headnode)
-        return t.done();
+    //
+    // NOTE: VM should have been created by:
+    //
+    // create_vm_with_package
+    //
+    // above which uses 'pkgId' set by:
+    //
+    // filter_vms_ok
+    //
+    // To the package of the first VM it could find with 128M of "ram".
+    // So the VM should exist and be using 128M of DRAM.
+    //
 
-    var path = '/vms?ram=' + 1024 + '&owner_uuid=' + CUSTOMER;
     var largerPkg;
+    var largeRamValue = // value is in MiB, so:
+            10 * 1024 * // 10 EiB should be enough for anyone
+            1024 *      // PiB
+            1024 *      // TiB
+            1024;       // GiB
+    var largeQuotaValue = largeRamValue * 1024; // EiB->ZiB
+    var path = '/vms?ram=' + 1024 + '&owner_uuid=' + CUSTOMER;
+    var pkgName = 'ginormous-vmapi-test-10EiB';
+    var pkgUuid;
 
-    client.get(path, function (err, req, res, body) {
-        common.ifError(t, err);
-        t.equal(res.statusCode, 200, '200 OK');
-        body.forEach(function (m) {
-            // Any non-null package works
-            if (m['billing_id'] &&
-                m['billing_id'] !== '00000000-0000-0000-0000-000000000000') {
-                largerPkg = m['billing_id'];
+    vasync.pipeline({
+        arg: {},
+        funcs: [
+            function _createGinormousPackage(ctx, cb) {
+                client.papi.post('/packages', {
+                    active: true,
+                    cpu_cap: 10000,
+                    description:
+                        'Very large test package for VMAPI\'s vms.full.test.js',
+                    max_lwps: 30000,
+                    max_physical_memory: largeRamValue,
+                    max_swap: largeRamValue,
+                    name: pkgName,
+                    quota: largeQuotaValue,
+                    version: '1.0.0',
+                    vcpus: 32, // the largest papi currently allows LOL
+                    zfs_io_priority: 16383 // also largest papi currently allows
+                }, function _onPost(err, req, res, body) {
+                    common.ifError(t, err, 'POST ginormous package to PAPI');
+
+                    if (!err) {
+                        t.ok(body.uuid, 'created package uuid: ' + body.uuid);
+                        t.equal(pkgName, body.name,
+                            'response should be our fresh package');
+                        ctx.pkgUuid = body.uuid;
+                    }
+
+                    cb(err);
+                });
+            }, function _resizeToGinormous(ctx, cb) {
+                var params = {
+                    action: 'update',
+                    billing_id: ctx.pkgUuid
+                };
+                var opts = createOpts(vmLocation, params);
+
+                client.post(opts, params,
+                    function _onPost(err, req, res, body) {
+
+                    var error;
+
+                    t.ok(err, 'expected error POSTing resize');
+                    t.equal(res.statusCode, 409, 'expected HTTP code 409');
+                    t.equal(body.code, 'ValidationFailed',
+                        'expected ValidationFailed error');
+                    t.equal(body.message, 'Invalid VM update parameters',
+                        'expected invalid update message');
+
+                    error = body.errors[0];
+                    t.equal(error.field, 'ram', 'error should be due to ram');
+                    t.equal(error.code, 'InsufficientCapacity',
+                        'error code should be InsufficientCapacity');
+                    t.ok(error.message.match(
+                        'Required additional RAM \\(\\d+\\) ' +
+                        'exceeds the server\'s available RAM \\(\\d+\\)'),
+                        'error message should explain additional RAM required');
+
+                    cb();
+                });
+            }, function _deleteGinormousPackage(ctx, cb) {
+                client.papi.del({
+                    path: '/packages/' + ctx.pkgUuid + '?force=true'
+                }, function _onDel(err, req, res, body) {
+                    common.ifError(t, err, 'DELETE created package');
+
+                    t.equal(204, res.statusCode, 'expected 204 from DELETE');
+                    t.ok(!err, 'expected no restCode' +
+                        (err ? 'got ' + err.restCode : ''));
+
+                    cb(err);
+                });
             }
-        });
-
-        var params = { action: 'update', billing_id: largerPkg };
-
-        var opts = createOpts(vmLocation, params);
-
-        return client.post(opts, params, function (err2, req2, res2, body2) {
-            t.ok(err2);
-            t.equal(res2.statusCode, 409);
-
-            t.equal(body2.code, 'ValidationFailed');
-            t.equal(body2.message, 'Invalid VM update parameters');
-
-            var error = body2.errors[0];
-            t.equal(error.field, 'ram');
-            t.equal(error.code, 'InsufficientCapacity');
-            t.ok(error.message.match('Required additional RAM \\(896\\) ' +
-                'exceeds the server\'s available RAM \\(-\\d+\\)'));
-
-            t.done();
-        });
+        ]
+    }, function pipelineComplete(err) {
+        common.ifError(t, err, 'resize pipeline');
+        t.done();
     });
 };
 
@@ -2633,13 +2701,14 @@ exports.set_docker_tag_2 = function (t) {
     var query = {
        foo: 'bar'
     };
-
     var opts = createOpts(path, query);
 
     client.put(opts, query, function (err, req, res, body) {
+        var restCode = (err ? err.restCode : undefined);
+
         t.ok(err);
         t.equal(res.statusCode, 409, '409 Conflict');
-        t.equal(err.restCode, 'ValidationFailed');
+        t.equal(restCode, 'ValidationFailed');
 
         t.deepEqual(body, {
             code: 'ValidationFailed',
