@@ -176,6 +176,7 @@ function createTestVms(cb) {
         networks: [ { uuid: ADMIN_NETWORK.uuid } ],
         brand: 'joyent-minimal',
         billing_id: '00000000-0000-0000-0000-000000000000',
+        cpu_cap: 100,
         ram: 128,
         quota: 10,
         customer_metadata: {},
@@ -655,6 +656,7 @@ exports.create_vm_locality_not_ok = function (t) {
         networks: [ { uuid: ADMIN_NETWORK.uuid } ],
         brand: 'joyent-minimal',
         billing_id: '00000000-0000-0000-0000-000000000000',
+        cpu_cap: 100,
         ram: 64,
         quota: 10,
         creator_uuid: CUSTOMER,
@@ -687,6 +689,7 @@ exports.create_vm_tags_not_ok = function (t) {
             networks: [ { uuid: ADMIN_NETWORK.uuid } ],
             brand: 'joyent-minimal',
             billing_id: '00000000-0000-0000-0000-000000000000',
+            cpu_cap: 100,
             ram: 64,
             quota: 10,
             creator_uuid: CUSTOMER,
@@ -753,6 +756,7 @@ exports.create_vm_with_unknown_network = function (t) {
         networks: [ { uuid: FAKE_NETWORK_UUID } ],
         brand: 'joyent-minimal',
         billing_id: '00000000-0000-0000-0000-000000000000',
+        cpu_cap: 100,
         ram: 64,
         quota: 10,
         creator_uuid: CUSTOMER
@@ -783,6 +787,7 @@ exports.create_vm_with_unknown_network_name = function (t) {
         networks: [ { name: FAKE_NETWORK_NAME } ],
         brand: 'joyent-minimal',
         billing_id: '00000000-0000-0000-0000-000000000000',
+        cpu_cap: 100,
         ram: 64,
         quota: 10,
         creator_uuid: CUSTOMER
@@ -809,12 +814,12 @@ exports.create_vm_with_unknown_network_name = function (t) {
 exports.create_vm_dapi_failure = function (t) {
     var vm = {
         alias: makeVmAlias(testUuid.generateShortUuid()),
-        cpu_cap: 100,
         owner_uuid: CUSTOMER,
         image_uuid: IMAGE,
         networks: [ { uuid: ADMIN_NETWORK.uuid } ],
         brand: 'joyent-minimal',
         billing_id: '00000000-0000-0000-0000-000000000000',
+        cpu_cap: 100,
         internal_metadata: {
             force_designation_failure: true // to force DAPI to fail this provision
         },
@@ -888,6 +893,7 @@ exports.create_vm = function (t) {
         networks: [ { uuid: ADMIN_NETWORK.uuid } ],
         brand: 'joyent-minimal',
         billing_id: '00000000-0000-0000-0000-000000000000',
+        cpu_cap: 100,
         ram: 64,
         quota: 10,
         customer_metadata: md,
@@ -1171,6 +1177,7 @@ exports.create_vm_with_already_provisioned_ip = function (t) {
             image_uuid: IMAGE,
             brand: 'joyent-minimal',
             billing_id: '00000000-0000-0000-0000-000000000000',
+            cpu_cap: 100,
             ram: 64,
             quota: 10,
             creator_uuid: CUSTOMER
@@ -1981,6 +1988,7 @@ exports.create_nonautoboot_vm = function (t) {
         networks: [ { uuid: ADMIN_NETWORK.uuid } ],
         brand: 'joyent-minimal',
         billing_id: '00000000-0000-0000-0000-000000000000',
+        cpu_cap: 100,
         ram: 64,
         quota: 10,
         autoboot: false
@@ -2128,6 +2136,7 @@ exports.create_vm_from_existing_nics = function (t) {
             networks: [ { uuid: VALID_NIC.network_uuid } ],
             brand: 'joyent-minimal',
             billing_id: '00000000-0000-0000-0000-000000000000',
+            cpu_cap: 100,
             ram: 64,
             quota: 10,
             creator_uuid: CUSTOMER
@@ -2470,6 +2479,7 @@ exports.provision_network_names = function (t) {
         networks: [ { name: ADMIN_NETWORK.name } ],
         brand: 'joyent-minimal',
         billing_id: '00000000-0000-0000-0000-000000000000',
+        cpu_cap: 100,
         ram: 64,
         quota: 10,
         creator_uuid: CUSTOMER
@@ -2563,6 +2573,7 @@ exports.invalid_firewall_rules = function (t) {
             networks: [ { name: ADMIN_NETWORK.uuid } ],
             brand: 'joyent-minimal',
             billing_id: '00000000-0000-0000-0000-000000000000',
+            cpu_cap: 100,
             ram: 64,
             quota: 10,
             creator_uuid: CUSTOMER,
@@ -2600,6 +2611,7 @@ exports.create_docker_vm = function (t) {
         networks: [ { uuid: ADMIN_NETWORK.uuid } ],
         brand: 'joyent-minimal',
         billing_id: '00000000-0000-0000-0000-000000000000',
+        cpu_cap: 100,
         ram: 64,
         quota: 10,
         creator_uuid: CUSTOMER,
