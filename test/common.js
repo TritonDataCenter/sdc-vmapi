@@ -101,9 +101,9 @@ function setUp(callback) {
         volapi = restify.createJsonClient({
             url: VOLAPI_URL,
             /*
-             * Use a specific version and not the latest one (with "*"") to avoid
-             * breakage when VOLAPI's API changes in a way that is not backward
-             * compatible.
+             * Use a specific version and not the latest one (with "*"") to
+             * avoid breakage when VOLAPI's API changes in a way that is not
+             * backward compatible.
              */
             version: '^1',
             log: logger,

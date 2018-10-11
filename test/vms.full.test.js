@@ -511,7 +511,8 @@ exports.head_vms_ok = function (t) {
 
 
 exports.offset_vms_ok = function (t) {
-    var path = '/vms?ram=' + 128 + '&owner_uuid=' + CUSTOMER + '&offset=2&state=active';
+    var path = '/vms?ram=' + 128 + '&owner_uuid=' + CUSTOMER +
+        '&offset=2&state=active';
 
     client.get(path, function (err, req, res, body) {
         common.ifError(t, err);
@@ -822,7 +823,8 @@ exports.create_vm_dapi_failure = function (t) {
         billing_id: '00000000-0000-0000-0000-000000000000',
         cpu_cap: 100,
         internal_metadata: {
-            force_designation_failure: true // to force DAPI to fail this provision
+            // to force DAPI to fail this provision
+            force_designation_failure: true
         },
         quota: 10,
         creator_uuid: CUSTOMER
@@ -1638,7 +1640,8 @@ exports.wait_new_tag = function (t) {
 
 
 exports.get_tag = function (t) {
-    var path = '/vms/' + newUuid + '/tags/role?owner_uuid=' + CUSTOMER + '&state=active';
+    var path = '/vms/' + newUuid + '/tags/role?owner_uuid=' + CUSTOMER +
+        '&state=active';
 
     client.get(path, function (err, req, res, data) {
         common.ifError(t, err);
@@ -2268,16 +2271,13 @@ exports.resize_package_up_fail = function (t) {
     // So the VM should exist and be using 128M of DRAM.
     //
 
-    var largerPkg;
     var largeRamValue = // value is in MiB, so:
             10 * 1024 * // 10 EiB should be enough for anyone
             1024 *      // PiB
             1024 *      // TiB
             1024;       // GiB
     var largeQuotaValue = largeRamValue * 1024; // EiB->ZiB
-    var path = '/vms?ram=' + 1024 + '&owner_uuid=' + CUSTOMER;
     var pkgName = 'ginormous-vmapi-test-10EiB';
-    var pkgUuid;
 
     vasync.pipeline({
         arg: {},
