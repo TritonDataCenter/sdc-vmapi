@@ -255,6 +255,7 @@ function destroyTestVms(cb) {
 
                 client.del(opts, function (delErr, delReq, delRes, delBody) {
                     if (delErr) {
+                        delErr.message = delErr.message + ' VM ' + vm.uuid;
                         next(delErr);
                         return;
                     }
