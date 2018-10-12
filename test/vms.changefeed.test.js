@@ -183,11 +183,15 @@ exports.setUp = function (callback) {
     });
 };
 
+//
+// This SERVER will be used when performing actions that don't involve an actual
+// provision, like the tests of the PUT endpoint.
+//
 exports.find_server = function (t) {
     client.cnapi.get({
         path: '/servers',
         query: {
-            headnode: true
+            setup: true
         }
     }, function (err, req, res, servers) {
         common.ifError(t, err);
@@ -200,11 +204,11 @@ exports.find_server = function (t) {
                 break;
             }
         }
-        t.ok(SERVER, 'found a running headnode to use for test provisions');
+        t.ok(SERVER, 'found a running node to use for non-provision tests: ' +
+            SERVER.uuid);
         t.done();
     });
 };
-
 
 exports.napi_networks_ok = function (t) {
     client.napi.get('/networks', function (err, req, res, networks) {
@@ -229,11 +233,10 @@ exports.create_vm = function (t) {
     };
 
     VM = {
-        alias: 'sdcvmapitest_create_vm',
+        alias: 'sdcvmapitest_create_vm_' + process.pid,
         uuid: uuid.create(),
         owner_uuid: CUSTOMER,
         image_uuid: IMAGE,
-        server_uuid: SERVER.uuid,
         networks: [ { uuid: ADMIN_NETWORK.uuid } ],
         brand: 'joyent-minimal',
         billing_id: '00000000-0000-0000-0000-000000000000',
@@ -255,7 +258,7 @@ exports.create_vm = function (t) {
             t.equal(res.statusCode, 202, '202 Accepted');
             common.checkHeaders(t, res.headers);
             t.ok(res.headers['workflow-api'], 'workflow-api header');
-            t.ok(body, 'vm ok');
+            t.ok(body, 'vm ok job: ' + body.job_uuid);
 
             jobLocation = '/jobs/' + body.job_uuid;
         });

@@ -43,7 +43,6 @@ var VALID_NIC; // Create a new NIC with valid parameters for a later test
 var FAKE_NETWORK_UUID = 'caaaf10c-a587-49c6-9cf6-9b0a14ba960b';
 var FAKE_NETWORK_NAME = 'fakeNetworkName';
 var VM_UUID = uuid.create(); // Needs to be different everytime the test runs
-var SERVER = null;
 var CALLER = {
     type: 'signature',
     ip: '127.0.0.68',
@@ -58,7 +57,7 @@ function makeVmAlias(id) {
 }
 
 function checkMachine(t, vm) {
-    t.ok(vm.uuid, 'uuid');
+    t.ok(vm.uuid, 'uuid ' + vm.uuid);
     t.ok(vm.brand, 'brand');
     t.ok(vm.ram, 'ram');
     t.ok(vm.max_swap, 'swap');
@@ -174,10 +173,10 @@ function createTestVms(cb) {
         autoboot: false,
         owner_uuid: CUSTOMER,
         image_uuid: IMAGE,
-        server_uuid: SERVER.uuid,
         networks: [ { uuid: ADMIN_NETWORK.uuid } ],
         brand: 'joyent-minimal',
         billing_id: '00000000-0000-0000-0000-000000000000',
+        cpu_cap: 100,
         ram: 128,
         quota: 10,
         customer_metadata: {},
@@ -256,6 +255,7 @@ function destroyTestVms(cb) {
 
                 client.del(opts, function (delErr, delReq, delRes, delBody) {
                     if (delErr) {
+                        delErr.message = delErr.message + ' VM ' + vm.uuid;
                         next(delErr);
                         return;
                     }
@@ -297,29 +297,8 @@ exports.setUp = function (callback) {
 };
 
 
-exports.find_server = function (t) {
-    client.cnapi.get({
-        path: '/servers',
-        query: {
-            headnode: true
-        }
-    }, function (err, req, res, servers) {
-        common.ifError(t, err);
-        t.equal(res.statusCode, 200, '200 OK');
-        t.ok(servers, 'servers is set');
-        t.ok(Array.isArray(servers), 'servers is Array');
-        for (var i = 0; i < servers.length; i++) {
-            if (servers[i].status === 'running') {
-                SERVER = servers[i];
-                break;
-            }
-        }
-        t.ok(SERVER, 'found a running headnode to use for test provisions');
-        t.done();
-    });
-};
-
-
+// Other tests depend on there being both an 'admin' and 'external' network.
+// This test loads these and ensures we have both.
 exports.napi_networks_ok = function (t) {
     client.napi.get('/networks', function (err, req, res, networks) {
         common.ifError(t, err);
@@ -331,11 +310,16 @@ exports.napi_networks_ok = function (t) {
         var adminExtNetworks = common.extractAdminAndExternalNetwork(networks);
         ADMIN_NETWORK = adminExtNetworks.admin;
         EXTERNAL_NETWORK = adminExtNetworks.external;
+        t.ok(ADMIN_NETWORK, 'admin network is ' +
+            (ADMIN_NETWORK ? ADMIN_NETWORK.uuid : ADMIN_NETWORK));
+        t.ok(EXTERNAL_NETWORK, 'external network is ' +
+            (EXTERNAL_NETWORK ? EXTERNAL_NETWORK.uuid : EXTERNAL_NETWORK));
         t.done();
     });
 };
 
 
+// Create 3 test VMs for later use
 exports.initialize_test_vms = function (t) {
     destroyTestVms(function (destroyErr, destroyObj) {
         common.ifError(t, destroyErr);
@@ -363,8 +347,15 @@ exports.initialize_test_vms = function (t) {
 };
 
 
+//
+// Ensure that we have no VMs that have 32MB of DRAM
+//
+// ARCHEOLOGICAL NOTE: It seems that the assumption here is that 32M is too
+// small for any package, and as such this is a "safe" value to query to test
+// that a search that has an empty result succeeds.
+//
 exports.filter_vms_empty = function (t) {
-    var path = '/vms?ram=32&owner_uuid=' + CUSTOMER;
+    var path = '/vms?ram=32&owner_uuid=' + CUSTOMER + '&state=active';
 
     client.get(path, function (err, req, res, body) {
         common.ifError(t, err);
@@ -379,7 +370,7 @@ exports.filter_vms_empty = function (t) {
 
 
 exports.filter_vms_ok = function (t) {
-    var path = '/vms?ram=' + 128 + '&owner_uuid=' + CUSTOMER;
+    var path = '/vms?ram=' + 128 + '&owner_uuid=' + CUSTOMER + '&state=active';
 
     client.get(path, function (err, req, res, body) {
         common.ifError(t, err);
@@ -422,7 +413,7 @@ exports.filter_vms_advanced = function (t) {
 
 exports.filter_vms_predicate = function (t) {
     var pred  = JSON.stringify({ eq: [ 'brand', 'joyent-minimal' ] });
-    var path = '/vms?predicate=' + pred;
+    var path = '/vms?predicate=' + pred + '&state=active';
 
     client.get(path, function (err, req, res, body) {
         common.ifError(t, err);
@@ -448,7 +439,7 @@ exports.filter_vms_predicate = function (t) {
 exports.filter_vms_mixed = function (t) {
     var query = qs.escape('(ram=128)');
     var pred  = JSON.stringify({ eq: [ 'brand', 'joyent-minimal' ] });
-    var args  = 'owner_uuid=' + CUSTOMER;
+    var args  = 'owner_uuid=' + CUSTOMER + '&state=active';
 
     var path = '/vms?query=' + query + '&predicate=' + pred + '&' + args;
 
@@ -490,7 +481,7 @@ exports.filter_vms_mixed = function (t) {
 
 
 exports.limit_vms_ok = function (t) {
-    var path = '/vms?limit=5';
+    var path = '/vms?limit=5&state=active';
 
     client.get(path, function (err, req, res, body) {
         common.ifError(t, err);
@@ -506,7 +497,7 @@ exports.limit_vms_ok = function (t) {
 
 
 exports.head_vms_ok = function (t) {
-    var path = '/vms?ram=' + 128 + '&owner_uuid=' + CUSTOMER;
+    var path = '/vms?ram=' + 128 + '&owner_uuid=' + CUSTOMER + '&state=active';
     client.head(path, function (err, req, res) {
         common.ifError(t, err);
         t.equal(res.statusCode, 200, '200 OK');
@@ -520,7 +511,8 @@ exports.head_vms_ok = function (t) {
 
 
 exports.offset_vms_ok = function (t) {
-    var path = '/vms?ram=' + 128 + '&owner_uuid=' + CUSTOMER + '&offset=2';
+    var path = '/vms?ram=' + 128 + '&owner_uuid=' + CUSTOMER +
+        '&offset=2&state=active';
 
     client.get(path, function (err, req, res, body) {
         common.ifError(t, err);
@@ -538,7 +530,7 @@ exports.offset_vms_ok = function (t) {
 
 exports.offset_vms_at_end = function (t) {
     var path = '/vms?ram=' + 128 + '&owner_uuid=' + CUSTOMER +
-        '&offset=' + vmCount;
+        '&offset=' + vmCount + '&state=active';
 
     client.get(path, function (err, req, res, body) {
         common.ifError(t, err);
@@ -554,7 +546,7 @@ exports.offset_vms_at_end = function (t) {
 
 exports.offset_vms_beyond = function (t) {
     var path = '/vms?ram=' + 128 + '&owner_uuid=' + CUSTOMER +
-        '&offset=' + vmCount + 5;
+        '&offset=' + vmCount + 5 + '&state=active';
 
     client.get(path, function (err, req, res, body) {
         common.ifError(t, err);
@@ -572,7 +564,7 @@ exports.offset_fields_vms_ok = function (t) {
     // Currently we get lucky because the dhcpd0 and assets0 zones
     // are 128MBs zones
     var path = '/vms?ram=' + 128 + '&owner_uuid=' + CUSTOMER +
-        '&fields=uuid,alias&offset=1';
+        '&fields=uuid,alias&offset=1&state=active';
 
     client.get(path, function (err, req, res, body) {
         common.ifError(t, err);
@@ -598,7 +590,7 @@ exports.offset_fields_vms_ok = function (t) {
 
 exports.offset_fields_vms_beyond = function (t) {
     var path = '/vms?ram=' + 128 + '&owner_uuid=' + CUSTOMER +
-        '&fields=uuid,alias&offset=' + vmCount + 5;
+        '&fields=uuid,alias&offset=' + vmCount + 5 + '&state=active';
 
     client.get(path, function (err, req, res, body) {
         common.ifError(t, err);
@@ -625,7 +617,7 @@ exports.get_vm_not_found = function (t) {
 
 
 exports.get_vm_ok = function (t) {
-    var path = '/vms/' + muuid + '?owner_uuid=' + CUSTOMER;
+    var path = '/vms/' + muuid + '?owner_uuid=' + CUSTOMER + '&state=active';
 
     client.get(path, function (err, req, res, body) {
         common.ifError(t, err);
@@ -639,7 +631,7 @@ exports.get_vm_ok = function (t) {
 
 
 exports.head_vm_ok = function (t) {
-    var path = '/vms/' + muuid + '?owner_uuid=' + CUSTOMER;
+    var path = '/vms/' + muuid + '?owner_uuid=' + CUSTOMER + '&state=active';
     client.head(path, function (err, req, res) {
         common.ifError(t, err);
         t.equal(res.statusCode, 200, '200 OK');
@@ -663,10 +655,10 @@ exports.create_vm_locality_not_ok = function (t) {
     var vm = {
         owner_uuid: CUSTOMER,
         image_uuid: IMAGE,
-        server_uuid: SERVER.uuid,
         networks: [ { uuid: ADMIN_NETWORK.uuid } ],
         brand: 'joyent-minimal',
         billing_id: '00000000-0000-0000-0000-000000000000',
+        cpu_cap: 100,
         ram: 64,
         quota: 10,
         creator_uuid: CUSTOMER,
@@ -696,10 +688,10 @@ exports.create_vm_tags_not_ok = function (t) {
         var vm = {
             owner_uuid: CUSTOMER,
             image_uuid: IMAGE,
-            server_uuid: SERVER.uuid,
             networks: [ { uuid: ADMIN_NETWORK.uuid } ],
             brand: 'joyent-minimal',
             billing_id: '00000000-0000-0000-0000-000000000000',
+            cpu_cap: 100,
             ram: 64,
             quota: 10,
             creator_uuid: CUSTOMER,
@@ -763,10 +755,10 @@ exports.create_vm_with_unknown_network = function (t) {
     var vm = {
         owner_uuid: CUSTOMER,
         image_uuid: IMAGE,
-        server_uuid: SERVER.uuid,
         networks: [ { uuid: FAKE_NETWORK_UUID } ],
         brand: 'joyent-minimal',
         billing_id: '00000000-0000-0000-0000-000000000000',
+        cpu_cap: 100,
         ram: 64,
         quota: 10,
         creator_uuid: CUSTOMER
@@ -794,10 +786,10 @@ exports.create_vm_with_unknown_network_name = function (t) {
     var vm = {
         owner_uuid: CUSTOMER,
         image_uuid: IMAGE,
-        server_uuid: SERVER.uuid,
         networks: [ { name: FAKE_NETWORK_NAME } ],
         brand: 'joyent-minimal',
         billing_id: '00000000-0000-0000-0000-000000000000',
+        cpu_cap: 100,
         ram: 64,
         quota: 10,
         creator_uuid: CUSTOMER
@@ -829,7 +821,11 @@ exports.create_vm_dapi_failure = function (t) {
         networks: [ { uuid: ADMIN_NETWORK.uuid } ],
         brand: 'joyent-minimal',
         billing_id: '00000000-0000-0000-0000-000000000000',
-        ram: 64000000, // Something way too large
+        cpu_cap: 100,
+        internal_metadata: {
+            // to force DAPI to fail this provision
+            force_designation_failure: true
+        },
         quota: 10,
         creator_uuid: CUSTOMER
     };
@@ -897,10 +893,10 @@ exports.create_vm = function (t) {
         alias: makeVmAlias(testUuid.generateShortUuid()),
         owner_uuid: CUSTOMER,
         image_uuid: IMAGE,
-        server_uuid: SERVER.uuid,
         networks: [ { uuid: ADMIN_NETWORK.uuid } ],
         brand: 'joyent-minimal',
         billing_id: '00000000-0000-0000-0000-000000000000',
+        cpu_cap: 100,
         ram: 64,
         quota: 10,
         customer_metadata: md,
@@ -1182,9 +1178,9 @@ exports.create_vm_with_already_provisioned_ip = function (t) {
             alias: makeVmAlias(testUuid.generateShortUuid()),
             owner_uuid: CUSTOMER,
             image_uuid: IMAGE,
-            server_uuid: SERVER.uuid,
             brand: 'joyent-minimal',
             billing_id: '00000000-0000-0000-0000-000000000000',
+            cpu_cap: 100,
             ram: 64,
             quota: 10,
             creator_uuid: CUSTOMER
@@ -1644,7 +1640,8 @@ exports.wait_new_tag = function (t) {
 
 
 exports.get_tag = function (t) {
-    var path = '/vms/' + newUuid + '/tags/role?owner_uuid=' + CUSTOMER;
+    var path = '/vms/' + newUuid + '/tags/role?owner_uuid=' + CUSTOMER +
+        '&state=active';
 
     client.get(path, function (err, req, res, data) {
         common.ifError(t, err);
@@ -1992,10 +1989,10 @@ exports.create_nonautoboot_vm = function (t) {
     var vm = {
         owner_uuid: CUSTOMER,
         image_uuid: IMAGE,
-        server_uuid: SERVER.uuid,
         networks: [ { uuid: ADMIN_NETWORK.uuid } ],
         brand: 'joyent-minimal',
         billing_id: '00000000-0000-0000-0000-000000000000',
+        cpu_cap: 100,
         ram: 64,
         quota: 10,
         autoboot: false
@@ -2140,10 +2137,10 @@ exports.create_vm_from_existing_nics = function (t) {
             uuid: VM_UUID,
             owner_uuid: CUSTOMER,
             image_uuid: IMAGE,
-            server_uuid: SERVER.uuid,
             networks: [ { uuid: VALID_NIC.network_uuid } ],
             brand: 'joyent-minimal',
             billing_id: '00000000-0000-0000-0000-000000000000',
+            cpu_cap: 100,
             ram: 64,
             quota: 10,
             creator_uuid: CUSTOMER
@@ -2223,7 +2220,6 @@ exports.create_vm_with_package = function (t) {
     var vm = {
         owner_uuid: CUSTOMER,
         image_uuid: IMAGE,
-        server_uuid: SERVER.uuid,
         networks: [ { uuid: ADMIN_NETWORK.uuid } ],
         brand: 'joyent-minimal',
         billing_id: pkgId
@@ -2255,45 +2251,110 @@ exports.wait_provisioned_with_package_job = function (t) {
 };
 
 
-// if there's not enough spare RAM on a server, and we're resizing upwards, we
-// want it to fail
+//
+// If there's not enough spare RAM on a server, and we're resizing upwards, we
+// want the provision to fail. Failure should be the normal case for this
+// feature, since ideally it will never work if we've done a good job of packing
+// VMs.
+//
 exports.resize_package_up_fail = function (t) {
-    if (SERVER.datacenter !== 'coal' || !SERVER.headnode)
-        return t.done();
+    //
+    // NOTE: VM should have been created by:
+    //
+    // create_vm_with_package
+    //
+    // above which uses 'pkgId' set by:
+    //
+    // filter_vms_ok
+    //
+    // To the package of the first VM it could find with 128M of "ram".
+    // So the VM should exist and be using 128M of DRAM.
+    //
 
-    var path = '/vms?ram=' + 1024 + '&owner_uuid=' + CUSTOMER;
-    var largerPkg;
+    var largeRamValue = // value is in MiB, so:
+            10 * 1024 * // 10 EiB should be enough for anyone
+            1024 *      // PiB
+            1024 *      // TiB
+            1024;       // GiB
+    var largeQuotaValue = largeRamValue * 1024; // EiB->ZiB
+    var pkgName = 'ginormous-vmapi-test-10EiB';
 
-    client.get(path, function (err, req, res, body) {
-        common.ifError(t, err);
-        t.equal(res.statusCode, 200, '200 OK');
-        body.forEach(function (m) {
-            // Any non-null package works
-            if (m['billing_id'] &&
-                m['billing_id'] !== '00000000-0000-0000-0000-000000000000') {
-                largerPkg = m['billing_id'];
+    vasync.pipeline({
+        arg: {},
+        funcs: [
+            function _createGinormousPackage(ctx, cb) {
+                client.papi.post('/packages', {
+                    active: true,
+                    cpu_cap: 10000,
+                    description:
+                        'Very large test package for VMAPI\'s vms.full.test.js',
+                    max_lwps: 30000,
+                    max_physical_memory: largeRamValue,
+                    max_swap: largeRamValue,
+                    name: pkgName,
+                    quota: largeQuotaValue,
+                    version: '1.0.0',
+                    vcpus: 32, // the largest papi currently allows LOL
+                    zfs_io_priority: 16383 // also largest papi currently allows
+                }, function _onPost(err, req, res, body) {
+                    common.ifError(t, err, 'POST ginormous package to PAPI');
+
+                    if (!err) {
+                        t.ok(body.uuid, 'created package uuid: ' + body.uuid);
+                        t.equal(pkgName, body.name,
+                            'response should be our fresh package');
+                        ctx.pkgUuid = body.uuid;
+                    }
+
+                    cb(err);
+                });
+            }, function _resizeToGinormous(ctx, cb) {
+                var params = {
+                    action: 'update',
+                    billing_id: ctx.pkgUuid
+                };
+                var opts = createOpts(vmLocation, params);
+
+                client.post(opts, params,
+                    function _onPost(err, req, res, body) {
+
+                    var error;
+
+                    t.ok(err, 'expected error POSTing resize');
+                    t.equal(res.statusCode, 409, 'expected HTTP code 409');
+                    t.equal(body.code, 'ValidationFailed',
+                        'expected ValidationFailed error');
+                    t.equal(body.message, 'Invalid VM update parameters',
+                        'expected invalid update message');
+
+                    error = body.errors[0];
+                    t.equal(error.field, 'ram', 'error should be due to ram');
+                    t.equal(error.code, 'InsufficientCapacity',
+                        'error code should be InsufficientCapacity');
+                    t.ok(error.message.match(
+                        'Required additional RAM \\(\\d+\\) ' +
+                        'exceeds the server\'s available RAM \\(\\d+\\)'),
+                        'error message should explain additional RAM required');
+
+                    cb();
+                });
+            }, function _deleteGinormousPackage(ctx, cb) {
+                client.papi.del({
+                    path: '/packages/' + ctx.pkgUuid + '?force=true'
+                }, function _onDel(err, req, res, body) {
+                    common.ifError(t, err, 'DELETE created package');
+
+                    t.equal(204, res.statusCode, 'expected 204 from DELETE');
+                    t.ok(!err, 'expected no restCode' +
+                        (err ? 'got ' + err.restCode : ''));
+
+                    cb(err);
+                });
             }
-        });
-
-        var params = { action: 'update', billing_id: largerPkg };
-
-        var opts = createOpts(vmLocation, params);
-
-        return client.post(opts, params, function (err2, req2, res2, body2) {
-            t.ok(err2);
-            t.equal(res2.statusCode, 409);
-
-            t.equal(body2.code, 'ValidationFailed');
-            t.equal(body2.message, 'Invalid VM update parameters');
-
-            var error = body2.errors[0];
-            t.equal(error.field, 'ram');
-            t.equal(error.code, 'InsufficientCapacity');
-            t.ok(error.message.match('Required additional RAM \\(896\\) ' +
-                'exceeds the server\'s available RAM \\(-\\d+\\)'));
-
-            t.done();
-        });
+        ]
+    }, function pipelineComplete(err) {
+        common.ifError(t, err, 'resize pipeline');
+        t.done();
     });
 };
 
@@ -2416,10 +2477,10 @@ exports.provision_network_names = function (t) {
     var vm = {
         owner_uuid: CUSTOMER,
         image_uuid: IMAGE,
-        server_uuid: SERVER.uuid,
         networks: [ { name: ADMIN_NETWORK.name } ],
         brand: 'joyent-minimal',
         billing_id: '00000000-0000-0000-0000-000000000000',
+        cpu_cap: 100,
         ram: 64,
         quota: 10,
         creator_uuid: CUSTOMER
@@ -2510,10 +2571,10 @@ exports.invalid_firewall_rules = function (t) {
         var vm = {
             owner_uuid: CUSTOMER,
             image_uuid: IMAGE,
-            server_uuid: SERVER.uuid,
             networks: [ { name: ADMIN_NETWORK.uuid } ],
             brand: 'joyent-minimal',
             billing_id: '00000000-0000-0000-0000-000000000000',
+            cpu_cap: 100,
             ram: 64,
             quota: 10,
             creator_uuid: CUSTOMER,
@@ -2548,10 +2609,10 @@ exports.create_docker_vm = function (t) {
     var vm = {
         owner_uuid: CUSTOMER,
         image_uuid: IMAGE,
-        server_uuid: SERVER.uuid,
         networks: [ { uuid: ADMIN_NETWORK.uuid } ],
         brand: 'joyent-minimal',
         billing_id: '00000000-0000-0000-0000-000000000000',
+        cpu_cap: 100,
         ram: 64,
         quota: 10,
         creator_uuid: CUSTOMER,
@@ -2653,13 +2714,14 @@ exports.set_docker_tag_2 = function (t) {
     var query = {
        foo: 'bar'
     };
-
     var opts = createOpts(path, query);
 
     client.put(opts, query, function (err, req, res, body) {
+        var restCode = (err ? err.restCode : undefined);
+
         t.ok(err);
         t.equal(res.statusCode, 409, '409 Conflict');
-        t.equal(err.restCode, 'ValidationFailed');
+        t.equal(restCode, 'ValidationFailed');
 
         t.deepEqual(body, {
             code: 'ValidationFailed',
@@ -2859,7 +2921,6 @@ exports.create_vm_on_fabric_network = function (t) {
     var vm = {
         owner_uuid: CUSTOMER,
         image_uuid: IMAGE,
-        server_uuid: SERVER.uuid,
         networks: [ { uuid: fabricNetwork.uuid } ],
         brand: 'joyent-minimal',
         billing_id: pkgId
