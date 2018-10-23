@@ -242,6 +242,7 @@ exports.create_vm = function (t) {
         billing_id: '00000000-0000-0000-0000-000000000000',
         ram: 64,
         quota: 10,
+        cpu_cap: 100,
         customer_metadata: md,
         creator_uuid: CUSTOMER,
         role_tags: ['fd48177c-d7c3-11e3-9330-28cfe91a33c9']
