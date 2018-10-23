@@ -43,7 +43,8 @@
             "delete-snapshot",
             "add-nics",
             "update-nics",
-            "remove-nics"
+            "remove-nics",
+            "migrate"
         ],
         "url": "http://{{{WORKFLOW_SERVICE}}}"
     },

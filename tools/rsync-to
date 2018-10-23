@@ -25,7 +25,7 @@ TOP=$(cd $(dirname $0)/../; pwd)
 NODE="root@$1"
 
 if [[ -z "$VMAPI_ZONE" ]]; then
-    VMAPI_ZONE=$(ssh $NODE "vmadm lookup -1 alias=~^vmapi" 2>/dev/null)
+    VMAPI_ZONE=$(ssh $NODE "vmadm lookup -1 alias=~^vmapi[0-9]+" 2>/dev/null)
 fi
 echo "VMAPI_ZONE: $VMAPI_ZONE"
 
