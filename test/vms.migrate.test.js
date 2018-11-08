@@ -227,6 +227,7 @@ exports.bad_migrate_unknown_action = function (t) {
     });
 };
 
+if (!process.env.MIGRATION_SKIP_START) {
 [
     'abort',
     'pause',
@@ -248,6 +249,7 @@ exports.bad_migrate_unknown_action = function (t) {
         });
     };
 });
+}
 
 exports.bad_migrate_core_zone = function (t) {
     // Should not be able to migrate a triton core zone.
@@ -332,6 +334,13 @@ exports.bad_migrate_nat_zone = function (t) {
 };
 
 exports.migration_start = function test_migration_start(t) {
+    if (process.env.MIGRATION_SKIP_START) {
+        t.ok(true, 'Skip - VM migration start has been skipped');
+        mig.started = true;
+        t.done();
+        return;
+    }
+
     // Trying to run a migration action when there a migration has not started.
     client.post({
         path: format('/vms/%s?action=migrate&migration_action=start', VM_UUID)
@@ -462,9 +471,56 @@ exports.migration_sync = function test_migration_sync(t) {
     });
 };
 
+exports.migration_sync_incremental = function test_migration_sync_inc(t) {
+    // Start the migration sync phase again - should do an incremental sync.
+    if (!mig.synced) {
+        t.ok(false, 'VM migration did not sync successfully');
+        t.done();
+        return;
+    }
+
+    client.post({
+        path: format('/vms/%s?action=migrate&migration_action=sync', VM_UUID)
+    }, function onMigrateSyncCb(err, req, res, body) {
+        t.ifError(err, 'no error expected when syncing the migration');
+        if (!err) {
+            t.ok(res, 'should get a restify response object');
+            if (res) {
+                t.equal(res.statusCode, 202,
+                    format('err.statusCode === 202, got %s', res.statusCode));
+                t.ok(res.body, 'should get a restify response body object');
+            }
+            if (body) {
+                console.log(body);
+                t.ok(body.job_uuid, 'got a job uuid in the sync response');
+
+                var waitParams = {
+                    client: client,
+                    job_uuid: body.job_uuid,
+                    timeout: 1 * 60 * 60 // 1 hour
+                };
+
+                waitForJob(waitParams, function onMigrationJobCb(jerr, state,
+                        job) {
+                    t.ifError(jerr, 'Migration sync should be successful');
+                    if (!jerr) {
+                        t.equal(state, 'succeeded',
+                            'Migration sync job should succeed - ' +
+                            (state === 'succeeded' ? 'ok' : getJobError(job)));
+                    }
+                    mig.synced = (state === 'succeeded');
+                    t.done();
+                });
+                return;
+            }
+        }
+        t.done();
+    });
+};
+
 exports.migration_switch = function test_migration_switch(t) {
     if (1 || 0) {
-        t.ok(false, 'Not performing switch');
+        t.ok(true, 'SKIP - not performing switch');
         t.done();
         return;
     }
