@@ -19,7 +19,6 @@
     "ldap-filter": "0.3.3",
     "libuuid": "0.2.1",
     "moray": "3.1.1",
-    "nodeunit": "0.9.1",
     "once": "^1.3.3",
     "restify": "4.3.0",
     "sdc-clients": "11.3.1",
@@ -37,6 +36,7 @@
     "vm-agent": ">=1.5.0"
   },
   "devDependencies": {
+    "nodeunit": "0.11.3",
     "tap": "*"
   },
   "scripts": {

@@ -424,6 +424,71 @@ exports.bad_migrate_cannot_pause_from_paused_state = function (t) {
     });
 };
 
+exports.migration_list = function test_migration_list(t) {
+    client.get({
+        path: '/migrations'
+    }, function onMigrateListCb(err, req, res, body) {
+        t.ifError(err, 'no error expected when listing migrations');
+        if (err) {
+            t.done();
+            return;
+        }
+
+        t.ok(res, 'should get a restify response object');
+        if (!res) {
+            t.done();
+            return;
+        }
+        t.equal(res.statusCode, 200,
+            format('err.statusCode === 200, got %s', res.statusCode));
+        t.ok(Array.isArray(body), 'body response should be an array');
+        if (!Array.isArray(body)) {
+            t.done();
+            return;
+        }
+
+        t.ok(body.length >= 1, 'should be at least one migration');
+        if (body.length === 0) {
+            t.done();
+            return;
+        }
+
+        var migrations = body.filter(function _filtMig(entry) {
+            return entry.vm_uuid === VM_UUID;
+        });
+        t.ok(migrations.length >= 1, 'should be at least vm match');
+        if (migrations.length === 0) {
+            t.done();
+            return;
+        }
+
+        var migration = migrations.slice(-1)[0];
+        t.equal(migration.automatic, false, 'automatic should be false');
+        t.equal(migration.phase, 'start', 'phase should be "start"');
+        t.equal(migration.state, 'paused', 'state should be "paused"');
+        t.equal(migration.vm_uuid, VM_UUID, 'vm_uuid should be the same');
+
+        t.ok(Array.isArray(migration.progress_history) &&
+                migration.progress_history.length >= 1,
+            'migration should have at least one progress entry');
+        if (!Array.isArray(migration.progress_history) ||
+                migration.progress_history.length === 0) {
+            t.done();
+            return;
+        }
+
+        var lastProgress = migration.progress_history.slice(-1)[0];
+        t.equal(lastProgress.current_progress, 100,
+            'current_progress should be 100');
+        t.equal(lastProgress.total_progress, 100,
+            'total_progress should be 100');
+        t.equal(lastProgress.phase, 'start', 'phase should be "start"');
+        t.equal(lastProgress.state, 'success', 'state should be "success"');
+
+        t.done();
+    });
+};
+
 exports.migration_sync = function test_migration_sync(t) {
     // Start the migration sync phase.
     if (!mig.started) {
@@ -589,19 +654,16 @@ exports.cleanup = function test_cleanup(t) {
     }
 
     client.del({
-        path: '/vms/' + VM_UUID
+        path: format('/vms/%s?sync=true', VM_UUID)
     }, function onVmDelete(err) {
         t.ifError(err, 'Deleting VM ' + VM_UUID + ' should succeed');
 
-        if (err) {
-            t.done();
-            return;
-        }
-
-        waitForValue('/vms/' + VM_UUID, 'state', 'destroyed', {
-            client: client
-        }, function onVmDeleted(vmDelErr) {
-            t.ifError(vmDelErr, 'VM should have been deleted successfully');
+        // XXX: This deletes the temporarily renamed (hack) migrated instance.
+        var hackVm = VM_UUID.slice(0, -6) + 'aaaaaa';
+        client.del({
+            path: format('/vms/%s?sync=true', hackVm)
+        }, function onHackVmDelete(err2) {
+            t.ifError(err2, 'Deleting hackVM ' + hackVm + ' should succeed');
             t.done();
         });
     });
