@@ -18,9 +18,12 @@
  *  - abort (destroys the provisioned vm)
  */
 
+var stream = require('stream');
 var util = require('util');
 
 var assert = require('assert-plus');
+var byline = require('byline');
+var restify = require('restify');
 var vasync = require('vasync');
 
 var common = require('./common');
@@ -73,6 +76,72 @@ function logJobError(t, job, message) {
     if (errMsg) {
         t.ok(false, message + ': ' + errMsg);
     }
+}
+
+function MigrationWatcher(vm_uuid) {
+    this.vm_uuid = vm_uuid;
+    this.ended = false;
+    this.events = [];
+    this.error = null;
+
+    var options = {};
+    stream.Transform.call(this, options);
+}
+util.inherits(MigrationWatcher, stream.Transform);
+
+MigrationWatcher.prototype._transform =
+function _migWatchTransform(chunk, encoding, callback) {
+    try {
+        this.events.push(JSON.parse(chunk));
+    } catch (ex) {
+        console.log('# WARNING: Unable to parse watch event: ', String(chunk));
+        if (!this.error) {
+            this.error = new Error('Unable to parse event:', String(chunk));
+        }
+    }
+    callback();
+};
+
+MigrationWatcher.prototype.start = function _migWatchStart() {
+    var self = this;
+    var requestPath = format('/vms/%s?action=migrate&migration_action=watch',
+        self.vm_uuid);
+
+    self.ended = false;
+
+    var httpVmapi = restify.createHttpClient({url: client.url.href});
+
+    httpVmapi.post(requestPath, function onMigrateWatchPost(postErr, req) {
+        if (postErr) {
+            console.log('# ERROR: ', postErr);
+            self.ended = true;
+            self.error = postErr;
+            return;
+        }
+
+        req.on('result', function onMigrateWatchResult(err, res) {
+            if (err) {
+                console.log('# ERROR: ', err);
+                self.ended = true;
+                self.error = err;
+                return;
+            }
+
+            res.on('end', function _watcherResEnd() {
+                self.ended = true;
+            });
+
+            var lineStream = new byline.LineStream();
+            res.pipe(lineStream).pipe(self);
+        });
+
+        req.end();
+    });
+};
+
+function createMigrationWatcher() {
+    mig.watcher = new MigrationWatcher(VM_UUID);
+    mig.watcher.start();
 }
 
 /* Tests */
@@ -355,7 +424,6 @@ exports.migration_start = function test_migration_start(t) {
             }
             if (body) {
                 console.log(body);
-                console.log('{ req_id: ' + res.headers['x-request-id'] + ' }');
                 t.ok(body.job_uuid, 'got a job uuid in the start response');
 
                 var waitParams = {
@@ -380,6 +448,46 @@ exports.migration_start = function test_migration_start(t) {
         }
         t.done();
     });
+};
+
+exports.check_watch_entries = function check_watch_entries(t) {
+    createMigrationWatcher();
+
+    assert.object(mig.watcher, 'mig.watcher');
+
+    var loopCount = 0;
+
+    function waitForWatcherEnd() {
+        loopCount += 1;
+        if (!mig.watcher.ended) {
+            if (loopCount > 60) {
+                t.ok(false, 'Timed out waiting for the watcher to end');
+                t.done();
+                return;
+            }
+            setTimeout(waitForWatcherEnd, 1000);
+            return;
+        }
+
+        // Check the events.
+        t.ok(mig.watcher.events.length > 0, 'Should be events seen');
+
+        var startEvent = mig.watcher.events.filter(function _filtStart(event) {
+            return event.phase === 'start';
+        }).slice(-1)[0];
+        t.ok(startEvent, 'Should have a start event');
+        if (startEvent) {
+            t.equal(startEvent.state, 'success', 'event state was success');
+            t.equal(startEvent.current_progress, 100, 'current_progress');
+            t.equal(startEvent.total_progress, 100, 'total_progress');
+            t.ok(startEvent.started_timestamp, 'event has started_timestamp');
+            t.ok(startEvent.finished_timestamp, 'event has finished_timestamp');
+        }
+
+        t.done();
+    }
+
+    waitForWatcherEnd();
 };
 
 exports.bad_migrate_cannot_start_from_start_phase = function (t) {
@@ -534,6 +642,59 @@ exports.migration_sync = function test_migration_sync(t) {
         }
         t.done();
     });
+};
+
+exports.check_watch_entries_after_sync =
+function check_watch_entries_after_sync(t) {
+    createMigrationWatcher();
+
+    assert.object(mig.watcher, 'mig.watcher');
+
+    var loopCount = 0;
+
+    function waitForWatcherEnd() {
+        loopCount += 1;
+        if (!mig.watcher.ended) {
+            if (loopCount > 60) {
+                t.ok(false, 'Timed out waiting for the watcher to end');
+                t.done();
+                return;
+            }
+            setTimeout(waitForWatcherEnd, 1000);
+            return;
+        }
+
+        // Check the events.
+        t.ok(mig.watcher.events.length > 0, 'Should be events seen');
+
+        var startEvent = mig.watcher.events.filter(function _filtStart(event) {
+            return event.phase === 'start';
+        }).slice(-1)[0];
+        t.ok(startEvent, 'Should have a start event');
+        if (startEvent) {
+            t.equal(startEvent.state, 'success', 'event state was success');
+            t.equal(startEvent.current_progress, 100, 'current_progress');
+            t.equal(startEvent.total_progress, 100, 'total_progress');
+            t.ok(startEvent.started_timestamp, 'event has started_timestamp');
+            t.ok(startEvent.finished_timestamp, 'event has finished_timestamp');
+        }
+
+        var syncEvent = mig.watcher.events.filter(function _filtSync(event) {
+            return event.phase === 'sync';
+        }).slice(-1)[0];
+        t.ok(syncEvent, 'Should have a sync event');
+        if (syncEvent) {
+            t.equal(syncEvent.state, 'success', 'event state was success');
+            t.ok(syncEvent.current_progress, 'event has a current_progress');
+            t.ok(syncEvent.total_progress, 'event has a total_progress');
+            t.ok(syncEvent.started_timestamp, 'event has started_timestamp');
+            t.ok(syncEvent.finished_timestamp, 'event has finished_timestamp');
+        }
+
+        t.done();
+    }
+
+    waitForWatcherEnd();
 };
 
 exports.migration_sync_incremental = function test_migration_sync_inc(t) {

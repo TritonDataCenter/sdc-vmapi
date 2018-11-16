@@ -36,6 +36,7 @@
     "vm-agent": ">=1.5.0"
   },
   "devDependencies": {
+    "byline": "5.0.0",
     "nodeunit": "0.11.3",
     "tap": "*"
   },
