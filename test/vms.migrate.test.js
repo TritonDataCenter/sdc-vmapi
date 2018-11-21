@@ -104,14 +104,13 @@ function _migWatchTransform(chunk, encoding, callback) {
 
 MigrationWatcher.prototype.start = function _migWatchStart() {
     var self = this;
-    var requestPath = format('/vms/%s?action=migrate&migration_action=watch',
-        self.vm_uuid);
+    var requestPath = format('/migrations/%s/watch', self.vm_uuid);
 
     self.ended = false;
 
     var httpVmapi = restify.createHttpClient({url: client.url.href});
 
-    httpVmapi.post(requestPath, function onMigrateWatchPost(postErr, req) {
+    httpVmapi.get(requestPath, function onMigrateWatchPost(postErr, req) {
         if (postErr) {
             console.log('# ERROR: ', postErr);
             self.ended = true;
@@ -249,6 +248,8 @@ exports.create_vm = function (t) {
 
                 ctx.jobUuid = body.job_uuid;
                 VM_UUID = body.vm_uuid;
+                console.log('# Vm uuid: ' + VM_UUID);
+
                 next();
             });
         },
