@@ -900,7 +900,11 @@ exports.create_vm = function (t) {
         ram: 64,
         quota: 10,
         customer_metadata: md,
-        creator_uuid: CUSTOMER
+        creator_uuid: CUSTOMER,
+        locality: {
+            strict: false,
+            far: [ '00000000-0000-0000-0000-000000000001' ]
+        }
     };
 
     var opts = createOpts('/vms', vm);
@@ -950,7 +954,6 @@ exports.wait_provisioned_job = function (t) {
 };
 
 
-
 exports.check_create_vm_nics_running = function (t) {
     var query = {
         belongs_to_uuid: newUuid,
@@ -959,6 +962,20 @@ exports.check_create_vm_nics_running = function (t) {
 
     waitForNicState(t, query, 'running', function (err) {
         common.ifError(t, err);
+        t.done();
+    });
+};
+
+
+exports.check_locality_in_internal_metadata = function (t) {
+    client.get(vmLocation, function getVm(err, req, res, body) {
+        common.ifError(t, err);
+
+        t.deepEqual(JSON.parse(body.internal_metadata.locality), {
+            strict: false,
+            far: [ '00000000-0000-0000-0000-000000000001' ]
+        });
+
         t.done();
     });
 };
