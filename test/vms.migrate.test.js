@@ -41,10 +41,10 @@ var ADMIN_FABRIC_NETWORK;
 var VMAPI_ORIGIN_IMAGE_UUID;
 var SERVER;
 var VM_UUID;
+var VM_PAYLOAD;
 
 var client;
 var mig = {};
-
 
 /* Helper functions */
 
@@ -53,13 +53,14 @@ function getVmPayloadTemplate() {
         alias: 'vmapitest-migrate-' + testUuid.generateShortUuid(),
         owner_uuid: ADMIN_USER_UUID,
         image_uuid: VMAPI_ORIGIN_IMAGE_UUID,
-        server_uuid: SERVER.uuid,
+//         server_uuid: SERVER.uuid,
         networks: [ { uuid: ADMIN_FABRIC_NETWORK.uuid } ],
         brand: 'joyent-minimal',
-        billing_id: '00000000-0000-0000-0000-000000000000',
-        ram: 1024,
-        quota: 10,
-        cpu_cap: 100
+//         billing_id: '00000000-0000-0000-0000-000000000000',
+        billing_id: '2b7e38e2-b744-47fa-8b37-c5db20120d85' // Sample-1G
+//         ram: 1024,
+//         quota: 10,
+//         cpu_cap: 100
     };
 }
 
@@ -192,6 +193,7 @@ exports.get_vmapi_origin_image = function (t) {
 exports.get_admin_fabric_network = function (t) {
     client.napi.get('/networks?owner_uuid=' + ADMIN_USER_UUID + '&fabric=true',
         function (err, req, res, networks) {
+        console.dir(networks);
         common.ifError(t, err);
         t.equal(res.statusCode, 200, '200 OK');
         t.ok(networks, 'networks is set');
@@ -214,6 +216,11 @@ exports.find_headnode = function (t) {
     });
 };
 
+exports.get_vm_payload_template = function (t) {
+    VM_PAYLOAD = getVmPayloadTemplate();
+    t.done();
+};
+
 exports.create_vm = function (t) {
     if (process.env.MIGRATION_VM_UUID) {
         VM_UUID = process.env.MIGRATION_VM_UUID;
@@ -221,14 +228,12 @@ exports.create_vm = function (t) {
         return;
     }
 
-    var vmPayload = getVmPayloadTemplate();
-
     vasync.pipeline({arg: {}, funcs: [
 
         function createVm(ctx, next) {
             client.post({
                 path: '/vms'
-            }, vmPayload, function onVmCreated(err, req, res, body) {
+            }, VM_PAYLOAD, function onVmCreated(err, req, res, body) {
                 var expectedResStatusCode = 202;
 
                 t.ifError(err, 'VM creation should not error');
@@ -261,6 +266,14 @@ exports.create_vm = function (t) {
                     t.ifError(err, 'VM should be provisioned successfully');
                     next();
                 });
+        },
+        function getVmServer(ctx, next) {
+            client.get('/vms/' + VM_UUID, function (err, req, res, body) {
+                t.ifError(err, 'VM should appear in vmapi');
+                console.log('the server uuid');
+                console.dir(SERVER.UUID);
+                next();
+            });
         }
     ]}, function _provisionPipelineCb(err) {
         common.ifError(t, err);
@@ -411,10 +424,16 @@ exports.migration_start = function test_migration_start(t) {
         return;
     }
 
+    // XXX: Testing - tweak the uuid to allow on the same CN.
+    var override_uuid = VM_UUID.slice(0, -6) + 'aaaaaa';
+    var override_alias = getVmPayloadTemplate().alias + '-aaaaaa';
+
     // Trying to run a migration action when there a migration has not started.
-    client.post({
-        path: format('/vms/%s?action=migrate&migration_action=start', VM_UUID)
-    }, function onMigrateStartCb(err, req, res, body) {
+    client.post(
+        { path:
+            format('/vms/%s?action=migrate&migration_action=start', VM_UUID) },
+        { override_uuid: override_uuid, override_alias: override_alias },
+        function onMigrateStartCb(err, req, res, body) {
         t.ifError(err, 'no error expected when starting the migration');
         if (!err) {
             t.ok(res, 'should get a restify response object');
@@ -629,7 +648,9 @@ exports.migration_sync = function test_migration_sync(t) {
 
                 waitForJob(waitParams, function onMigrationJobCb(jerr, state,
                         job) {
-                    t.ifError(jerr, 'Migration sync should be successful');
+                    t.ifError(jerr,
+                        'Migration (' + body.job_uuid
+                        + ') sync should be successful');
                     if (!jerr) {
                         t.equal(state, 'succeeded',
                             'Migration sync job should succeed - ' +
