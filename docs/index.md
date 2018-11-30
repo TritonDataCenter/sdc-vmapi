@@ -36,7 +36,7 @@ call, while some of them can only be set at VM creation time. In the next table,
 the column "VM Response Default" refers to attributes that are always going to
 be part of the VM response object. Those with a column value of 'No' are only
 going to be returned when set via CreateVm or UpdateVm. Finally, the last two
-columns specify wether or not some VM attributes can be set at creation or
+columns specify whether or not some VM attributes can be set at creation or
 update time.
 
 | Param                    | Type                          | Description                                                                                                                                                                                                               | Vm Response Default | Create | Update |
@@ -52,7 +52,13 @@ update time.
 | destroyed                | Date                          | The time at which the VM was destroyed in ISO 8601 format                                                                                                                                                                 | Yes                 | No     | No     |
 | datasets                 | Array                         | VM datasets                                                                                                                                                                                                               | Yes                 | No     | No     |
 | delegate_dataset         | Boolean                       | Delegate a data dataset to the VM                                                                                                                                                                                         | No                  | Yes    | No     |
-| dns_domain               | String                        | Search domain value for /etc/resolv.conf (max length 255 chars)                                                                                                                                                   | No                  | Yes    | No     |
+| disks                    | Array                         | Array of virtual disks (zvols) that are used by a bhyve VM.                                                                                                                                                               | No                  | No     | No     |
+| disks.*.path             | String                        | File path in GZ.                                                                                                                                                                                                          | No                  | No     | No     |
+| disks.*.size             | Number (MiB)                  | Size of disk.                                                                                                                                                                                                             | No                  | No     | No     |
+| disks.*.pci_slot         | String                        | Specifies the virtual PCI slot a disk occupies.                                                                                                                                                                           | No                  | No     | No     |
+| disks.*.boot             | Boolean                       | If this is a VM's boot disk.                                                                                                                                                                                              | No                  | No     | No     |
+| flexible_disk_size       | Number (MiB)                  | Maximum amount of space that can be used by the sum of all disks.                                                                                                                                                         | No                  | Yes    | No     |
+| dns_domain               | String                        | Search domain value for /etc/resolv.conf (max length 255 chars)                                                                                                                                                           | No                  | Yes    | No     |
 | do_not_inventory         | Boolean                       | The primary use-case of this attribute is for test VMs that are created but you don't want their existence propagated up to VMAPI since they'll be short-lived and its lifecycle will be physically managed in the server | No                  | Yes    | Yes    |
 | firewall_enabled         | Boolean                       | Enable firewall for the VM                                                                                                                                                                                                | Yes                 | Yes    | Yes    |
 | fs_allowed               | String (comma-separated list) | Filesystems allowed for the VM                                                                                                                                                                                            | No                  | Yes    | Yes    |
@@ -1425,6 +1431,74 @@ For removing NICs from a VM, a macs list parameter must be specified. This param
 
     POST /vms/e9bd0ed1-7de3-4c66-a649-d675dbce6e83?action=remove_nics \
       -d macs=90:b8:d0:d9:f0:83 \
+
+
+## CreateDisk (POST /vms/:uuid?action=create_disk)
+
+Create a virtual disk and attach it to a bhyve VM. VM must be currently stopped,
+and have flexible_disk_size set.
+
+| Param    | Type         | Description                                                                                                         |
+| -------- | ------------ | ------------------------------------------------------------------------------------------------------------------- |
+| pci_slot | String       | Free PCI slot of disk to create. This is typically in the 0:4:[0-7] and 0:5:[0-7] range.                            |
+| size     | Number (MiB) | Size of new virtual disk. Can also use string "remaining" to use up all remaining free space in flexible_disk_size. |
+
+### Example of creating a new 5GiB virtual disk using a JSON payload
+
+    POST /vms/e9bd0ed1-7de3-4c66-a649-d675dbce6e83?action=create_disk -d '{
+        "pci_slot": "0:5:3",
+        "size": 5120
+    }'
+
+### Example with form parameters
+
+    POST /vms/e9bd0ed1-7de3-4c66-a649-d675dbce6e83?action=create_disk \
+      -d pci_slot=0:5:3 -d size=5120
+
+
+## ResizeDisk (POST /vms/:uuid?action=resize_disk)
+
+Resizes one of the virtual disks on a bhyve VM. VM must be currently stopped,
+and have flexible_disk_size set.
+
+| Param                  | Type         | Description                             |
+| ---------------------- | ------------ | --------------------------------------- |
+| pci_slot               | String       | PCI slot of disk to resize              |
+| size                   | Number (MiB) | Size to change the virtual disk to      |
+| dangerous_allow_shrink | Boolean      | Since resizing down potentially causes data loss due to internal filesystem truncation, this must be set when shrinking a disk. |
+
+### Example: resizing virtual disk "disk1" up to 10GiB using a JSON payload
+
+    POST /vms/0cb0f7b1-b092-4252-b205-c9c268bfa148?action=resize_disk -d '{
+      "slot": "0:4:1",
+      "size": 10240
+    }'
+
+### Example with form parameters
+
+    POST /vms/e9bd0ed1-7de3-4c66-a649-d675dbce6e83?action=resize_disk \
+      -d pci_slot=0:4:1 -d size=10240
+
+
+## DeleteDisk (POST /vms/:uuid?action=delete_disk)
+
+Removes and deletes a virtual disk from a bhyve VM. VM must currently be
+stopped, and have flexible_disk_size set.
+
+| Param    | Type   | Description                                   |
+| -------- | ------ | --------------------------------------------- |
+| pci_slot | String | PCI slot of disk to delete                    |
+
+### Example with a JSON payload
+
+    POST /vms/e9bd0ed1-7de3-4c66-a649-d675dbce6e83?action=delete_disk -d '{
+      "pci_slot": "0:4:6"
+    }'
+
+### Example with form parameters
+
+    POST /vms/e9bd0ed1-7de3-4c66-a649-d675dbce6e83?action=delete_disk \
+      -d slot=0:4:6
 
 
 ## CreateSnapshot (POST /vms/:uuid?action=create_snapshot)
