@@ -13,7 +13,7 @@
  *  - test bad actions (no migration, ...)
  *  - provision vm
  *  - test bad actions
- *  - migrate start (no sync or switch)
+ *  - migrate begin (no sync or switch)
  *  - test bad actions (starting migrate again...)
  *  - abort (destroys the provisioned vm)
  */
@@ -207,7 +207,7 @@ exports.get_vmapi_origin_image = function (t) {
 exports.get_admin_fabric_network = function (t) {
     client.napi.get('/networks?owner_uuid=' + ADMIN_USER_UUID + '&fabric=true',
         function (err, req, res, networks) {
-        console.dir(networks);
+        // console.dir(networks);
         common.ifError(t, err);
         t.equal(res.statusCode, 200, '200 OK');
         t.ok(networks, 'networks is set');
@@ -284,8 +284,8 @@ exports.create_vm = function (t) {
         function getVmServer(ctx, next) {
             client.get('/vms/' + VM_UUID, function (err, req, res, body) {
                 t.ifError(err, 'VM should appear in vmapi');
-                console.log('the server uuid');
-                console.dir(SERVER.UUID);
+                // console.log('the server uuid');
+                // console.dir(SERVER.UUID);
                 next();
             });
         }
@@ -324,7 +324,7 @@ exports.bad_migrate_unknown_action = function (t) {
     });
 };
 
-if (!process.env.MIGRATION_SKIP_START) {
+if (!process.env.MIGRATION_SKIP_BEGIN) {
 [
     'abort',
     'pause',
@@ -372,7 +372,7 @@ exports.bad_migrate_core_zone = function (t) {
 
         function migrateCoreZone(ctx, next) {
             client.post({
-                path: format('/vms/%s?action=migrate&migration_action=start',
+                path: format('/vms/%s?action=migrate&migration_action=begin',
                     ctx.vm.uuid)
             }, function onMigrateCoreZoneCb(err) {
                 t.ok(err, 'expect an error for migration of a core zone');
@@ -413,7 +413,7 @@ exports.bad_migrate_nat_zone = function (t) {
 
         function migrateNatZone(ctx, next) {
             client.post({
-                path: format('/vms/%s?action=migrate&migration_action=start',
+                path: format('/vms/%s?action=migrate&migration_action=begin',
                     ctx.vm.uuid)
             }, function onMigrateNatZoneCb(err) {
                 t.ok(err, 'expect an error for migration of a nat zone');
@@ -430,25 +430,27 @@ exports.bad_migrate_nat_zone = function (t) {
     });
 };
 
-exports.migration_start = function test_migration_start(t) {
-    if (process.env.MIGRATION_SKIP_START) {
-        t.ok(true, 'Skip - VM migration start has been skipped');
+exports.migration_begin = function test_migration_begin(t) {
+    if (process.env.MIGRATION_SKIP_BEGIN) {
+        t.ok(true, 'Skip - VM migration begin has been skipped');
         mig.started = true;
         t.done();
         return;
     }
 
     // XXX: Testing - tweak the uuid to allow on the same CN.
+    // TODO: Check server list to see if this is needed (i.e. when there is
+    // just one CN).
     var override_uuid = VM_UUID.slice(0, -6) + 'aaaaaa';
     var override_alias = getVmPayloadTemplate().alias + '-aaaaaa';
 
     // Trying to run a migration action when there a migration has not started.
     client.post(
         { path:
-            format('/vms/%s?action=migrate&migration_action=start', VM_UUID) },
+            format('/vms/%s?action=migrate&migration_action=begin', VM_UUID) },
         { override_uuid: override_uuid, override_alias: override_alias },
-        function onMigrateStartCb(err, req, res, body) {
-        t.ifError(err, 'no error expected when starting the migration');
+        function onMigrateBeginCb(err, req, res, body) {
+        t.ifError(err, 'no error expected when beginning the migration');
         if (!err) {
             t.ok(res, 'should get a restify response object');
             if (res) {
@@ -458,7 +460,7 @@ exports.migration_start = function test_migration_start(t) {
             }
             if (body) {
                 console.log(body);
-                t.ok(body.job_uuid, 'got a job uuid in the start response');
+                t.ok(body.job_uuid, 'got a job uuid in the begin response');
 
                 var waitParams = {
                     client: client,
@@ -468,11 +470,11 @@ exports.migration_start = function test_migration_start(t) {
 
                 waitForJob(waitParams, function onMigrationJobCb(jerr, state,
                         job) {
-                    t.ifError(jerr, 'Migration start should be successful');
+                    t.ifError(jerr, 'Migration begin should be successful');
                     if (!jerr) {
                         mig.started = (state === 'succeeded');
                         t.equal(state, 'succeeded',
-                            'Migration start job should succeed - ' +
+                            'Migration begin job should succeed - ' +
                             (mig.started ? 'ok' : getJobError(job)));
                     }
                     t.done();
@@ -506,16 +508,16 @@ exports.check_watch_entries = function check_watch_entries(t) {
         // Check the events.
         t.ok(mig.watcher.events.length > 0, 'Should be events seen');
 
-        var startEvent = mig.watcher.events.filter(function _filtStart(event) {
-            return event.phase === 'start';
+        var beginEvent = mig.watcher.events.filter(function _filtBegin(event) {
+            return event.phase === 'begin';
         }).slice(-1)[0];
-        t.ok(startEvent, 'Should have a start event');
-        if (startEvent) {
-            t.equal(startEvent.state, 'success', 'event state was success');
-            t.equal(startEvent.current_progress, 100, 'current_progress');
-            t.equal(startEvent.total_progress, 100, 'total_progress');
-            t.ok(startEvent.started_timestamp, 'event has started_timestamp');
-            t.ok(startEvent.finished_timestamp, 'event has finished_timestamp');
+        t.ok(beginEvent, 'Should have a begin event');
+        if (beginEvent) {
+            t.equal(beginEvent.state, 'success', 'event state was success');
+            t.equal(beginEvent.current_progress, 100, 'current_progress');
+            t.equal(beginEvent.total_progress, 100, 'total_progress');
+            t.ok(beginEvent.started_timestamp, 'event has started_timestamp');
+            t.ok(beginEvent.finished_timestamp, 'event has finished_timestamp');
         }
 
         t.done();
@@ -524,16 +526,16 @@ exports.check_watch_entries = function check_watch_entries(t) {
     waitForWatcherEnd();
 };
 
-exports.bad_migrate_cannot_start_from_start_phase = function (t) {
+exports.bad_migrate_cannot_begin_from_begin_phase = function (t) {
     // Invalid action according to the current migration phase.
     if (!mig.started) {
-        t.ok(false, 'VM migration did not start successfully');
+        t.ok(false, 'VM migration did not begin successfully');
         t.done();
         return;
     }
 
     client.post({
-        path: format('/vms/%s?action=migrate&migration_action=start',
+        path: format('/vms/%s?action=migrate&migration_action=begin',
                  VM_UUID)
     }, function onMigrateNoAction(err) {
         t.ok(err, 'expect an error when the migration already started');
@@ -548,7 +550,7 @@ exports.bad_migrate_cannot_start_from_start_phase = function (t) {
 exports.bad_migrate_cannot_pause_from_paused_state = function (t) {
     // Invalid action according to the current migration state.
     if (!mig.started) {
-        t.ok(false, 'VM migration did not start successfully');
+        t.ok(false, 'VM migration did not begin successfully');
         t.done();
         return;
     }
@@ -606,7 +608,7 @@ exports.migration_list = function test_migration_list(t) {
 
         var migration = migrations.slice(-1)[0];
         t.equal(migration.automatic, false, 'automatic should be false');
-        t.equal(migration.phase, 'start', 'phase should be "start"');
+        t.equal(migration.phase, 'begin', 'phase should be "begin"');
         t.equal(migration.state, 'paused', 'state should be "paused"');
         t.equal(migration.vm_uuid, VM_UUID, 'vm_uuid should be the same');
 
@@ -624,7 +626,7 @@ exports.migration_list = function test_migration_list(t) {
             'current_progress should be 100');
         t.equal(lastProgress.total_progress, 100,
             'total_progress should be 100');
-        t.equal(lastProgress.phase, 'start', 'phase should be "start"');
+        t.equal(lastProgress.phase, 'begin', 'phase should be "begin"');
         t.equal(lastProgress.state, 'success', 'state should be "success"');
 
         t.done();
@@ -634,7 +636,7 @@ exports.migration_list = function test_migration_list(t) {
 exports.migration_sync = function test_migration_sync(t) {
     // Start the migration sync phase.
     if (!mig.started) {
-        t.ok(false, 'VM migration did not start successfully');
+        t.ok(false, 'VM migration did not begin successfully');
         t.done();
         return;
     }
@@ -703,16 +705,16 @@ function check_watch_entries_after_sync(t) {
         // Check the events.
         t.ok(mig.watcher.events.length > 0, 'Should be events seen');
 
-        var startEvent = mig.watcher.events.filter(function _filtStart(event) {
-            return event.phase === 'start';
+        var beginEvent = mig.watcher.events.filter(function _filtBegin(event) {
+            return event.phase === 'begin';
         }).slice(-1)[0];
-        t.ok(startEvent, 'Should have a start event');
-        if (startEvent) {
-            t.equal(startEvent.state, 'success', 'event state was success');
-            t.equal(startEvent.current_progress, 100, 'current_progress');
-            t.equal(startEvent.total_progress, 100, 'total_progress');
-            t.ok(startEvent.started_timestamp, 'event has started_timestamp');
-            t.ok(startEvent.finished_timestamp, 'event has finished_timestamp');
+        t.ok(beginEvent, 'Should have a begin event');
+        if (beginEvent) {
+            t.equal(beginEvent.state, 'success', 'event state was success');
+            t.equal(beginEvent.current_progress, 100, 'current_progress');
+            t.equal(beginEvent.total_progress, 100, 'total_progress');
+            t.ok(beginEvent.started_timestamp, 'event has started_timestamp');
+            t.ok(beginEvent.finished_timestamp, 'event has finished_timestamp');
         }
 
         var syncEvent = mig.watcher.events.filter(function _filtSync(event) {
@@ -781,15 +783,15 @@ exports.migration_sync_incremental = function test_migration_sync_inc(t) {
 };
 
 exports.migration_switch = function test_migration_switch(t) {
-    if (1 || 0) {
-        t.ok(true, 'SKIP - not performing switch');
-        t.done();
-        return;
-    }
+    // if (1 || 0) {
+    //     t.ok(true, 'SKIP - not performing switch');
+    //     t.done();
+    //     return;
+    // }
 
     // Start the migration switch phase.
     if (!mig.started) {
-        t.ok(false, 'VM migration did not start successfully');
+        t.ok(false, 'VM migration did not begin successfully');
         t.done();
         return;
     }
@@ -839,7 +841,7 @@ exports.migration_switch = function test_migration_switch(t) {
 };
 
 exports.cleanup = function test_cleanup(t) {
-    if (process.env.MIGRATION_VM_UUID) {
+    if (1 || process.env.MIGRATION_VM_UUID) {
         t.done();
         return;
     }
