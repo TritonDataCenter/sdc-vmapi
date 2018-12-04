@@ -42,6 +42,7 @@ var VMAPI_ORIGIN_IMAGE_UUID;
 var SERVER;
 var VM_UUID;
 var VM_PAYLOAD;
+var BILLING_ID;
 
 var client;
 var mig = {};
@@ -53,14 +54,9 @@ function getVmPayloadTemplate() {
         alias: 'vmapitest-migrate-' + testUuid.generateShortUuid(),
         owner_uuid: ADMIN_USER_UUID,
         image_uuid: VMAPI_ORIGIN_IMAGE_UUID,
-//         server_uuid: SERVER.uuid,
         networks: [ { uuid: ADMIN_FABRIC_NETWORK.uuid } ],
         brand: 'joyent-minimal',
-//         billing_id: '00000000-0000-0000-0000-000000000000',
-        billing_id: '2b7e38e2-b744-47fa-8b37-c5db20120d85' // Sample-1G
-//         ram: 1024,
-//         quota: 10,
-//         cpu_cap: 100
+        billing_id: BILLING_ID
     };
 }
 
@@ -153,6 +149,24 @@ exports.setUp = function (callback) {
         client = _client;
         callback();
     });
+};
+
+exports.get_package = function (t, cb) {
+    // look for sdc_64
+    client.papi.get('/packages', getPackages);
+    function getPackages(err, req, res, packages) {
+        t.ifError(err, 'getting packages');
+        console.dir(packages);
+
+        var found = packages.filter(function (p) {
+            return p.name === 'sdc_64';
+        });
+
+        t.equal(found.length, 1, 'found package');
+
+        BILLING_ID = found[0].uuid;
+        t.done();
+    }
 };
 
 exports.get_vmapi_origin_image = function (t) {
