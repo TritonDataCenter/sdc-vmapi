@@ -39,10 +39,10 @@ var waitForJob = common.waitForJob;
 var ADMIN_USER_UUID = common.config.ufdsAdminUuid;
 var ADMIN_FABRIC_NETWORK;
 var VMAPI_ORIGIN_IMAGE_UUID;
-var SERVER;
 var VM_UUID;
 var VM_PAYLOAD;
 var BILLING_ID;
+// var NGINX_IMAGE_UUID = '2d7ec6d2-f100-11e5-84d7-77c57246a64a';
 
 var client;
 var mig = {};
@@ -54,6 +54,7 @@ function getVmPayloadTemplate() {
         alias: 'vmapitest-migrate-' + testUuid.generateShortUuid(),
         owner_uuid: ADMIN_USER_UUID,
         image_uuid: VMAPI_ORIGIN_IMAGE_UUID,
+        // image_uuid: NGINX_IMAGE_UUID,
         networks: [ { uuid: ADMIN_FABRIC_NETWORK.uuid } ],
         brand: 'joyent-minimal',
         billing_id: BILLING_ID
@@ -66,13 +67,6 @@ function getJobError(job) {
         return JSON.stringify(job.chain_results.slice(-1)[0].error);
     }
     return null;
-}
-
-function logJobError(t, job, message) {
-    var errMsg = getJobError(job);
-    if (errMsg) {
-        t.ok(false, message + ': ' + errMsg);
-    }
 }
 
 function MigrationWatcher(vm_uuid) {
@@ -156,7 +150,7 @@ exports.get_package = function (t, cb) {
     client.papi.get('/packages', getPackages);
     function getPackages(err, req, res, packages) {
         t.ifError(err, 'getting packages');
-        console.dir(packages);
+        // console.dir(packages);
 
         var found = packages.filter(function (p) {
             return p.name === 'sdc_64';
@@ -222,14 +216,6 @@ exports.get_admin_fabric_network = function (t) {
     });
 };
 
-exports.find_headnode = function (t) {
-    common.findHeadnode(t, client, function _findHeadnodeCb(err, headnode) {
-        common.ifError(t, err);
-        SERVER = headnode;
-        t.done();
-    });
-};
-
 exports.get_vm_payload_template = function (t) {
     VM_PAYLOAD = getVmPayloadTemplate();
     t.done();
@@ -284,8 +270,6 @@ exports.create_vm = function (t) {
         function getVmServer(ctx, next) {
             client.get('/vms/' + VM_UUID, function (err, req, res, body) {
                 t.ifError(err, 'VM should appear in vmapi');
-                // console.log('the server uuid');
-                // console.dir(SERVER.UUID);
                 next();
             });
         }
@@ -438,6 +422,12 @@ exports.migration_begin = function test_migration_begin(t) {
         return;
     }
 
+    if (!VM_UUID) {
+        t.ok(false, 'Original VM was not created successfully');
+        t.done();
+        return;
+    }
+
     // XXX: Testing - tweak the uuid to allow on the same CN.
     // TODO: Check server list to see if this is needed (i.e. when there is
     // just one CN).
@@ -569,6 +559,12 @@ exports.bad_migrate_cannot_pause_from_paused_state = function (t) {
 };
 
 exports.migration_list = function test_migration_list(t) {
+    if (!mig.started) {
+        t.ok(false, 'VM migration did not begin successfully');
+        t.done();
+        return;
+    }
+
     client.get({
         path: '/migrations'
     }, function onMigrateListCb(err, req, res, body) {
@@ -841,7 +837,7 @@ exports.migration_switch = function test_migration_switch(t) {
 };
 
 exports.cleanup = function test_cleanup(t) {
-    if (1 || process.env.MIGRATION_VM_UUID) {
+    if (process.env.MIGRATION_VM_UUID) {
         t.done();
         return;
     }
@@ -852,18 +848,13 @@ exports.cleanup = function test_cleanup(t) {
         return;
     }
 
+    var override_uuid = VM_UUID.slice(0, -6) + 'aaaaaa';
     client.del({
-        path: format('/vms/%s?sync=true', VM_UUID)
+        path: format('/vms/%s?sync=true', override_uuid)
     }, function onVmDelete(err) {
-        t.ifError(err, 'Deleting VM ' + VM_UUID + ' should succeed');
+        t.ifError(err, 'Deleting VM ' + override_uuid + ' should succeed');
 
-        // XXX: This deletes the temporarily renamed (hack) migrated instance.
-        var hackVm = VM_UUID.slice(0, -6) + 'aaaaaa';
-        client.del({
-            path: format('/vms/%s?sync=true', hackVm)
-        }, function onHackVmDelete(err2) {
-            t.ifError(err2, 'Deleting hackVM ' + hackVm + ' should succeed');
-            t.done();
-        });
+        // TODO: Need to delete the original (now hidden with DNI) vm as well.
+        t.done();
     });
 };
