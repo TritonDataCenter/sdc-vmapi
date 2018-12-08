@@ -45,6 +45,7 @@
             "update-nics",
             "remove-nics",
             "migrate-begin",
+            "migrate-pause",
             "migrate-sync",
             "migrate-switch"
         ],
