@@ -779,12 +779,6 @@ exports.migration_sync_incremental = function test_migration_sync_inc(t) {
 };
 
 exports.migration_switch = function test_migration_switch(t) {
-    // if (1 || 0) {
-    //     t.ok(true, 'SKIP - not performing switch');
-    //     t.done();
-    //     return;
-    // }
-
     // Start the migration switch phase.
     if (!mig.started) {
         t.ok(false, 'VM migration did not begin successfully');
@@ -827,11 +821,94 @@ exports.migration_switch = function test_migration_switch(t) {
                             'Migration switch job should succeed - ' +
                             (state === 'succeeded' ? 'ok' : getJobError(job)));
                     }
+                    mig.switched = (state === 'succeeded');
                     t.done();
                 });
                 return;
             }
         }
+        t.done();
+    });
+};
+
+exports.migration_switched_list = function test_migration_switched_list(t) {
+    if (!mig.switched) {
+        t.ok(false, 'VM migration did not switch successfully');
+        t.done();
+        return;
+    }
+
+    client.get({
+        path: '/migrations'
+    }, function onMigrateListCb(err, req, res, body) {
+        t.ifError(err, 'no error expected when listing migrations');
+        if (err) {
+            t.done();
+            return;
+        }
+
+        t.ok(res, 'should get a restify response object');
+        if (!res) {
+            t.done();
+            return;
+        }
+        t.equal(res.statusCode, 200,
+            format('err.statusCode === 200, got %s', res.statusCode));
+        t.ok(Array.isArray(body), 'body response should be an array');
+        if (!Array.isArray(body)) {
+            t.done();
+            return;
+        }
+
+        t.ok(body.length >= 1, 'should be at least one migration');
+        if (body.length === 0) {
+            t.done();
+            return;
+        }
+
+        var migrations = body.filter(function _filtMig(entry) {
+            return entry.vm_uuid === VM_UUID;
+        });
+        t.ok(migrations.length >= 1, 'should be at least vm match');
+        if (migrations.length === 0) {
+            t.done();
+            return;
+        }
+
+        var migration = migrations.slice(-1)[0];
+        t.equal(migration.automatic, false, 'automatic should be false');
+        t.equal(migration.phase, 'switch', 'phase should be "switch"');
+        t.equal(migration.state, 'successful', 'state should be "successful"');
+        t.equal(migration.vm_uuid, VM_UUID, 'vm_uuid should be the same');
+
+        t.ok(Array.isArray(migration.progress_history) &&
+                migration.progress_history.length >= 5,
+            'migration should have at least five progress entries');
+        if (!Array.isArray(migration.progress_history) ||
+                migration.progress_history.length < 5) {
+            t.done();
+            return;
+        }
+
+        function checkProgressEntry(entry, phase) {
+            t.equal(entry.phase, phase, 'phase should be "' + phase + '"');
+            t.equal(entry.state, 'success', 'state should be "success"');
+
+            if (phase === 'sync') {
+                t.equal(entry.current_progress, entry.total_progress,
+                    'current_progress should equal total_progress');
+            } else {
+                t.equal(entry.current_progress, 100, 'current_progress is 100');
+                t.equal(entry.total_progress, 100, 'total_progress is 100');
+            }
+        }
+
+        checkProgressEntry(migration.progress_history[0], 'begin');
+        checkProgressEntry(migration.progress_history[1], 'sync');
+        checkProgressEntry(migration.progress_history[2], 'sync');
+        checkProgressEntry(migration.progress_history[3], 'sync');
+        checkProgressEntry(migration.progress_history[4], 'switch');
+
         t.done();
     });
 };
@@ -854,7 +931,7 @@ exports.cleanup = function test_cleanup(t) {
     }, function onVmDelete(err) {
         t.ifError(err, 'Deleting VM ' + override_uuid + ' should succeed');
 
-        // TODO: Need to delete the original (now hidden with DNI) vm as well.
+        // TODO: Need to delete the original vm (now hidden with DNI) as well.
         t.done();
     });
 };
