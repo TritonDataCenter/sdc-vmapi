@@ -361,8 +361,8 @@ exports.bad_migrate_core_zone = function (t) {
             }, function onMigrateCoreZoneCb(err) {
                 t.ok(err, 'expect an error for migration of a core zone');
                 if (err) {
-                    t.equal(err.statusCode, 409,
-                        format('err.statusCode === 409, got %s',
+                    t.equal(err.statusCode, 412,
+                        format('err.statusCode === 412, got %s',
                             err.statusCode));
                 }
                 next();
@@ -402,8 +402,8 @@ exports.bad_migrate_nat_zone = function (t) {
             }, function onMigrateNatZoneCb(err) {
                 t.ok(err, 'expect an error for migration of a nat zone');
                 if (err) {
-                    t.equal(err.statusCode, 409,
-                        format('err.statusCode === 409, got %s',
+                    t.equal(err.statusCode, 412,
+                        format('err.statusCode === 412, got %s',
                             err.statusCode));
                 }
                 next();
@@ -412,6 +412,44 @@ exports.bad_migrate_nat_zone = function (t) {
     ]}, function _pipelineCb() {
         t.done();
     });
+};
+
+exports.migration_estimate = function test_migration_estimate(t) {
+    if (!VM_UUID) {
+        t.ok(false, 'Original VM was not created successfully');
+        t.done();
+        return;
+    }
+
+    client.post(
+        {path: format('/vms/%s?action=migrate&migration_action=estimate',
+                VM_UUID)},
+        onMigrateEstimateCb);
+
+    function onMigrateEstimateCb(err, req, res, body) {
+        t.ifError(err, 'estimate: no error when estimating the migration');
+        if (err) {
+            t.done();
+            return;
+        }
+
+        t.ok(res, 'estimate: got a restify response object');
+        if (res) {
+            t.equal(res.statusCode, 200,
+                format('err.statusCode === 200, got %s', res.statusCode));
+            t.ok(res.body, 'estimate: got a restify response body object');
+        }
+
+        t.ok(body, 'estimate: got a response body');
+        if (!body) {
+            t.done();
+            return;
+        }
+
+        t.ok(body.size, 'estimate: got body.size estimate');
+        t.ok(body.size > 0, 'estimate: got body.size >= 0: ' + body.size);
+        t.done();
+    }
 };
 
 exports.migration_begin = function test_migration_begin(t) {
@@ -530,8 +568,8 @@ exports.bad_migrate_cannot_begin_from_begin_phase = function (t) {
     }, function onMigrateNoAction(err) {
         t.ok(err, 'expect an error when the migration already started');
         if (err) {
-            t.equal(err.statusCode, 409,
-                format('err.statusCode === 409, got %s', err.statusCode));
+            t.equal(err.statusCode, 412,
+                format('err.statusCode === 412, got %s', err.statusCode));
         }
         t.done();
     });
@@ -551,8 +589,8 @@ exports.bad_migrate_cannot_pause_from_paused_state = function (t) {
     }, function onMigrateNoAction(err) {
         t.ok(err, 'expect an error when the migration is already paused');
         if (err) {
-            t.equal(err.statusCode, 409,
-                format('err.statusCode === 409, got %s', err.statusCode));
+            t.equal(err.statusCode, 412,
+                format('err.statusCode === 412, got %s', err.statusCode));
         }
         t.done();
     });
