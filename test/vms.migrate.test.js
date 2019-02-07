@@ -134,6 +134,10 @@ function createMigrationWatcher() {
     mig.watcher.start();
 }
 
+function destroyMigrationWatcher() {
+    delete mig.watcher;
+}
+
 /* Tests */
 
 exports.setUp = function (callback) {
@@ -490,6 +494,9 @@ exports.migration_begin = function test_migration_begin(t) {
                 console.log(body);
                 t.ok(body.job_uuid, 'got a job uuid in the begin response');
 
+                // Watch for migration events.
+                createMigrationWatcher();
+
                 var waitParams = {
                     client: client,
                     job_uuid: body.job_uuid,
@@ -515,9 +522,12 @@ exports.migration_begin = function test_migration_begin(t) {
 };
 
 exports.check_watch_entries = function check_watch_entries(t) {
-    createMigrationWatcher();
 
-    assert.object(mig.watcher, 'mig.watcher');
+    t.ok(mig.watcher, 'mig.watcher exists');
+    if (!mig.watcher) {
+        t.done();
+        return;
+    }
 
     var loopCount = 0;
 
@@ -536,17 +546,30 @@ exports.check_watch_entries = function check_watch_entries(t) {
         // Check the events.
         t.ok(mig.watcher.events.length > 0, 'Should be events seen');
 
-        var beginEvent = mig.watcher.events.filter(function _filtBegin(event) {
-            return event.phase === 'begin';
-        }).slice(-1)[0];
-        t.ok(beginEvent, 'Should have a begin event');
-        if (beginEvent) {
-            t.equal(beginEvent.state, 'success', 'event state was success');
-            t.equal(beginEvent.current_progress, 100, 'current_progress');
-            t.equal(beginEvent.total_progress, 100, 'total_progress');
-            t.ok(beginEvent.started_timestamp, 'event has started_timestamp');
-            t.ok(beginEvent.finished_timestamp, 'event has finished_timestamp');
+        var beginEvents = mig.watcher.events.filter(function _filtBegin(event) {
+            return event.type === 'progress' && event.phase === 'begin';
+        });
+        t.ok(beginEvents.length > 0, 'Should have begin events');
+        if (beginEvents.length > 0) {
+            beginEvents.map(function (event) {
+                t.ok(event.state === 'running' ||
+                    event.state === 'successful',
+                    'event state running or successful');
+                t.ok(event.current_progress > 0, 'current_progress > 0');
+                t.equal(event.total_progress, 100, 'total_progress === 100');
+            });
         }
+
+        var endEvent = mig.watcher.events.filter(function _filtEnd(event) {
+            return event.type === 'end';
+        }).slice(-1)[0];
+        t.ok(endEvent, 'Should have an end event');
+        if (endEvent) {
+            t.equal(endEvent.phase, 'begin', 'end event phase is "begin"');
+            t.equal(endEvent.state, 'paused', 'end event state is "paused"');
+        }
+
+        destroyMigrationWatcher();
 
         t.done();
     }
@@ -690,6 +713,9 @@ exports.migration_sync = function test_migration_sync(t) {
                 console.log(body);
                 t.ok(body.job_uuid, 'got a job uuid in the sync response');
 
+                // Watch for migration events.
+                createMigrationWatcher();
+
                 var waitParams = {
                     client: client,
                     job_uuid: body.job_uuid,
@@ -718,9 +744,12 @@ exports.migration_sync = function test_migration_sync(t) {
 
 exports.check_watch_entries_after_sync =
 function check_watch_entries_after_sync(t) {
-    createMigrationWatcher();
 
-    assert.object(mig.watcher, 'mig.watcher');
+    t.ok(mig.watcher, 'mig.watcher exists');
+    if (!mig.watcher) {
+        t.done();
+        return;
+    }
 
     var loopCount = 0;
 
@@ -739,29 +768,37 @@ function check_watch_entries_after_sync(t) {
         // Check the events.
         t.ok(mig.watcher.events.length > 0, 'Should be events seen');
 
-        var beginEvent = mig.watcher.events.filter(function _filtBegin(event) {
-            return event.phase === 'begin';
-        }).slice(-1)[0];
-        t.ok(beginEvent, 'Should have a begin event');
-        if (beginEvent) {
-            t.equal(beginEvent.state, 'success', 'event state was success');
-            t.equal(beginEvent.current_progress, 100, 'current_progress');
-            t.equal(beginEvent.total_progress, 100, 'total_progress');
-            t.ok(beginEvent.started_timestamp, 'event has started_timestamp');
-            t.ok(beginEvent.finished_timestamp, 'event has finished_timestamp');
+        var syncEvents = mig.watcher.events.filter(function _filtSync(event) {
+            console.log('event:', JSON.stringify(event));
+            return event.type === 'progress' && event.phase === 'sync';
+        });
+        t.ok(syncEvents.length > 0, 'Should have sync events');
+        if (syncEvents.length > 0) {
+            var sawBandwidthEvent = false;
+            syncEvents.map(function (event) {
+                t.ok(event.state === 'running' ||
+                    event.state === 'successful',
+                    'event state running or successful');
+                t.ok(event.current_progress, 'event has a current_progress');
+                t.ok(event.total_progress, 'event has a total_progress');
+                if (event.transfer_bytes_second) {
+                    t.ok(event.eta_ms, 'event has a eta_ms');
+                    sawBandwidthEvent = true;
+                }
+            });
+            t.ok(sawBandwidthEvent, 'a bandwidth progress event was seen');
         }
 
-        var syncEvent = mig.watcher.events.filter(function _filtSync(event) {
-            return event.phase === 'sync';
+        var endEvent = mig.watcher.events.filter(function _filtEnd(event) {
+            return event.type === 'end';
         }).slice(-1)[0];
-        t.ok(syncEvent, 'Should have a sync event');
-        if (syncEvent) {
-            t.equal(syncEvent.state, 'success', 'event state was success');
-            t.ok(syncEvent.current_progress, 'event has a current_progress');
-            t.ok(syncEvent.total_progress, 'event has a total_progress');
-            t.ok(syncEvent.started_timestamp, 'event has started_timestamp');
-            t.ok(syncEvent.finished_timestamp, 'event has finished_timestamp');
+        t.ok(endEvent, 'Should have an end event');
+        if (endEvent) {
+            t.equal(endEvent.phase, 'sync', 'end event phase is "sync"');
+            t.equal(endEvent.state, 'paused', 'end event state is "paused"');
         }
+
+        destroyMigrationWatcher();
 
         t.done();
     }
@@ -844,6 +881,9 @@ exports.migration_switch = function test_migration_switch(t) {
             if (body) {
                 console.log(body);
                 t.ok(body.job_uuid, 'got a job uuid in the switch response');
+
+                // Watch for migration events.
+                createMigrationWatcher();
 
                 var waitParams = {
                     client: client,
