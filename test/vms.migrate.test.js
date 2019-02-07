@@ -684,7 +684,7 @@ exports.migration_list = function test_migration_list(t) {
         t.equal(lastProgress.total_progress, 100,
             'total_progress should be 100');
         t.equal(lastProgress.phase, 'begin', 'phase should be "begin"');
-        t.equal(lastProgress.state, 'success', 'state should be "success"');
+        t.equal(lastProgress.state, 'successful', 'state is "successful"');
 
         t.done();
     });
@@ -970,7 +970,7 @@ exports.migration_switched_list = function test_migration_switched_list(t) {
 
         function checkProgressEntry(entry, phase) {
             t.equal(entry.phase, phase, 'phase should be "' + phase + '"');
-            t.equal(entry.state, 'success', 'state should be "success"');
+            t.equal(entry.state, 'successful', 'progress state "successful"');
 
             if (phase === 'sync') {
                 t.equal(entry.current_progress, entry.total_progress,
