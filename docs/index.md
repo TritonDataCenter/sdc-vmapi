@@ -10,7 +10,7 @@ markdown2extras: tables, code-friendly
 -->
 
 <!--
-    Copyright (c) 2018, Joyent, Inc.
+    Copyright (c) 2019, Joyent, Inc.
 -->
 
 # Introduction to VMs API
@@ -55,6 +55,8 @@ update time.
 | dns_domain               | String                        | Search domain value for /etc/resolv.conf (max length 255 chars)                                                                                                                                                   | No                  | Yes    | No     |
 | do_not_inventory         | Boolean                       | The primary use-case of this attribute is for test VMs that are created but you don't want their existence propagated up to VMAPI since they'll be short-lived and its lifecycle will be physically managed in the server | No                  | Yes    | Yes    |
 | firewall_enabled         | Boolean                       | Enable firewall for the VM                                                                                                                                                                                                | Yes                 | Yes    | Yes    |
+| flexible_disk_size       | Number (MiB)                  | The amount of space a bhyve instance may use for its disks and snapshots of those disks | No                 | Yes    | Yes    |
+| free_space               | Number (MiB)                  | Space that is not allocated to bhyve instance disks nor in use by snapshots of those disks) | No                 | Yes    | Yes    |
 | fs_allowed               | String (comma-separated list) | Filesystems allowed for the VM                                                                                                                                                                                            | No                  | Yes    | Yes    |
 | hostname                 | String                        | Hostname (excluding DNS suffix) for the VM (max length 63 chars, must be DNS-safe)                                                                                                                                        | No                  | Yes    | No     |
 | image_uuid               | UUID                          | Image of the VM                                                                                                                                                                                                           | Yes                 | Yes    | No     |
