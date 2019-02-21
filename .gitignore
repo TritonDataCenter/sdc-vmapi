@@ -1,7 +1,9 @@
 .DS_Store
+/make_stamps
 /node_modules
 /tmp
 /smf/manifests/*.xml
+bits
 build
 docs/*.json
 docs/*.html
@@ -9,3 +11,4 @@ cscope.in.out
 cscope.po.out
 cscope.out
 config.json
+vmapi-pkg-*.tar.gz
