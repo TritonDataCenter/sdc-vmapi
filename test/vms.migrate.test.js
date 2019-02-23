@@ -240,12 +240,6 @@ exports.get_vm_payload_template = function (t) {
 };
 
 exports.create_vm = function (t) {
-    if (process.env.MIGRATION_VM_UUID) {
-        VM_UUID = process.env.MIGRATION_VM_UUID;
-        t.done();
-        return;
-    }
-
     vasync.pipeline({arg: {}, funcs: [
 
         function createVm(ctx, next) {
@@ -327,7 +321,6 @@ exports.bad_migrate_unknown_action = function (t) {
     });
 };
 
-if (!process.env.MIGRATION_SKIP_BEGIN) {
 [
     'abort',
     'pause',
@@ -349,7 +342,6 @@ if (!process.env.MIGRATION_SKIP_BEGIN) {
         });
     };
 });
-}
 
 exports.bad_migrate_core_zone = function (t) {
     // Should not be able to migrate a triton core zone.
@@ -472,13 +464,6 @@ exports.migration_estimate = function test_migration_estimate(t) {
 };
 
 exports.migration_begin = function test_migration_begin(t) {
-    if (process.env.MIGRATION_SKIP_BEGIN) {
-        t.ok(true, 'Skip - VM migration begin has been skipped');
-        mig.started = true;
-        t.done();
-        return;
-    }
-
     if (!VM_UUID) {
         t.ok(false, 'Original VM was not created successfully');
         t.done();
@@ -1236,11 +1221,6 @@ exports.check_vmapi_state_2 = function test_check_vmapi_state_2(t) {
 };
 
 exports.cleanup = function test_cleanup(t) {
-    if (process.env.MIGRATION_VM_UUID) {
-        t.done();
-        return;
-    }
-
     if (!VM_UUID) {
         t.ok(false, 'VM_UUID not found, cannot delete VM');
         t.done();
