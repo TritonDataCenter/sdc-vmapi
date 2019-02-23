@@ -35,7 +35,10 @@ var VM_OPTS = {
     ram: 1024,
     disks: [ { image_uuid: '81c0ef69-e9d7-4e93-a15b-efd7ea9c9ee8' } ],
     networks: [],
-    creator_uuid: CUSTOMER_UUID
+    creator_uuid: CUSTOMER_UUID,
+    tags: {
+        'triton.placement.exclude_virtual_servers': true
+    }
 };
 var CALLER = {
     type: 'signature',
