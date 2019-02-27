@@ -24,6 +24,7 @@ var VM_UUID;
 var PCI_SLOTS = [];
 
 var CUSTOMER_UUID = common.config.ufdsAdminUuid;
+var DISK_UUID = '2de262f8-3aa1-11e9-b79e-d712c1fb6cee';
 var VM_ALIAS_BASE = 'vmapitest-disk';
 var VM_OPTS = {
     autoboot: false,
@@ -172,7 +173,7 @@ exports.add_disk = function add_disk(t) {
     var opts = { size: 1024 };
 
     CLIENT.post(path, opts, function postCb(err, req, res, job) {
-        t.ok(!err, 'err');
+        common.ifError(t, err, 'err');
 
         assert.object(job, 'job');
         assert.uuid(job.job_uuid, 'job.job_uuid');
@@ -246,7 +247,7 @@ exports.resize_disk_down_with_flag = function resize_disk_down_with_flag(t) {
     };
 
     CLIENT.post(path, opts, function postCb(err, req, res, job) {
-        t.ok(!err, 'err');
+        common.ifError(t, err, 'err');
 
         assert.object(job, 'job');
         assert.uuid(job.job_uuid, 'job.job_uuid');
@@ -284,7 +285,7 @@ exports.resize_disk_up = function resize_disk_up(t) {
     };
 
     CLIENT.post(path, opts, function postCb(err, req, res, job) {
-        t.ok(!err, 'err');
+        common.ifError(t, err, 'err');
 
         assert.object(job, 'job');
         assert.uuid(job.job_uuid, 'job.job_uuid');
@@ -334,7 +335,7 @@ exports.delete_disk = function delete_disk(t) {
     var opts = { pci_slot: PCI_SLOTS[1] };
 
     CLIENT.post(path, opts, function postCb(err, req, res, job) {
-        t.ok(!err, 'err');
+        common.ifError(t, err, 'err');
 
         assert.object(job, 'job');
         assert.uuid(job.job_uuid, 'job.job_uuid');
@@ -367,11 +368,11 @@ exports.add_disk_with_pci_slot = function add_disk_with_pci_slot(t) {
     var path = '/vms/' + VM_UUID + '?action=create_disk';
     var opts = {
         pci_slot: '0:4:5',
-        size: 1024
+        size: 512
     };
 
     CLIENT.post(path, opts, function postCb(err, req, res, job) {
-        t.ok(!err, 'err');
+        common.ifError(t, err, 'err');
 
         assert.object(job, 'job');
         assert.uuid(job.job_uuid, 'job.job_uuid');
@@ -398,7 +399,94 @@ function check_added_disk_with_pci_slot(t) {
         t.equal(disks[0].pci_slot, '0:4:0', '[0].pci_slot');
         t.equal(disks[0].size, 10240, '[0].size');
         t.equal(disks[1].pci_slot, '0:4:5', '[1].pci_slot');
-        t.equal(disks[1].size, 1024, '[1].size');
+        t.equal(disks[1].size, 512, '[1].size');
+
+        t.done();
+    });
+};
+
+
+exports.add_disk_with_existing_pci_slot =
+function add_disk_with_existing_pci_slot(t) {
+    var path = '/vms/' + VM_UUID + '?action=create_disk';
+    var opts = {
+        pci_slot: '0:4:5',
+        size: 256
+    };
+
+    CLIENT.post(path, opts, function postCb(err, req, res, body) {
+        t.ok(err, 'err');
+
+        t.equal(err.name, 'ValidationFailedError', 'err.name');
+        t.equal(body.errors[0].field, 'pci_slot', 'field');
+        t.equal(body.errors[0].message, 'Already in use', 'message');
+
+        t.done();
+    });
+};
+
+
+exports.add_disk_with_uuid = function add_disk_with_uuid(t) {
+    var path = '/vms/' + VM_UUID + '?action=create_disk';
+    var opts = {
+        disk_uuid: DISK_UUID,
+        size: 256
+    };
+
+    CLIENT.post(path, opts, function postCb(err, req, res, job) {
+        common.ifError(t, err, 'err');
+
+        assert.object(job, 'job');
+        assert.uuid(job.job_uuid, 'job.job_uuid');
+
+        var jobPath = '/jobs/' + job.job_uuid;
+        waitForValue(jobPath, 'execution', 'succeeded', {
+            client: CLIENT
+        }, function waitForValueCb(err2) {
+            common.ifError(t, err2, 'err2');
+            t.done();
+        });
+    });
+};
+
+
+exports.check_added_disk_with_uuid =
+function check_added_disk_with_uuid(t) {
+    var path = '/vms/' + VM_UUID;
+    CLIENT.get(path, function getCb(err, req, res, vm) {
+        common.ifError(t, err, 'err');
+
+        var disks = vm.disks;
+        t.equal(disks.length, 3);
+        t.equal(disks[0].pci_slot, '0:4:0', '[0].pci_slot');
+        t.equal(disks[0].size, 10240, '[0].size');
+
+        t.equal(disks[1].pci_slot, '0:4:5', '[1].pci_slot');
+        t.equal(disks[1].size, 512, '[1].size');
+
+        t.equal(disks[2].uuid, DISK_UUID, '[1].uuid');
+        t.equal(disks[2].pci_slot, '0:4:1', '[1].pci_slot');
+        t.equal(disks[2].size, 256, '[1].size');
+
+        t.done();
+    });
+};
+
+
+exports.add_disk_with_existing_uuid =
+function add_disk_with_existing_uuid(t) {
+    var path = '/vms/' + VM_UUID + '?action=create_disk';
+    var opts = {
+        disk_uuid: DISK_UUID,
+        size: 128
+    };
+
+    CLIENT.post(path, opts, function postCb(err, req, res, body) {
+        t.ok(err, 'err');
+
+        t.equal(err.name, 'ValidationFailedError', 'err.name');
+        t.equal(body.errors[0].field, 'disk_uuid', 'field');
+        t.equal(body.errors[0].message, 'Already in use', 'message');
 
         t.done();
     });

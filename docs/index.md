@@ -1463,14 +1463,18 @@ For removing NICs from a VM, a macs list parameter must be specified. This param
 Create a virtual disk and attach it to a bhyve VM. VM must be currently stopped,
 and have flexible_disk_size set.
 
-| Param    | Type         | Description                                                                                                         |
-| -------- | ------------ | ------------------------------------------------------------------------------------------------------------------- |
-| pci_slot | String       | Optional. Free PCI slot of disk to create. This is typically in the 0:4:[0-7] and 0:5:[0-7] range.                  |
-| size     | Number (MiB) | Size of new virtual disk. Can also use string "remaining" to use up all remaining free space in flexible_disk_size. |
+| Param     | Type         | Description                                                                                                         |
+| --------- | ------------ | ------------------------------------------------------------------------------------------------------------------- |
+| pci_slot  | String       | Optional. Free PCI slot of disk to create. This is typically in the 0:4:[0-7] and 0:5:[0-7] range.                  |
+| disk_uuid | String       | Optional. UUID to uniquely identify disk to create.  Useful for client apps.                                        |
+| size      | Number (MiB) | Size of new virtual disk. Can also use string "remaining" to use up all remaining free space in flexible_disk_size. |
 
 If `pci_slot` is not provided when creating the disk, a slot will be
 automatically assigned. See [Disk PCI Slot](#disk-pci-slot) for more
 information about proper assignment of PCI slots.
+
+Likewise with `disk_uuid` -- if not provided, one will be automatically
+assigned.
 
 ### Example of creating a new 5GiB virtual disk using a JSON payload
 
