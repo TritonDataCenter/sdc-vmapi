@@ -2350,7 +2350,7 @@ exports.resize_package_up_fail = function (t) {
                         'error code should be InsufficientCapacity');
                     t.ok(error.message.match(
                         'Required additional RAM \\(\\d+\\) ' +
-                        'exceeds the server\'s available RAM \\(\\d+\\)'),
+                        'exceeds the server\'s available RAM \\(-?\\d+\\)'),
                         'error message should explain additional RAM required');
 
                     cb();
