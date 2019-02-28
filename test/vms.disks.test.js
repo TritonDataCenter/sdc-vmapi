@@ -8,7 +8,6 @@
  * Copyright (c) 2019, Joyent, Inc.
  */
 
-var assert = require('assert-plus');
 var jsprim = require('jsprim');
 var uuid = require('libuuid');
 
@@ -71,9 +70,9 @@ function createVm(t, vmOpts) {
 
     CLIENT.post(opts, vmOpts, function postCb(err, req, res, job) {
         common.ifError(t, err, 'err');
-
-        assert.object(job, 'job');
-        assert.uuid(job.job_uuid, 'job.job_uuid');
+        t.equal(res.statusCode, 202, 'status code: ' + res.statusCode);
+        t.ok(job, 'job');
+        t.ok(job.job_uuid, 'job.job_uuid');
 
         VM_UUID = job.vm_uuid;
         var path = '/jobs/' + job.job_uuid;
@@ -91,8 +90,8 @@ function createVm(t, vmOpts) {
 function deleteVm(t) {
     CLIENT.del('/vms/' + VM_UUID, function delCb(err, req, res, job) {
         common.ifError(t, err, 'err');
-        assert.object(job, 'job');
-        assert.uuid(job.job_uuid, 'job.job_uuid');
+        t.ok(job, 'job');
+        t.ok(job.job_uuid, 'job.job_uuid');
 
         var path = '/jobs/' + job.job_uuid;
         waitForValue(path, 'execution', 'succeeded', {
@@ -110,8 +109,8 @@ function deleteVm(t) {
 
 exports.setup = function setup(t) {
     common.setUp(function setUpCb(setupErr, _client) {
-        assert.ifError(setupErr);
-        assert.ok(_client, 'restify client');
+        common.ifError(t, setupErr, 'setupErr');
+        t.ok(_client, 'restify client');
         CLIENT = _client;
 
         CLIENT.napi.get('/networks', function getNet(err, req, res, networks) {
@@ -188,8 +187,8 @@ exports.add_disk = function add_disk(t) {
     CLIENT.post(path, opts, function postCb(err, req, res, job) {
         common.ifError(t, err, 'err');
 
-        assert.object(job, 'job');
-        assert.uuid(job.job_uuid, 'job.job_uuid');
+        t.ok(job, 'job');
+        t.ok(job.job_uuid, 'job.job_uuid');
 
         var jobPath = '/jobs/' + job.job_uuid;
         waitForValue(jobPath, 'execution', 'succeeded', {
@@ -206,6 +205,8 @@ exports.check_added_disk = function check_added_disk(t) {
     var path = '/vms/' + VM_UUID;
     CLIENT.get(path, function getCb(err, req, res, vm) {
         common.ifError(t, err, 'err');
+        t.ok(vm);
+        t.ok(vm.disks);
 
         var disks = vm.disks;
         t.equal(disks.length, 2);
@@ -262,8 +263,8 @@ exports.resize_disk_down_with_flag = function resize_disk_down_with_flag(t) {
     CLIENT.post(path, opts, function postCb(err, req, res, job) {
         common.ifError(t, err, 'err');
 
-        assert.object(job, 'job');
-        assert.uuid(job.job_uuid, 'job.job_uuid');
+        t.ok(job, 'job');
+        t.ok(job.job_uuid, 'job.job_uuid');
 
         var jobPath = '/jobs/' + job.job_uuid;
         waitForValue(jobPath, 'execution', 'succeeded', {
@@ -300,8 +301,8 @@ exports.resize_disk_up = function resize_disk_up(t) {
     CLIENT.post(path, opts, function postCb(err, req, res, job) {
         common.ifError(t, err, 'err');
 
-        assert.object(job, 'job');
-        assert.uuid(job.job_uuid, 'job.job_uuid');
+        t.ok(job, 'job');
+        t.ok(job.job_uuid, 'job.job_uuid');
 
         var jobPath = '/jobs/' + job.job_uuid;
         waitForValue(jobPath, 'execution', 'succeeded', {
@@ -350,8 +351,9 @@ exports.delete_disk = function delete_disk(t) {
     CLIENT.post(path, opts, function postCb(err, req, res, job) {
         common.ifError(t, err, 'err');
 
-        assert.object(job, 'job');
-        assert.uuid(job.job_uuid, 'job.job_uuid');
+        t.equal(res.statusCode, 202, 'status code: ' + res.statusCode);
+        t.ok(job, 'job');
+        t.ok(job.job_uuid, 'job.job_uuid');
 
         var jobPath = '/jobs/' + job.job_uuid;
         waitForValue(jobPath, 'execution', 'succeeded', {
@@ -387,8 +389,9 @@ exports.add_disk_with_pci_slot = function add_disk_with_pci_slot(t) {
     CLIENT.post(path, opts, function postCb(err, req, res, job) {
         common.ifError(t, err, 'err');
 
-        assert.object(job, 'job');
-        assert.uuid(job.job_uuid, 'job.job_uuid');
+        t.equal(res.statusCode, 202, 'status code: ' + res.statusCode);
+        t.ok(job, 'job');
+        t.ok(job.job_uuid, 'job.job_uuid');
 
         var jobPath = '/jobs/' + job.job_uuid;
         waitForValue(jobPath, 'execution', 'succeeded', {
@@ -449,8 +452,8 @@ exports.add_disk_with_uuid = function add_disk_with_uuid(t) {
     CLIENT.post(path, opts, function postCb(err, req, res, job) {
         common.ifError(t, err, 'err');
 
-        assert.object(job, 'job');
-        assert.uuid(job.job_uuid, 'job.job_uuid');
+        t.ok(job, 'job');
+        t.ok(job.job_uuid, 'job.job_uuid');
 
         var jobPath = '/jobs/' + job.job_uuid;
         waitForValue(jobPath, 'execution', 'succeeded', {
