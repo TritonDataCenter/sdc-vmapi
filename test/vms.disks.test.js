@@ -26,6 +26,7 @@ var PCI_SLOTS = [];
 var CUSTOMER_UUID = common.config.ufdsAdminUuid;
 var DISK_UUID = '2de262f8-3aa1-11e9-b79e-d712c1fb6cee';
 var VM_ALIAS_BASE = 'vmapitest-disk';
+var IMAGE_NAME = 'ubuntu-certified-16.04';
 var VM_OPTS = {
     autoboot: false,
     owner_uuid: CUSTOMER_UUID,
@@ -34,8 +35,8 @@ var VM_OPTS = {
     vcpus: 1,
     cpu_cap: 100,
     ram: 1024,
-    disks: [ { image_uuid: '81c0ef69-e9d7-4e93-a15b-efd7ea9c9ee8' } ],
-    networks: [],
+    disks: [],     // filled in later
+    networks: [],  // filled in later
     creator_uuid: CUSTOMER_UUID,
     tags: {
         'triton.placement.exclude_virtual_servers': true
@@ -108,18 +109,30 @@ function deleteVm(t) {
 
 
 exports.setup = function setup(t) {
-    common.setUp(function setUpCb(err, _client) {
-        assert.ifError(err);
+    common.setUp(function setUpCb(setupErr, _client) {
+        assert.ifError(setupErr);
         assert.ok(_client, 'restify client');
         CLIENT = _client;
 
-        CLIENT.napi.get('/networks', function getCb(err2, req, res, networks) {
-            common.ifError(t, err2, 'err2');
-            var admin = common.extractAdminAndExternalNetwork(networks).admin;
+        CLIENT.napi.get('/networks', function getNet(err, req, res, networks) {
+            common.ifError(t, err, 'err');
 
+            var admin = common.extractAdminAndExternalNetwork(networks).admin;
             VM_OPTS.networks.push({ uuid: admin.uuid });
 
-            t.done();
+            CLIENT.imgapi.get('/images?name=' + IMAGE_NAME + '&state=active',
+            function getImg(err2, req2, res2, imgs) {
+                common.ifError(t, err2, 'err2');
+                t.ok(imgs.length, 'imgs.length');
+
+                var newestImg = imgs.sort(function byDate(a, b) {
+                    return a.published_at < b.published_at ? 1 : -1;
+                })[0];
+
+                VM_OPTS.disks.push({ image_uuid: newestImg.uuid });
+
+                t.done();
+            });
         });
     });
 };
