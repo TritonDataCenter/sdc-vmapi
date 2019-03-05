@@ -266,7 +266,8 @@ exports.create_vm = function (t) {
                 ctx.jobUuid = body.job_uuid;
                 VM_UUID = body.vm_uuid;
                 mig.vms[VM_UUID] = body;
-                console.log('# Vm uuid: ' + VM_UUID);
+
+                t.ok(VM_UUID, 'got a vm uuid: ' + VM_UUID);
 
                 next();
             });
@@ -463,12 +464,115 @@ exports.migration_estimate = function test_migration_estimate(t) {
     }
 };
 
+exports.migration_begin_abort = function test_migration_begin_abort(t) {
+    if (!VM_UUID) {
+        t.ok(false, 'Original VM was not created successfully');
+        t.done();
+        return;
+    }
+
+    // XXX: Testing - tweak the uuid to allow on the same CN.
+    // TODO: Check server list to see if this is needed (i.e. when there is
+    // just one CN).
+    var override_uuid = VM_UUID.slice(0, -6) + 'ab0ab0';
+    var override_alias = getVmPayloadTemplate().alias + '-abort';
+
+    // Trying to run a migration action when a migration has not started.
+    client.post(
+            {path: format('/vms/%s?action=migrate&migration_action=begin',
+                VM_UUID)},
+            {override_uuid: override_uuid, override_alias: override_alias},
+            function onMigrateBeginAbortCb(err, req, res, body) {
+        common.ifError(t, err, 'no error when beginning the migration');
+        if (!err) {
+            t.ok(res, 'should get a restify response object');
+            if (res) {
+                t.equal(res.statusCode, 202,
+                    format('err.statusCode === 202, got %s', res.statusCode));
+                t.ok(res.body, 'should get a restify response body object');
+            }
+            if (body) {
+                t.ok(body.job_uuid, 'got a job uuid: ' + body.job_uuid);
+
+                var waitParams = {
+                    client: client,
+                    job_uuid: body.job_uuid,
+                    timeout: 15 * 60
+                };
+
+                waitForJob(waitParams, function onMigrationJobCb(jerr, state,
+                        job) {
+                    common.ifError(t, jerr, 'begin should be successful');
+                    if (!jerr) {
+                        mig.started = (state === 'succeeded');
+                        t.equal(state, 'succeeded',
+                            'Migration begin job should succeed - ' +
+                            (mig.started ? 'ok' : getJobError(job)));
+                    }
+                    t.done();
+                });
+                return;
+            }
+        }
+        t.done();
+    });
+};
+
+exports.migration_abort = function test_migration_abort(t) {
+    if (!mig.started) {
+        t.ok(false, 'VM migration did not begin successfully');
+        t.done();
+        return;
+    }
+
+    client.post(
+            {path: format('/vms/%s?action=migrate&migration_action=abort',
+                VM_UUID)},
+            {},
+            function onMigrateBeginAbortCb(err, req, res, body) {
+        common.ifError(t, err, 'no error when aborting the migration');
+        if (!err) {
+            t.ok(res, 'should get a restify response object');
+            if (res) {
+                t.equal(res.statusCode, 202,
+                    format('err.statusCode === 202, got %s', res.statusCode));
+                t.ok(res.body, 'should get a restify response body object');
+            }
+            if (body) {
+                t.ok(body.job_uuid, 'got a job uuid: ' + body.job_uuid);
+
+                var waitParams = {
+                    client: client,
+                    job_uuid: body.job_uuid,
+                    timeout: 15 * 60
+                };
+
+                waitForJob(waitParams, function onMigrationJobCb(jerr, state,
+                        job) {
+                    common.ifError(t, jerr, 'abort should be successful');
+                    if (!jerr) {
+                        mig.started = (state === 'succeeded');
+                        t.equal(state, 'succeeded',
+                            'Migration abort job should succeed - ' +
+                            (mig.started ? 'ok' : getJobError(job)));
+                    }
+                    t.done();
+                });
+                return;
+            }
+        }
+        t.done();
+    });
+};
+
 exports.migration_begin = function test_migration_begin(t) {
     if (!VM_UUID) {
         t.ok(false, 'Original VM was not created successfully');
         t.done();
         return;
     }
+
+    mig.started = false;
 
     // XXX: Testing - tweak the uuid to allow on the same CN.
     // TODO: Check server list to see if this is needed (i.e. when there is
@@ -491,8 +595,7 @@ exports.migration_begin = function test_migration_begin(t) {
                 t.ok(res.body, 'should get a restify response body object');
             }
             if (body) {
-                console.log(body);
-                t.ok(body.job_uuid, 'got a job uuid in the begin response');
+                t.ok(body.job_uuid, 'got a job uuid: ' + body.job_uuid);
 
                 // Watch for migration events.
                 createMigrationWatcher(VM_UUID);
@@ -664,7 +767,7 @@ exports.migration_list = function test_migration_list(t) {
             return;
         }
 
-        var migration = migrations.slice(-1)[0];
+        var migration = migrations[0];
         t.equal(migration.automatic, false, 'automatic should be false');
         t.equal(migration.phase, 'begin', 'phase should be "begin"');
         t.equal(migration.state, 'paused', 'state should be "paused"');
@@ -711,8 +814,7 @@ exports.migration_sync = function test_migration_sync(t) {
                 t.ok(res.body, 'should get a restify response body object');
             }
             if (body) {
-                console.log(body);
-                t.ok(body.job_uuid, 'got a job uuid in the sync response');
+                t.ok(body.job_uuid, 'got a job uuid: ' + body.job_uuid);
 
                 // Watch for migration events.
                 createMigrationWatcher(VM_UUID);
@@ -827,8 +929,7 @@ exports.migration_sync_incremental = function test_migration_sync_inc(t) {
                 t.ok(res.body, 'should get a restify response body object');
             }
             if (body) {
-                console.log(body);
-                t.ok(body.job_uuid, 'got a job uuid in the sync response');
+                t.ok(body.job_uuid, 'got a job uuid: ' + body.job_uuid);
 
                 var waitParams = {
                     client: client,
@@ -880,8 +981,7 @@ exports.migration_switch = function test_migration_switch(t) {
                 t.ok(res.body, 'should get a restify response body object');
             }
             if (body) {
-                console.log(body);
-                t.ok(body.job_uuid, 'got a job uuid in the switch response');
+                t.ok(body.job_uuid, 'got a job uuid: ' + body.job_uuid);
 
                 // Watch for migration events.
                 createMigrationWatcher(VM_UUID);
@@ -955,7 +1055,7 @@ exports.migration_switched_list = function test_migration_switched_list(t) {
             return;
         }
 
-        var migration = migrations.slice(-1)[0];
+        var migration = migrations[0];
         t.equal(migration.automatic, false, 'automatic should be false');
         t.equal(migration.phase, 'switch', 'phase should be "switch"');
         t.equal(migration.state, 'successful', 'state should be "successful"');
@@ -1030,9 +1130,19 @@ exports.check_vmapi_state = function test_check_vmapi_state(t) {
             onGetMigratedVm);
     }
 
+    var loopCount = 0;
+
     function onGetMigratedVm(err, req, res, vm) {
         common.ifError(t, err, 'should be no error fetching migrated vm');
         if (vm) {
+            // When the migration is complete - it will be a while before the
+            // zone has fully started up.
+            if (vm.state !== 'running' && loopCount < 30) {
+                loopCount += 1;
+                setTimeout(checkMigratedVm, 2000);
+                return;
+            }
+
             t.equal(vm.state, 'running', 'vm state should be "running"');
             mig.vms[vm.uuid] = vm;
         }
@@ -1051,7 +1161,7 @@ exports.migration_full = function test_migration_full(t) {
     // just one CN).
     var switched_uuid = VM_UUID.slice(0, -6) + 'aaaaaa';
     var override_uuid = VM_UUID.slice(0, -6) + 'bbbbbb';
-    var override_alias = getVmPayloadTemplate().alias + '-aaaaaa';
+    var override_alias = getVmPayloadTemplate().alias + '-bbbbbb';
 
     // Trying to run a migration action when a migration has not started.
     var params = {
@@ -1075,8 +1185,7 @@ exports.migration_full = function test_migration_full(t) {
                 t.ok(res.body, 'should get a restify response body object');
             }
             if (body) {
-                console.log(body);
-                t.ok(body.job_uuid, 'got a job uuid in the begin response');
+                t.ok(body.job_uuid, 'got a job uuid: ' + body.job_uuid);
 
                 // Watch for migration events.
                 createMigrationWatcher(switched_uuid);
@@ -1210,9 +1319,19 @@ exports.check_vmapi_state_2 = function test_check_vmapi_state_2(t) {
             onGetMigratedVm);
     }
 
+    var loopCount = 0;
+
     function onGetMigratedVm(err, req, res, vm) {
         common.ifError(t, err, 'should be no error fetching migrated vm');
         if (vm) {
+            // When the migration is complete - it will be a while before the
+            // zone has fully started up.
+            if (vm.state !== 'running' && loopCount < 30) {
+                loopCount += 1;
+                setTimeout(checkMigratedVm, 2000);
+                return;
+            }
+
             t.equal(vm.state, 'running', 'vm state should be "running"');
             mig.vms[vm.uuid] = vm;
         }

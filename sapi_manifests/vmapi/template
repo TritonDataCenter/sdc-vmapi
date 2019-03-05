@@ -44,6 +44,7 @@
             "add-nics",
             "update-nics",
             "remove-nics",
+            "migrate-abort",
             "migrate-begin",
             "migrate-pause",
             "migrate-sync",
