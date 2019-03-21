@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright (c) 2018, Joyent, Inc.
+ * Copyright (c) 2019, Joyent, Inc.
  */
 
 var assert = require('assert-plus');
@@ -234,7 +234,10 @@ function waitForValue(url, key, value, options, callback) {
     assert.func(callback, 'callback');
 
     var client = options.client;
-    var timeout = 120;
+
+    // Set a longish timeout value to allow for slow tests that do eventually
+    // complete. For instance, concurrent test execution on older hardware.
+    var timeout = 10 * 60;
     var times = 0;
 
     if (options.timeout !== undefined) {
