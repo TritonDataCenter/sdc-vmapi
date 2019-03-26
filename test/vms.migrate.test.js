@@ -48,7 +48,7 @@ var waitForJob = common.waitForJob;
 /* Globals */
 
 var ADMIN_USER_UUID = common.config.ufdsAdminUuid;
-var ADMIN_FABRIC_NETWORK;
+var PROVISION_NETWORKS = [];
 var VMAPI_ORIGIN_IMAGE_UUID;
 var VM_UUID;
 var VM_PAYLOAD;
@@ -69,7 +69,7 @@ function getVmPayloadTemplate() {
         owner_uuid: ADMIN_USER_UUID,
         image_uuid: VMAPI_ORIGIN_IMAGE_UUID,
         // image_uuid: NGINX_IMAGE_UUID,
-        networks: [ { uuid: ADMIN_FABRIC_NETWORK.uuid } ],
+        networks: [PROVISION_NETWORKS],
         brand: 'joyent-minimal',
         billing_id: BILLING_ID
     };
@@ -217,21 +217,42 @@ exports.get_vmapi_origin_image = function (t) {
 };
 
 exports.get_admin_fabric_network = function (t) {
-    client.napi.get('/networks?owner_uuid=' + ADMIN_USER_UUID + '&fabric=true',
-        function (err, req, res, networks) {
-        // console.dir(networks);
-        common.ifError(t, err, 'lookup admin fabric network');
-        t.equal(res.statusCode, 200, '200 OK');
-        t.ok(networks, 'networks is set');
-        t.ok(Array.isArray(networks), 'networks is Array');
-        t.ok(networks.length === 1, '1 network found');
+    client.napi.get('/fabrics/' + ADMIN_USER_UUID + '/vlans',
+            function (err, req, res, vlans) {
+        if (err) {
+            // When fabrics are disabled, we get a PreconditionRequiredError.
+            if (err.restCode === 'PreconditionRequiredError') {
+                t.ok(true, 'Fabric networking is not enabled');
+            } else {
+                t.ok(false, 'Error listing fabric vlans: ' + err);
+            }
 
-        ADMIN_FABRIC_NETWORK = networks[0];
-        t.ok(ADMIN_FABRIC_NETWORK,
-            'Admin fabric network should have been found');
+            t.done();
+            return;
+        }
 
-        t.done();
+        lookupFabricNetwork();
     });
+
+    function lookupFabricNetwork() {
+        client.napi.get('/networks?owner_uuid=' + ADMIN_USER_UUID +
+            '&fabric=true',
+                function (err, req, res, networks) {
+            // console.dir(networks);
+            common.ifError(t, err, 'lookup admin fabric network');
+            t.equal(res.statusCode, 200, '200 OK');
+            t.ok(networks, 'networks is set');
+            t.ok(Array.isArray(networks), 'networks is Array');
+            t.ok(networks.length === 1, '1 network found');
+
+            t.ok(networks[0], 'Admin fabric network should be found');
+            if (Array.isArray(networks) && networks.length >= 1) {
+                PROVISION_NETWORKS = {uuid: networks[0].uuid};
+            }
+
+            t.done();
+        });
+    }
 };
 
 exports.get_vm_payload_template = function (t) {
