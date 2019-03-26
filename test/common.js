@@ -279,7 +279,7 @@ function waitForValue(url, key, value, options, callback) {
  */
 function waitForJob(options, callback) {
     assert.object(options, 'options');
-    assert.string(options.job_uuid, 'options.job_uuid');
+    assert.uuid(options.job_uuid, 'options.job_uuid');
     assert.object(options.client, 'options.client');
     assert.optionalNumber(options.timeout, 'options.timeout');
     assert.func(callback, 'callback');
