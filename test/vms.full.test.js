@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright (c) 2018, Joyent, Inc.
+ * Copyright (c) 2019, Joyent, Inc.
  */
 
 // var test = require('tap').test;
@@ -2882,13 +2882,12 @@ exports.destroy_test_vms_final = function (t) {
 exports.find_fabric_network = function (t) {
     assert.arrayOfObject(NETWORKS, 'NETWORKS');
 
-    // Find a fabric network that is owned by CUSTOMER.
+    // Find a fabric network that is owned by CUSTOMER. If none is found, skip
+    // the tests that depend on the availability of one.
     fabricNetwork = NETWORKS.find(function _findFabricNetwork(n) {
         return n.fabric === true && Array.isArray(n.owner_uuids) &&
             n.owner_uuids.indexOf(CUSTOMER) >= 0;
     });
-
-    t.ok(fabricNetwork, 'found a fabric network');
 
     if (fabricNetwork) {
         assert.object(fabricNetwork, 'fabricNetwork');
