@@ -2895,6 +2895,8 @@ exports.find_fabric_network = function (t) {
         assert.uuid(fabricNetwork.uuid, 'fabricNetwork.uuid');
         t.ok(true, util.format('using fabric network "%s": %s',
             fabricNetwork.name, fabricNetwork.uuid));
+    } else {
+        t.ok(true, 'no fabric networks found, skipping fabric tests');
     }
 
     t.done();
@@ -2903,7 +2905,7 @@ exports.find_fabric_network = function (t) {
 
 exports.ensure_no_fabric_nat_provisioned = function (t) {
     if (!fabricNetwork) {
-        t.fail('No fabric network available');
+        t.ok(true, 'skipping, as no fabric network available');
         t.done();
         return;
     }
@@ -2929,7 +2931,7 @@ exports.ensure_no_fabric_nat_provisioned = function (t) {
 
 exports.create_vm_on_fabric_network = function (t) {
     if (!fabricNetwork) {
-        t.fail('No fabric network available');
+        t.ok(true, 'skipping, as no fabric network available');
         t.done();
         return;
     }
@@ -2960,7 +2962,7 @@ exports.create_vm_on_fabric_network = function (t) {
 
 exports.wait_provisioned_fabric_vm_job = function (t) {
     if (!fabricNetwork) {
-        t.fail('No fabric network available');
+        t.ok(true, 'skipping, as no fabric network available');
         t.done();
         return;
     }
@@ -2975,7 +2977,7 @@ exports.wait_provisioned_fabric_vm_job = function (t) {
 
 exports.ensure_fabric_nat_provisioned = function (t) {
     if (!fabricNetwork) {
-        t.fail('No fabric network available');
+        t.ok(true, 'skipping, as no fabric network available');
         t.done();
         return;
     }
@@ -3023,7 +3025,7 @@ exports.ensure_fabric_nat_provisioned = function (t) {
 
 exports.destroy_fabric_vm = function (t) {
     if (!fabricNetwork) {
-        t.fail('No fabric network available');
+        t.ok(true, 'skipping, as no fabric network available');
         t.done();
         return;
     }
@@ -3044,7 +3046,7 @@ exports.destroy_fabric_vm = function (t) {
 
 exports.wait_destroyed_fabric_vm_job = function (t) {
     if (!fabricNetwork) {
-        t.fail('No fabric network available');
+        t.ok(true, 'skipping, as no fabric network available');
         t.done();
         return;
     }
@@ -3059,7 +3061,7 @@ exports.wait_destroyed_fabric_vm_job = function (t) {
 
 exports.ensure_fabric_nat_destroyed = function (t) {
     if (!fabricNetwork) {
-        t.fail('No fabric network available');
+        t.ok(true, 'skipping, as no fabric network available');
         t.done();
         return;
     }
@@ -3090,7 +3092,7 @@ exports.ensure_fabric_nat_destroyed = function (t) {
 
 exports.ensure_no_fabric_nat_zone = function (t) {
     if (!fabricNetwork) {
-        t.fail('No fabric network available');
+        t.ok(true, 'skipping, as no fabric network available');
         t.done();
         return;
     }
