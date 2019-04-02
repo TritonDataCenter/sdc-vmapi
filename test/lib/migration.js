@@ -360,7 +360,7 @@ function TestMigrationCfg(test, cfg) {
         }
     };
 
-    test.migration_begin_abort = function test_migration_begin_abort(t) {
+    test.migration_begin_for_abort = function test_migration_begin_abort(t) {
         if (!VM_UUID) {
             t.ok(false, 'Original VM was not created successfully');
             t.done();
@@ -390,6 +390,11 @@ function TestMigrationCfg(test, cfg) {
                 }
                 if (body) {
                     t.ok(body.job_uuid, 'got a job uuid: ' + body.job_uuid);
+                    t.ok(body.migration, 'got a migration record');
+                    if (body.migration) {
+                        t.equal(body.migration.phase, 'begin');
+                        t.equal(body.migration.state, 'running');
+                    }
 
                     var waitParams = {
                         client: client,
@@ -438,6 +443,11 @@ function TestMigrationCfg(test, cfg) {
                 }
                 if (body) {
                     t.ok(body.job_uuid, 'got a job uuid: ' + body.job_uuid);
+                    t.ok(body.migration, 'got a migration record');
+                    if (body.migration) {
+                        t.equal(body.migration.phase, 'abort');
+                        t.equal(body.migration.state, 'running');
+                    }
 
                     var waitParams = {
                         client: client,
@@ -496,6 +506,11 @@ function TestMigrationCfg(test, cfg) {
                 }
                 if (body) {
                     t.ok(body.job_uuid, 'got a job uuid: ' + body.job_uuid);
+                    t.ok(body.migration, 'got a migration record');
+                    if (body.migration) {
+                        t.equal(body.migration.phase, 'begin');
+                        t.equal(body.migration.state, 'running');
+                    }
 
                     // Watch for migration events.
                     createMigrationWatcher(VM_UUID);
@@ -717,6 +732,11 @@ function TestMigrationCfg(test, cfg) {
                 }
                 if (body) {
                     t.ok(body.job_uuid, 'got a job uuid: ' + body.job_uuid);
+                    t.ok(body.migration, 'got a migration record');
+                    if (body.migration) {
+                        t.equal(body.migration.phase, 'sync');
+                        t.equal(body.migration.state, 'running');
+                    }
 
                     // Watch for migration events.
                     createMigrationWatcher(VM_UUID);
@@ -837,6 +857,11 @@ function TestMigrationCfg(test, cfg) {
                 }
                 if (body) {
                     t.ok(body.job_uuid, 'got a job uuid: ' + body.job_uuid);
+                    t.ok(body.migration, 'got a migration record');
+                    if (body.migration) {
+                        t.equal(body.migration.phase, 'sync');
+                        t.equal(body.migration.state, 'running');
+                    }
 
                     var waitParams = {
                         client: client,
@@ -893,6 +918,11 @@ function TestMigrationCfg(test, cfg) {
                 }
                 if (body) {
                     t.ok(body.job_uuid, 'got a job uuid: ' + body.job_uuid);
+                    t.ok(body.migration, 'got a migration record');
+                    if (body.migration) {
+                        t.equal(body.migration.phase, 'switch');
+                        t.equal(body.migration.state, 'running');
+                    }
 
                     // Watch for migration events.
                     createMigrationWatcher(VM_UUID);
@@ -1103,6 +1133,11 @@ function TestMigrationCfg(test, cfg) {
                 }
                 if (body) {
                     t.ok(body.job_uuid, 'got a job uuid: ' + body.job_uuid);
+                    t.ok(body.migration, 'got a migration record');
+                    if (body.migration) {
+                        t.equal(body.migration.phase, 'begin');
+                        t.equal(body.migration.state, 'running');
+                    }
 
                     // Watch for migration events.
                     createMigrationWatcher(switched_uuid);
