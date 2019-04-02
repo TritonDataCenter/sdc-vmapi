@@ -152,6 +152,15 @@ mkdir -p $OUTPUT_DIR
 
 CFG_FILE=$TOP/config.json
 
+# Install necessary images (for instance migration tests).
+# Image 7b5981c4-1889-11e7-b4c5-3f3bdfc9b88b (lx, ubuntu-16.04, 20170403)
+sdc-imgadm get 7b5981c4-1889-11e7-b4c5-3f3bdfc9b88b >/dev/null 2>/dev/null \
+    || sdc-imgadm import 7b5981c4-1889-11e7-b4c5-3f3bdfc9b88b  -S https://images.joyent.com
+# Image 2d4068a1-d3da-4f93-bcda-db872bc7ded7 (HVM, ubuntu-certified-16.04, 20190212)
+sdc-imgadm get 2d4068a1-d3da-4f93-bcda-db872bc7ded7 >/dev/null 2>/dev/null \
+    || sdc-imgadm import 2d4068a1-d3da-4f93-bcda-db872bc7ded7  -S https://images.joyent.com
+
+
 # Setup VMAPI tests to run on either local or SDC mode
 if [[ -n "$opt_local" ]]; then
     export VMAPI_URL=http://localhost:$(json api.port <$CFG_FILE)
