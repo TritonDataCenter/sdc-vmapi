@@ -31,6 +31,7 @@ var newUuid;
 var jobLocation;
 var vmLocation;
 var vmCount;
+var nicCount;
 var pkgId;
 var nicMac;
 
@@ -822,9 +823,9 @@ exports.create_vm_dapi_failure = function (t) {
         brand: 'joyent-minimal',
         billing_id: '00000000-0000-0000-0000-000000000000',
         cpu_cap: 100,
+        ram: 32,
         internal_metadata: {
-            // to force DAPI to fail this provision
-            force_designation_failure: true
+            force_provision_failure: true
         },
         quota: 10,
         creator_uuid: CUSTOMER
@@ -852,7 +853,6 @@ exports.create_vm_dapi_failure = function (t) {
 exports.get_eventual_fail_job = function (t) {
     getJobOk(t);
 };
-
 
 exports.wait_provisioned_job_failed = function (t) {
     waitForValue(jobLocation, 'execution', 'failed', {

@@ -232,6 +232,8 @@ exports.create_vm = function (t) {
         credentials: JSON.stringify({ 'user_pw': '12345678' })
     };
 
+    jobLocation = null;
+
     VM = {
         alias: 'sdcvmapitest_create_vm_' + process.pid,
         uuid: uuid.create(),
@@ -262,6 +264,7 @@ exports.create_vm = function (t) {
             t.ok(body, 'vm ok job: ' + body.job_uuid);
 
             jobLocation = '/jobs/' + body.job_uuid;
+            done();
         });
     });
 
@@ -273,6 +276,17 @@ exports.create_vm = function (t) {
     });
 
     var stateReceived = false;
+
+    /*
+     * It doesn't matter if the request return or the change feed event occurs
+     * first as long as they both occur.
+     */
+    function done() {
+        if (jobLocation !== null && stateReceived) {
+            t.done();
+        }
+    }
+
     function processChangeItem(changeItem) {
         var changeKind = changeItem.changeKind;
         if (!stateReceived &&
@@ -283,7 +297,7 @@ exports.create_vm = function (t) {
             t.ok(true, 'state received');
             stateReceived = true;
             listener._endSocket();
-            t.done();
+            done();
         }
     }
 };

@@ -304,6 +304,7 @@ function startVmapiService() {
                 moray: moray,
                 morayBucketsInitializer: morayBucketsInitializer,
                 overlay: config.overlay,
+                cnapi: config.cnapi, // TODO: TRITON-1295
                 reserveKvmStorage: config.reserveKvmStorage,
                 serverConfig: {
                     bindPort: config.api.port
