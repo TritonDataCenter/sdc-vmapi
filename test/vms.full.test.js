@@ -814,7 +814,7 @@ exports.create_vm_with_unknown_network_name = function (t) {
 };
 
 // Test that pre-provisioned NICs get cleaned up properly (TRITON-394)
-exports.create_vm_dapi_failure = function (t) {
+exports.create_vm_provision_failure = function (t) {
     var vm = {
         alias: makeVmAlias(testUuid.generateShortUuid()),
         owner_uuid: CUSTOMER,
@@ -863,7 +863,7 @@ exports.wait_provisioned_job_failed = function (t) {
     });
 };
 
-// verify create_vm_dapi_failure VM has no NICs
+// verify create_vm_provision_failure VM has no NICs
 exports.failed_provision_has_no_nics = function (t) {
     var vmUuid = vmLocation.split('/')[2];
 
