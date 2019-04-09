@@ -2250,7 +2250,9 @@ Returns a job with the specified UUID.
 
 # VM Migration
 
-It is possible to migrate (move a VM) to another CN using these APIs.
+It is possible to migrate (move a VM) to another CN using these APIs. See
+[RFD 34](https://github.com/joyent/rfd/blob/master/rfd/0034/README.md) for
+the background on how and why instance migration works the way it does.
 
 VM migration operates in three distinct phases, the *begin* phase creates a
 hidden target placeholder vm for which to migrate into, the *sync* phase will
