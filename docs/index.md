@@ -2291,7 +2291,7 @@ Code | Description   | Response
 ---- | ------------- | ------------------
 200  | Successful    | JSON array of [Migration Objects](#migration-objects).
 
-## VmMigrateGet (GET /migrations:uuid)
+## VmMigrateGet (GET /migrations/:uuid)
 
 Returns the list of [Migration Objects](#migration-objects).
 
@@ -2343,9 +2343,9 @@ transfer\_bytes\_second | Number   | Estimate for the number of bytes that would
 Example:
 
     {
-      "eta_ms": "3600142",
-      "size": "484302896",
-      "transfer_bytes_second": "10000000"
+      "eta_ms": 3600142,
+      "size": 484302896,
+      "transfer_bytes_second": 10000000
     }
 
 ## VmMigrate (POST /vms/:uuid?action=migrate&migration_action=ACTION)
