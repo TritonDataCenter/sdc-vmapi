@@ -231,6 +231,7 @@ function waitForValue(url, key, value, options, callback) {
     assert.object(options, 'options');
     assert.object(options.client, 'options.client');
     assert.optionalNumber(options.timeout, 'options.timeout');
+    assert.optionalBool(options.waitUntilNotEqual, 'options.waitUntilNotEqual');
     assert.func(callback, 'callback');
 
     var client = options.client;
@@ -271,6 +272,56 @@ function waitForValue(url, key, value, options, callback) {
 }
 
 /*
+ * Wait for the vmapi workflow job to change execution state away from 'queued'
+ * and 'running'.
+ *
+ * callback(err, executionValue, job)
+ */
+function waitForJob(options, callback) {
+    assert.object(options, 'options');
+    assert.uuid(options.job_uuid, 'options.job_uuid');
+    assert.object(options.client, 'options.client');
+    assert.optionalNumber(options.timeout, 'options.timeout');
+    assert.func(callback, 'callback');
+
+    var client = options.client;
+    var runSeconds = 0;
+    var timeout = 120;
+    var url = '/jobs/' + options.job_uuid;
+
+    if (options.timeout !== undefined) {
+        timeout = options.timeout;
+    }
+
+    function waitUntilWorkflowStateChanges() {
+        client.get(url, function (err, req, res, job) {
+            if (err) {
+                callback(err);
+                return;
+            }
+
+            var execution = job && job['execution'] || '(No execution)';
+
+            if (execution === 'queued' || execution === 'running') {
+                runSeconds++;
+
+                if (runSeconds >= timeout) {
+                    callback(new Error('Timeout waiting on ' + url));
+                } else {
+                    setTimeout(function () {
+                        waitUntilWorkflowStateChanges();
+                    }, 1000);
+                }
+            } else {
+                callback(null, execution, job);
+            }
+        });
+    }
+
+    waitUntilWorkflowStateChanges();
+}
+
+/*
  * Given an array of networks (most likely returned from napi GET /networks),
  * find the admin and external network and return them as an object.  This
  * function will throw if neither network is found, or multiple networks with
@@ -295,6 +346,30 @@ function extractAdminAndExternalNetwork(networks) {
     return ret;
 }
 
+function findHeadnode(t, client, callback) {
+    client.cnapi.get({
+        path: '/servers',
+        query: {
+            headnode: true
+        }
+    }, function (err, req, res, servers) {
+        if (err) {
+            callback(err);
+            return;
+        }
+        t.equal(res.statusCode, 200, '200 OK');
+        t.ok(servers, 'servers is set');
+        t.ok(Array.isArray(servers), 'servers is Array');
+        for (var i = 0; i < servers.length; i++) {
+            if (servers[i].status === 'running') {
+                callback(null, servers[i]);
+                return;
+            }
+        }
+        callback(new Error('No running headnode server was found'));
+    });
+}
+
 module.exports = {
     setUp: setUp,
     checkHeaders: checkHeaders,
@@ -304,5 +379,7 @@ module.exports = {
     ifError: ifError,
     VMS_LIST_ENDPOINT: VMS_LIST_ENDPOINT,
     waitForValue: waitForValue,
-    extractAdminAndExternalNetwork: extractAdminAndExternalNetwork
+    waitForJob: waitForJob,
+    extractAdminAndExternalNetwork: extractAdminAndExternalNetwork,
+    findHeadnode: findHeadnode
 };

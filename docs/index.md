@@ -2248,6 +2248,310 @@ Returns a job with the specified UUID.
       ]
     }
 
+# VM Migration
+
+It is possible to migrate (move a VM) to another CN using these APIs. See
+[RFD 34](https://github.com/joyent/rfd/blob/master/rfd/0034/README.md) for
+the background on how and why instance migration works the way it does.
+
+VM migration operates in three distinct phases, the *begin* phase creates a
+hidden target placeholder vm for which to migrate into, the *sync* phase will
+synchronize the underlying filesystems and the *switch* phase will shutdown
+the original source vm, perform a final filesystem synchronization, hide the
+original source VM and then enable and restart the target VM.
+
+A migration can be set to run all of these phases in one (automatic migration)
+or these phases can each be run manually (on demand migration).
+
+For any migration action (e.g. begin, sync, switch or abort) you can use the
+migration watch endpoint to show progress information for the running migration
+action.
+
+## VmMigrateList (GET /migrations)
+
+Returns the list of [Migration Objects](#migration-objects).
+
+### Optional Inputs
+
+Param      | Type     | Description
+---------- | -------- | -----------
+format     | String   | Can be set to 'raw' to receive the raw (full) migration objects.
+owner_uuid | UUID     | VM Owner
+state      | String   | Query for migrations in a certain state. Can be one of the defined [Migration States](#migration-states), or "active". The "active" query will return all migrations in one of the states "running", "paused" or "failed".
+
+### VmMigrateList Examples
+
+    GET /migrations
+    GET /migrations?owner_uuid=77118fd1-b0f0-4e72-9d1d-aea57fe8b47c
+    GET /migrations?state=active&format=raw
+
+### Responses
+
+Code | Description   | Response
+---- | ------------- | ------------------
+200  | Successful    | JSON array of [Migration Objects](#migration-objects).
+
+## VmMigrateGet (GET /migrations/:uuid)
+
+Returns the list of [Migration Objects](#migration-objects).
+
+### Optional Inputs
+
+Param      | Type     | Description
+---------- | -------- | -----------
+format     | String   | Can be set to 'raw' to receive the raw (full) migration object.
+owner_uuid | UUID     | VM Owner
+
+### VmMigrateGet Examples
+
+    GET /migrations/5ad11be4-605c-4f64-b673-e0920ac0ac64
+    GET /migrations/5ad11be4-605c-4f64-b673-e0920ac0ac64?format=raw&owner_uuid=77118fd1-b0f0-4e72-9d1d-aea57fe8b47c
+
+### Responses
+
+Code | Description   | Response
+---- | ------------- | ------------------
+200  | Successful    | A JSON [Migration Object](#migration-objects).
+
+## VmMigrateEstimate (POST /vms/:uuid?action=migrate&migration_action=estimate)
+
+Get an estimate for how long a migration would take to complete.
+
+### Optional Inputs
+
+Param                | Type     | Description
+-------------------- | -------- | -----------
+owner_uuid           | UUID     | VM Owner
+
+### Responses
+
+Code     | Description                                                                  | Response
+-------- | ---------------------------------------------------------------------------- | ------------------
+200      | OK - estimate was completed.                                                 | [Migration Estimate Object](#migration-estimate-object)
+404      | VM Not Found. VM does not exist or VM does not belong to the specified owner | Error object
+
+#### Migration Estimate Object
+
+Migration objects store the state of a migration operation.
+
+Field                   | Type     | Description
+----------------------- | -------- | ---------------
+size                    | Number   | Number of filesystem bytes that will need to be migrated.
+eta\_ms                 | Number   | Estimate of the number of milliseconds until the task is completed.
+transfer\_bytes\_second | Number   | Estimate for the number of bytes that would be sent per second between the source and target instances during the "sync" phase.
+
+Example:
+
+    {
+      "eta_ms": 3600142,
+      "size": 484302896,
+      "transfer_bytes_second": 10000000
+    }
+
+## VmMigrate (POST /vms/:uuid?action=migrate&migration_action=ACTION)
+
+Starts the specified migration action.
+
+### Inputs
+
+Param            | Type     | Description
+---------------- | -------- | -----------
+migration_action | String   | One of "begin", "sync", "switch", "pause" or "abort".
+
+### Optional Inputs
+
+Param                | Type     | Description
+-------------------- | -------- | -----------
+migration_automatic  | Boolean  | Use to enable full automatic migration. A full migration will perform begin, multiple syncs and switch.
+owner_uuid           | UUID     | VM Owner
+override_server_uuid | UUID     | Migration target will be provisioned to this server.
+
+### Migrate Begin
+
+The "begin" action starts a workflow job that will create (provision) a target
+vm instance on a different CN that will be used to perform the migration. Once
+a begin job is completed successfully, you can then run the migration sync
+action.
+
+The begin phase will utilize the existing Triton provisioning and allocation
+APIs to ensure proper placement of the migrated VM.
+
+### Migrate Sync
+
+The "sync" action starts a workflow job that will synchronize the filesystems
+between the source and target VMs.
+
+This phase can be run multiple times, with each subsequent sync operation only
+transferring the filesystem differences since the last sync. When two or more
+sync jobs have completed successfully, you can then run migration switch.
+
+### Migrate Switch
+
+The "switch" action starts a workflow job that will switch over control to the
+target (migrated) vm and hide the original source vm.
+
+This phase will shutdown the source vm, perform a final sync, deactivate the
+source vm, then activate the target vm and finally start up the target vm (if
+the source vm was originally running).
+
+### Migrate Pause
+
+This action is only actionable when migration sync is running. It is used to
+stop the migration sync operation and place the migration into a paused state.
+
+### Migrate Abort
+
+This action is only actionable when the migration is paused or failed. It is
+used to abort the migration, removing the target placeholder vm and ensuring the
+source vm is returned to it's original state.
+
+### VmMigrate Response
+
+On a successful response, a [Migration Job Response Object](#migration-job-response-object) is
+returned in the response body and you can use the migration watch endpoint to
+follow the progress of the migration.
+
+Code     | Description                                                                  | Response
+-------- | ---------------------------------------------------------------------------- | ------------------
+202      | New job created                                                              | VM job response object
+404      | VM Not Found. VM does not exist or VM does not belong to the specified owner | Error object
+409      | VM failed to validate.                                                       | Error object
+
+#### Example
+
+    POST /vms/e9bd0ed1-7de3-4c66-a649-d675dbce6e83?action=migrate&migration_action=begin
+
+    HTTP/1.1 202 Accepted
+    Connection: close
+    workflow-api: http://workflow.coal.joyent.us
+    Content-Type: application/json
+    Content-Length: 100
+    Content-MD5: as77tkERx4gj7igpE83PyQ==
+    Date: Mon, 24 Apr 2017 22:30:44 GMT
+    Server: VMAPI
+    x-request-id: d169bbdf-a54c-4f71-a543-8928cda5b152
+    x-response-time: 170
+    x-server-name: d6334b70-2e19-4af4-85ba-53776ef82820
+
+    {
+      "job_uuid": "56aca67a-5374-4117-9817-6ac77060697e",
+      "migration": {
+        ... see (Migration Object)
+      }
+    }
+
+### Migration Job Response Object
+
+Most migration actions on a VM will result in a new Job being created on the
+backend. The job uuid will be returned, along with the migration record itself
+in the response object.
+
+Example:
+
+    {
+      "job_uuid": "6ad3a288-31cf-44e0-8d18-9b3f2a031067",
+      "migration": {
+        "automatic": false,
+        "created_timestamp": "2019-04-02T23:34:30.135Z",
+        "phase": "begin",
+        "state": "running",
+        "vm_uuid": "658e2899-5c9a-4e24-f768-f0d44aed5902",
+        "progress_history": []
+      }
+    }
+
+## Migration Objects
+
+Migration objects store the state of a migration operation.
+
+Field                | Type     | Description
+-------------------- | -------- | ---------------
+vm_uuid              | UUID     | Instance UUID of the instance being migrated.
+automatic            | Boolean  | Whether this migration will run all phases without any user intervention.
+created\_timestamp   | String   | ISO timestamp for the creation of the migration request.
+phase                | String   | Current migration phase - see [Migration Phases](#migration-phases).
+state                | String   | Current migration state - see [Migration States](#migration-states).
+progress\_history    | Array    | An Array of completed JSON progress events - see [Migration Progress Events](#migration-progress-events).
+error                | String   | If a migration fails - this is the error message of why it failed.
+
+### Migration States
+
+The state the migration operation is currently in. It can be one of the
+following states:
+
+State         | Description
+------------- | ----------------
+running       | Migration running, see also `progress_history`.
+paused        | The "begin" phase (and possibly "sync" phase) has been run - now waiting for a call to "sync" or the final call to "switch".
+aborted       | User or operator aborted the migration attempt.
+failed        | Migration operation could not complete, see migration "error" field.
+successful    | Migration was successfully completed.
+
+### Migration Phases
+
+The workflow stage that the migration is currently running, one of:
+
+Phase      | Description
+---------- | ------------
+begin      | This phase starts the migration process, creates a new migration database entry and provisions the target instance.
+sync       | This phase synchronizes the zfs datasets of the source instance with the zfs datasets in the target instance (without stopping the instance).
+switch     | This phase stops the instance from running, synchronizes the zfs datasets of the source instance with the zfs datasets in the target instance, moves the NICs from the source to the target instance, moves control to the target instance and then restarts the target instance.
+abort      | This phase is used when aborting a migration.
+
+## VmMigrateWatch (GET /migrations/:uuid/watch)
+
+Receive progress for an existing migration.
+
+### Optional Inputs
+
+Param                | Type     | Description
+-------------------- | -------- | -----------
+owner_uuid           | UUID     | VM Owner
+
+### VmMigrateWatch Response
+
+On success, you will receive a newline delimited JSON stream of
+[Migration Progress Events](#migration-progress-events), which will continue
+whilst the migration is running. At the end of the migration action (or if no
+action was running) a final [Migration End Event](#migration-end-event) will be
+sent and the connection will be closed.
+
+Code     | Description                                                                  | Response
+-------- | ---------------------------------------------------------------------------- | ------------------
+200      | OK - watching migration.                                                     | [Migration Progress Events](#migration-progress-events)
+404      | VM Not Found. VM does not exist or VM does not belong to the specified owner | Error object
+
+### Migration Progress Events
+
+The migration watch endpoint will send progress events to inform what is
+occurring during the migration. There are actually two styles of progress
+events - one for major events (and/or warnings) and one to show the sync
+progress (`bandwidth` and `eta`).
+
+Field                    | Type               | Description
+------------------------ | ------------------ | -----------------
+type                     | String             | Type is "progress".
+phase                    | String             | Current phase. See [Migration Phases](#migration-phases).
+state                    | String             | State is "running". See [Migration States](#migration-states).
+current\_progress        | Number             | This is how much progress has been made. For the sync phase, this is the number of bytes that have been sent to the target.
+total\_progress          | Number             | This is total possible progress. For the sync phase, this is the number of bytes that will need to be sent to the target.
+message                  | String (optional)  | Additional description message for this task.
+error                    | String (optional)  | Error occurred in this task - this is the description for that error.
+started\_timestamp       | String (optional)  | The ISO timestamp when the phase was started.
+duration\_ms             | Number (optional)  | The number of milliseconds the phase has taken.
+eta\_ms                  | Number (optional)  | Estimate of the number of milliseconds until the task is completed.
+transfer\_bytes\_second  | Number (optional)  | The number of bytes being sent per second between the source and target instances during the "sync" phase.
+
+### Migration End Event
+
+At the end of a migration watch a final end event is sent containing these
+fields:
+
+Field                    | Type               | Description
+------------------------ | ------------------ | -----------------
+type                     | String             | Type is "end".
+phase                    | String             | Phase that just ended. See [Migration Phases](#migration-phases).
+state                    | String             | State, one of "paused", "failed", "aborted" or "successful". See [Migration States](#migration-states).
 
 # Running Status for VMs
 
