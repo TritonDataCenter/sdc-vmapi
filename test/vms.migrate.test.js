@@ -96,7 +96,7 @@ var configurations = [
     // {
     //     type: 'bhyve',
     //     imageName: 'ubuntu-certified-16.04',
-    //     packageName: 'sample-kvm-2G',
+    //     packageName: 'sample-2G',
     //     vm: {
     //         alias: 'vmapitest-migrate-' + testUuid.generateShortUuid(),
     //         brand: 'bhyve',
@@ -109,7 +109,7 @@ var configurations = [
     {
         type: 'kvm',
         imageName: 'ubuntu-certified-16.04',
-        packageName: 'sample-kvm-2G',
+        packageName: 'sample-2G',
         vm: {
             alias: 'vmapitest-migrate-' + testUuid.generateShortUuid(),
             brand: 'kvm',

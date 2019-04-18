@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright (c) 2018, Joyent, Inc.
+ * Copyright (c) 2019, Joyent, Inc.
  */
 
 /*
@@ -29,8 +29,10 @@ var NoopDataMigrationsController =
 var testMoray = require('./lib/moray');
 var VmapiApp = require('../lib/vmapi');
 
+var BUCKET_SUFFIX = 'invalid_index_removal';
+
 var VMS_BUCKET_CONFIG_V0 = {
-    name: 'test_vmapi_vms_invalid_index_removal',
+    name: 'test_vmapi_vms_' + BUCKET_SUFFIX,
     schema: {
         index: {
             uuid: { type: 'string', unique: true},
@@ -40,7 +42,7 @@ var VMS_BUCKET_CONFIG_V0 = {
 };
 
 var VMS_BUCKET_CONFIG_V1 = {
-    name: 'test_vmapi_vms_invalid_index_removal',
+    name: VMS_BUCKET_CONFIG_V0.name,
     schema: {
         index: {
             uuid: { type: 'string', unique: true}
@@ -51,31 +53,15 @@ var VMS_BUCKET_CONFIG_V1 = {
     }
 };
 
-var SERVER_VMS_MORAY_BUCKET_CONFIG = {
-    name: 'test_vmapi_server_vms_invalid_index_removal',
-    schema: {}
-};
+var morayBucketsConfigV0 = testMoray.getDefaultBucketsConfig(BUCKET_SUFFIX);
+var morayBucketsConfigV1 = testMoray.getDefaultBucketsConfig(BUCKET_SUFFIX);
+// Replace the vms bucket with our test bucket.
+morayBucketsConfigV0.vms = VMS_BUCKET_CONFIG_V0;
+morayBucketsConfigV1.vms = VMS_BUCKET_CONFIG_V1;
 
-var ROLE_TAGS_MORAY_BUCKET_CONFIG = {
-    name: 'test_vmapi_vm_role_tags_invalid_index_removal',
-    schema: {
-        index: {
-            role_tags: { type: '[string]' }
-        }
-    }
-};
-
-var morayBucketsConfigV0 = {
-    vms: VMS_BUCKET_CONFIG_V0,
-    server_vms: SERVER_VMS_MORAY_BUCKET_CONFIG,
-    vm_role_tags: ROLE_TAGS_MORAY_BUCKET_CONFIG
-};
-
-var morayBucketsConfigV1 = {
-    vms: VMS_BUCKET_CONFIG_V1,
-    server_vms: SERVER_VMS_MORAY_BUCKET_CONFIG,
-    vm_role_tags: ROLE_TAGS_MORAY_BUCKET_CONFIG
-};
+var BUCKET_NAMES = Object.keys(morayBucketsConfigV0).map(function (b) {
+    return morayBucketsConfigV0[b].name;
+});
 
 var morayBucketsInitializer;
 
@@ -99,12 +85,8 @@ exports.moray_init_invalid_index_removal = function (t) {
 
     vasync.pipeline({funcs: [
         function cleanLeftoverTestBuckets(arg, next) {
-            testMoray.cleanupLeftoverBuckets([
-                morayBucketsConfigV0.vms.name,
-                morayBucketsConfigV0.server_vms.name,
-                morayBucketsConfigV0.vm_role_tags.name
-            ],
-            function onCleanupLeftoverBuckets(cleanupErr) {
+            testMoray.cleanupLeftoverBuckets(BUCKET_NAMES,
+                    function onCleanupLeftoverBuckets(cleanupErr) {
                 t.ifError(cleanupErr,
                     'cleaning up leftover buckets should be successful');
                 next(cleanupErr);

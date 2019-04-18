@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright (c) 2018, Joyent, Inc.
+ * Copyright (c) 2019, Joyent, Inc.
  */
 
 var assert = require('assert-plus');
@@ -18,6 +18,35 @@ var vasync = require('vasync');
 var verror = require('verror');
 
 var common = require('../common');
+
+function getDefaultBucketsConfig(suffix) {
+    return {
+        vms: {
+            name: 'test_vmapi_vms_' + suffix,
+            schema: {
+                index: {
+                    uuid: { type: 'string', unique: true}
+                }
+            }
+        },
+        server_vms: {
+            name: 'test_vmapi_server_vms_' + suffix,
+            schema: {}
+        },
+        vm_role_tags: {
+            name: 'test_vmapi_vm_role_tags_' + suffix,
+            schema: {
+                index: {
+                    role_tags: { type: '[string]' }
+                }
+            }
+        },
+        vm_migrations: {
+            name: 'test_vmapi_vm_migrations_' + suffix,
+            schema: {}
+        }
+    };
+}
 
 /*
  * Deletes all buckets whose name is present in the "bucketsName" array. When
@@ -107,6 +136,7 @@ function writeObjects(morayClient, bucketName, valueTemplate, nbObjects,
 }
 
 module.exports = {
+    getDefaultBucketsConfig: getDefaultBucketsConfig,
     cleanupLeftoverBuckets: cleanupLeftoverBuckets,
     writeObjects: writeObjects
 };

@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright (c) 2018, Joyent, Inc.
+ * Copyright (c) 2019, Joyent, Inc.
  */
 
 /*
@@ -31,40 +31,16 @@ var common = require('./common');
 var morayInit = require('../lib/moray/moray-init');
 var NoopDataMigrationsController =
     require('../lib/data-migrations/noop-controller');
+var testMoray = require('./lib/moray');
 var VmapiApp = require('../lib/vmapi');
 
 var TRANSIENT_ERROR_MSG = 'Mocked transient error';
 
-var VMS_BUCKET_CONFIG = {
-    name: 'test_vmapi_vms_reindex_transient_error',
-    schema: {
-        index: {
-            uuid: { type: 'string', unique: true}
-        }
-    }
-};
+var BUCKET_SUFFIX = 'reindex_transient_error';
 
-var SERVER_VMS_MORAY_BUCKET_CONFIG = {
-    name: 'test_vmapi_server_vms_reindex_transient_error',
-    schema: {}
-};
+var MORAY_BUCKETS_CONFIG = testMoray.getDefaultBucketsConfig(BUCKET_SUFFIX);
 
-var ROLE_TAGS_MORAY_BUCKET_CONFIG = {
-    name: 'test_vmapi_vm_role_tags_reindex_transient_error',
-    schema: {
-        index: {
-            role_tags: { type: '[string]' }
-        }
-    }
-};
-
-var MORAY_BUCKETS_CONFIG = {
-    vms: VMS_BUCKET_CONFIG,
-    server_vms: SERVER_VMS_MORAY_BUCKET_CONFIG,
-    vm_role_tags: ROLE_TAGS_MORAY_BUCKET_CONFIG
-};
-
-exports.moray_init_transient_error = function (t) {
+exports.moray_init_reindex_transient_error = function (t) {
     var morayBucketsInitializer;
     var morayClient;
     var moray;

@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright (c) 2018, Joyent, Inc.
+ * Copyright (c) 2019, Joyent, Inc.
  */
 
 var assert = require('assert-plus');
@@ -39,9 +39,7 @@ var MOCKED_WFAPI_CLIENT = {
     }
 };
 
-var VMS_BUCKET_NAME = 'test_vmapi_vms_data_migrations';
-var SERVER_VMS_BUCKET_NAME = 'test_vmapi_server_vms_data_migrations';
-var ROLE_TAGS_BUCKET_NAME = 'test_vmapi_vm_role_tags_data_migrations';
+var BUCKET_SUFFIX = 'data_migrations';
 
 /*
  * We use two versions for the VMS_BUCKET_CONFIG (VMS_BUCKET_CONFIG_V1 and
@@ -51,7 +49,7 @@ var ROLE_TAGS_BUCKET_NAME = 'test_vmapi_vm_role_tags_data_migrations';
  * See https://smartos.org/bugview/TRITON-214 for context.
  */
 var VMS_BUCKET_CONFIG_V1 = {
-    name: VMS_BUCKET_NAME,
+    name: 'test_vmapi_vms_' + BUCKET_SUFFIX,
     schema: {
         index: {
             foo: { type: 'string' },
@@ -61,7 +59,7 @@ var VMS_BUCKET_CONFIG_V1 = {
 };
 
 var VMS_BUCKET_CONFIG_V2 = {
-    name: VMS_BUCKET_NAME,
+    name: VMS_BUCKET_CONFIG_V1.name,
     schema: {
         index: {
             foo: { type: 'string' },
@@ -74,28 +72,17 @@ var VMS_BUCKET_CONFIG_V2 = {
     }
 };
 
-var SERVER_VMS_MORAY_BUCKET_CONFIG = {
-    name: SERVER_VMS_BUCKET_NAME,
-    schema: {}
-};
+var TEST_BUCKETS_CONFIG_V1 = testMoray.getDefaultBucketsConfig(BUCKET_SUFFIX);
+var TEST_BUCKETS_CONFIG_V2 = testMoray.getDefaultBucketsConfig(BUCKET_SUFFIX);
+// Replace the vms bucket with our test bucket.
+TEST_BUCKETS_CONFIG_V1.vms = VMS_BUCKET_CONFIG_V1;
+TEST_BUCKETS_CONFIG_V2.vms = VMS_BUCKET_CONFIG_V2;
 
-var ROLE_TAGS_MORAY_BUCKET_CONFIG = {
-    name: ROLE_TAGS_BUCKET_NAME,
-    schema: {
-    }
-};
+var BUCKET_NAMES = Object.keys(TEST_BUCKETS_CONFIG_V1).map(function (b) {
+    return TEST_BUCKETS_CONFIG_V1[b].name;
+});
 
-var TEST_BUCKETS_CONFIG_V1 = {
-    vms: VMS_BUCKET_CONFIG_V1,
-    server_vms: SERVER_VMS_MORAY_BUCKET_CONFIG,
-    vm_role_tags: ROLE_TAGS_MORAY_BUCKET_CONFIG
-};
-
-var TEST_BUCKETS_CONFIG_V2 = {
-    vms: VMS_BUCKET_CONFIG_V2,
-    server_vms: SERVER_VMS_MORAY_BUCKET_CONFIG,
-    vm_role_tags: ROLE_TAGS_MORAY_BUCKET_CONFIG
-};
+var VMS_BUCKET_NAME = VMS_BUCKET_CONFIG_V1.name;
 
 /*
  * The number of test objects is chosen so that it's larger than the default
@@ -169,12 +156,8 @@ exports.data_migrations = function (t) {
 
     vasync.pipeline({arg: context, funcs: [
         function cleanup(ctx, next) {
-            testMoray.cleanupLeftoverBuckets([
-                VMS_BUCKET_NAME,
-                SERVER_VMS_BUCKET_NAME,
-                ROLE_TAGS_BUCKET_NAME
-            ],
-            function onCleanupLeftoverBuckets(cleanupErr) {
+            testMoray.cleanupLeftoverBuckets(BUCKET_NAMES,
+                    function onCleanupLeftoverBuckets(cleanupErr) {
                 t.ok(!cleanupErr,
                     'cleaning up leftover buckets should be successful');
                 next(cleanupErr);
@@ -551,12 +534,8 @@ exports.data_migrations_non_transient_error = function (t) {
 
     vasync.pipeline({arg: context, funcs: [
         function cleanup(ctx, next) {
-            testMoray.cleanupLeftoverBuckets([
-                VMS_BUCKET_NAME,
-                SERVER_VMS_BUCKET_NAME,
-                ROLE_TAGS_BUCKET_NAME
-            ],
-            function onCleanupLeftoverBuckets(cleanupErr) {
+            testMoray.cleanupLeftoverBuckets(BUCKET_NAMES,
+                    function onCleanupLeftoverBuckets(cleanupErr) {
                 t.ok(!cleanupErr,
                     'cleaning up leftover buckets should be successful');
                 next(cleanupErr);

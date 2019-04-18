@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright (c) 2018, Joyent, Inc.
+ * Copyright (c) 2019, Joyent, Inc.
  */
 
 /*
@@ -31,8 +31,10 @@ var NoopDataMigrationsController =
 var testMoray = require('./lib/moray');
 var VmapiApp = require('../lib/vmapi');
 
+var BUCKET_SUFFIX = 'non_transient_error';
+
 var VMS_BUCKET_CONFIG_WITH_ERROR = {
-    name: 'test_vmapi_vms_non_transient_error',
+    name: 'test_vmapi_vms_' + BUCKET_SUFFIX,
     schema: {
         index: {
             uuid: { type: 'string', unique: true},
@@ -63,25 +65,15 @@ var VMS_BUCKET_CONFIG_WITH_ERROR = {
     }
 };
 
-var SERVER_VMS_MORAY_BUCKET_CONFIG = {
-    name: 'test_vmapi_server_vms_non_transient_error',
-    schema: {}
-};
+var morayBucketsConfigWithError =
+    testMoray.getDefaultBucketsConfig(BUCKET_SUFFIX);
+// Replace the vms bucket with our test bucket.
+morayBucketsConfigWithError.vms = VMS_BUCKET_CONFIG_WITH_ERROR;
 
-var ROLE_TAGS_MORAY_BUCKET_CONFIG = {
-    name: 'test_vmapi_vm_role_tags_non_transient_error',
-    schema: {
-        index: {
-            role_tags: { type: '[string]' }
-        }
-    }
-};
+var BUCKET_NAMES = Object.keys(morayBucketsConfigWithError).map(function (b) {
+    return morayBucketsConfigWithError[b].name;
+});
 
-var morayBucketsConfigWithError = {
-    vms: VMS_BUCKET_CONFIG_WITH_ERROR,
-    server_vms: SERVER_VMS_MORAY_BUCKET_CONFIG,
-    vm_role_tags: ROLE_TAGS_MORAY_BUCKET_CONFIG
-};
 
 exports.moray_init_non_transient_error = function (t) {
     var mockedMetricsManager = {
@@ -102,12 +94,8 @@ exports.moray_init_non_transient_error = function (t) {
 
     vasync.pipeline({funcs: [
         function cleanLeftoverTestBuckets(arg, next) {
-            testMoray.cleanupLeftoverBuckets([
-                morayBucketsConfigWithError.vms.name,
-                morayBucketsConfigWithError.server_vms.name,
-                morayBucketsConfigWithError.vm_role_tags.name
-            ],
-            function onCleanupLeftoverBuckets(cleanupErr) {
+            testMoray.cleanupLeftoverBuckets(BUCKET_NAMES,
+                    function onCleanupLeftoverBuckets(cleanupErr) {
                 t.ifError(cleanupErr,
                     'cleaning up leftover buckets should be successful');
                 next(cleanupErr);

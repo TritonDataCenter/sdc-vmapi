@@ -5,14 +5,14 @@
  */
 
 /*
- * Copyright (c) 2018, Joyent, Inc.
+ * Copyright (c) 2019, Joyent, Inc.
  */
 
 var VError = require('verror').VError;
 
 var safeBrandName = require('../lib/common/validation')._safeBrandName;
 var validatePackageValues =
-    require('../lib/common/validation')._validatePackageValues;
+    require('../lib/common/validation').validatePackageValues;
 
 var PACKAGES = {
     'BHYVE_PACKAGE': {

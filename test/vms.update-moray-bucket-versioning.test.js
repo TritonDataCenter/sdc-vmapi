@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright (c) 2018, Joyent, Inc.
+ * Copyright (c) 2019, Joyent, Inc.
  */
 
 var assert = require('assert-plus');
@@ -37,32 +37,8 @@ var MOCKED_WFAPI_CLIENT = {
     }
 };
 
-var VMS_BUCKET_NAME = 'test_vmapi_vms_versioning';
-var SERVER_VMS_BUCKET_NAME = 'test_vmapi_server_vms_versioning';
-var ROLE_TAGS_BUCKET_NAME = 'test_vmapi_vm_role_tags_versioning';
-
-/*
- * Initial buckets configuration, version 0.
- */
-var VMS_BUCKET_CONFIG_V0 = {
-    name: VMS_BUCKET_NAME,
-    schema: {
-        index: {
-            uuid: { type: 'string', unique: true }
-        }
-    }
-};
-
-var SERVER_VMS_MORAY_BUCKET_CONFIG_V0 = {
-    name: SERVER_VMS_BUCKET_NAME,
-    schema: {}
-};
-
-var ROLE_TAGS_MORAY_BUCKET_CONFIG_V0 = {
-    name: ROLE_TAGS_BUCKET_NAME,
-    schema: {
-    }
-};
+var BUCKET_SUFFIX = 'versioning';
+var VMS_BUCKET_NAME = 'test_vmapi_vms_' + BUCKET_SUFFIX;
 
 /*
  * Buckets configuration at version 1: an index is added on the property named
@@ -77,20 +53,6 @@ var VMS_BUCKET_CONFIG_V1 = {
         },
         options: {
             version: 1
-        }
-    }
-};
-
-var SERVER_VMS_MORAY_BUCKET_CONFIG_V1 = {
-    name: SERVER_VMS_BUCKET_NAME,
-    schema: {}
-};
-
-var ROLE_TAGS_MORAY_BUCKET_CONFIG_V1 = {
-    name: ROLE_TAGS_BUCKET_NAME,
-    schema: {
-        index: {
-            role_tags: { type: '[string]' }
         }
     }
 };
@@ -113,37 +75,16 @@ var VMS_BUCKET_CONFIG_V2 = {
     }
 };
 
-var SERVER_VMS_MORAY_BUCKET_CONFIG_V2 = {
-    name: SERVER_VMS_BUCKET_NAME,
-    schema: {}
-};
+var testBucketsConfigV0 = testMoray.getDefaultBucketsConfig(BUCKET_SUFFIX);
+var testBucketsConfigV1 = testMoray.getDefaultBucketsConfig(BUCKET_SUFFIX);
+var testBucketsConfigV2 = testMoray.getDefaultBucketsConfig(BUCKET_SUFFIX);
+// Replace the vms bucket with our test bucket.
+testBucketsConfigV1.vms = VMS_BUCKET_CONFIG_V1;
+testBucketsConfigV2.vms = VMS_BUCKET_CONFIG_V2;
 
-var ROLE_TAGS_MORAY_BUCKET_CONFIG_V2 = {
-    name: ROLE_TAGS_BUCKET_NAME,
-    schema: {
-        index: {
-            role_tags: { type: '[string]' }
-        }
-    }
-};
-
-var testBucketsConfigV0 = {
-    vms: VMS_BUCKET_CONFIG_V0,
-    server_vms: SERVER_VMS_MORAY_BUCKET_CONFIG_V0,
-    vm_role_tags: ROLE_TAGS_MORAY_BUCKET_CONFIG_V0
-};
-
-var testBucketsConfigV1 = {
-    vms: VMS_BUCKET_CONFIG_V1,
-    server_vms: SERVER_VMS_MORAY_BUCKET_CONFIG_V1,
-    vm_role_tags: ROLE_TAGS_MORAY_BUCKET_CONFIG_V1
-};
-
-var testBucketsConfigV2 = {
-    vms: VMS_BUCKET_CONFIG_V2,
-    server_vms: SERVER_VMS_MORAY_BUCKET_CONFIG_V2,
-    vm_role_tags: ROLE_TAGS_MORAY_BUCKET_CONFIG_V2
-};
+var BUCKET_NAMES = Object.keys(testBucketsConfigV0).map(function (b) {
+    return testBucketsConfigV0[b].name;
+});
 
 var NB_TEST_OBJECTS = 200;
 
@@ -395,12 +336,8 @@ function testMigrationToBucketsConfig(bucketsConfig, options, t, callback) {
 exports.moray_init_bucket_versioning = function (t) {
     vasync.pipeline({funcs: [
         function cleanup(arg, next) {
-            testMoray.cleanupLeftoverBuckets([
-                VMS_BUCKET_NAME,
-                SERVER_VMS_BUCKET_NAME,
-                ROLE_TAGS_BUCKET_NAME
-            ],
-            function onCleanupLeftoverBuckets(cleanupErr) {
+            testMoray.cleanupLeftoverBuckets(BUCKET_NAMES,
+                    function onCleanupLeftoverBuckets(cleanupErr) {
                 t.ok(!cleanupErr,
                     'cleaning up leftover buckets should be successful');
                 next(cleanupErr);
