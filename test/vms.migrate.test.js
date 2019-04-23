@@ -167,7 +167,7 @@ exports.get_admin_fabric_network = function (t) {
 
             t.ok(networks[0], 'Admin fabric network should be found');
             if (Array.isArray(networks) && networks.length >= 1) {
-                PROVISION_NETWORKS = {uuid: networks[0].uuid};
+                PROVISION_NETWORKS = [ {uuid: networks[0].uuid} ];
             }
 
             t.done();
@@ -188,7 +188,7 @@ exports.config_setup = function configSetup(t) {
             assert.string(cfg.packageName, 'cfg.packageName');
             assert.object(cfg.vm, 'cfg.vm');
 
-            cfg.vm.networks = [PROVISION_NETWORKS];
+            cfg.vm.networks = PROVISION_NETWORKS;
 
             vasync.pipeline({funcs: [
                 function loadPackages(_, next) {
