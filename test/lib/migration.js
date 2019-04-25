@@ -99,20 +99,21 @@ MigrationWatcher.prototype.start = function _migWatchStart() {
 
 function TestMigrationCfg(test, cfg) {
     var client;
-    var VM_UUID;
-
-    var mig = {
-        vms: {}, // vmobject by their vm_uuid
-        dni_vm_uuids: []
-    };
+    var migrationStarted = false;
+    var migrationSynced = false;
+    var migrationSwitched = false;
+    var migrationUuidOverride = false;
+    var sourceVm;
+    var targetVm;
+    var watcher;
 
     // Helpers
     function createMigrationWatcher(vm_uuid) {
-        mig.watcher = new MigrationWatcher(client, vm_uuid);
-        mig.watcher.start();
+        watcher = new MigrationWatcher(client, vm_uuid);
+        watcher.start();
     }
     function destroyMigrationWatcher() {
-        delete mig.watcher;
+        watcher = null;
     }
 
     test.setUp = function (callback) {
@@ -128,7 +129,30 @@ function TestMigrationCfg(test, cfg) {
         });
     };
 
+    // Count available servers, to see if we need to set override_uuid.
+    test.count_running_servers = function test_count_running_servers(t) {
+        client.cnapi.get({path: '/servers?setup=true&extras=sysinfo'},
+                function _onGetServersCb(err, req, res, servers) {
+            common.ifError(t, err, 'get cnapi setup servers');
+
+            if (servers) {
+                // Filter running servers and virtual servers.
+                var availableServers = servers.filter(function _checkStatus(s) {
+                    return s.status === 'running' &&
+                        s.sysinfo && s.sysinfo['System Type'] !== 'Virtual';
+                });
+                if (availableServers.length < 2) {
+                    migrationUuidOverride = true;
+                }
+            }
+
+            t.done();
+        });
+    };
+
     test.create_vm = function (t) {
+        var vmUuid;
+
         vasync.pipeline({arg: {}, funcs: [
 
             function createVm(ctx, next) {
@@ -153,10 +177,9 @@ function TestMigrationCfg(test, cfg) {
                     }
 
                     ctx.jobUuid = body.job_uuid;
-                    VM_UUID = body.vm_uuid;
-                    mig.vms[VM_UUID] = body;
+                    vmUuid = body.vm_uuid;
 
-                    t.ok(VM_UUID, 'got a vm uuid: ' + VM_UUID);
+                    t.ok(body.vm_uuid, 'got a vm uuid: ' + body.vm_uuid);
 
                     next();
                 });
@@ -172,8 +195,9 @@ function TestMigrationCfg(test, cfg) {
                     });
             },
             function getVmServer(ctx, next) {
-                client.get('/vms/' + VM_UUID, function (err, req, res, body) {
+                client.get('/vms/' + vmUuid, function (err, req, res, body) {
                     common.ifError(t, err, 'VM should appear in vmapi');
+                    sourceVm = body;
                     next();
                 });
             }
@@ -187,7 +211,7 @@ function TestMigrationCfg(test, cfg) {
     test.bad_migrate_no_action = function (t) {
         // No action.
         client.post({
-            path: format('/vms/%s?action=migrate', VM_UUID)
+            path: format('/vms/%s?action=migrate', sourceVm.uuid)
         }, function onMigrateNoAction(err) {
             t.ok(err, 'expect an error when no migration action supplied');
             if (err) {
@@ -202,7 +226,7 @@ function TestMigrationCfg(test, cfg) {
         // Unknown migration action.
         client.post({
             path: format('/vms/%s?action=migrate&migration_action=unknown',
-                VM_UUID)
+                sourceVm.uuid)
         }, function onMigrateNoAction(err) {
             t.ok(err, 'expect an error for an unknown migration action');
             if (err) {
@@ -223,7 +247,7 @@ function TestMigrationCfg(test, cfg) {
             // Try to run a migration action when no migration has been started.
             client.post({
                 path: format('/vms/%s?action=migrate&migration_action=%s',
-                    VM_UUID, action)
+                    sourceVm.uuid, action)
             }, function onMigrateNoMigrationDataCb(err) {
                 t.ok(err, 'expect an error when there is no migration entry');
                 if (err) {
@@ -323,7 +347,7 @@ function TestMigrationCfg(test, cfg) {
     };
 
     test.migration_estimate = function test_migration_estimate(t) {
-        if (!VM_UUID) {
+        if (!sourceVm) {
             t.ok(false, 'Original VM was not created successfully');
             t.done();
             return;
@@ -331,7 +355,7 @@ function TestMigrationCfg(test, cfg) {
 
         client.post(
             {path: format('/vms/%s?action=migrate&migration_action=estimate',
-                    VM_UUID)},
+                    sourceVm.uuid)},
             onMigrateEstimateCb);
 
         function onMigrateEstimateCb(err, req, res, body) {
@@ -361,23 +385,27 @@ function TestMigrationCfg(test, cfg) {
     };
 
     test.migration_begin_for_abort = function test_migration_begin_abort(t) {
-        if (!VM_UUID) {
+        if (!sourceVm) {
             t.ok(false, 'Original VM was not created successfully');
             t.done();
             return;
         }
 
-        // XXX: Testing - tweak the uuid to allow on the same CN.
-        // TODO: Check server list to see if this is needed (i.e. when there is
-        // just one CN).
-        var override_uuid = VM_UUID.slice(0, -6) + 'ab0ab0';
-        var override_alias = cfg.vm.alias + '-abort';
+        var params = {};
+
+        if (migrationUuidOverride) {
+            // Change the uuid to allow on the same CN.
+            params = {
+                override_uuid: sourceVm.uuid.slice(0, -6) + 'ab0ab0',
+                override_alias: cfg.vm.alias + '-abort'
+            };
+        }
 
         // Trying to run a migration action when a migration has not started.
         client.post(
                 {path: format('/vms/%s?action=migrate&migration_action=begin',
-                    VM_UUID)},
-                {override_uuid: override_uuid, override_alias: override_alias},
+                    sourceVm.uuid)},
+                params,
                 function onMigrateBeginAbortCb(err, req, res, body) {
             common.ifError(t, err, 'no error when beginning the migration');
             if (!err) {
@@ -392,8 +420,10 @@ function TestMigrationCfg(test, cfg) {
                     t.ok(body.job_uuid, 'got a job uuid: ' + body.job_uuid);
                     t.ok(body.migration, 'got a migration record');
                     if (body.migration) {
-                        t.equal(body.migration.phase, 'begin');
-                        t.equal(body.migration.state, 'running');
+                        t.equal(body.migration.phase, 'begin',
+                            'phase should be begin');
+                        t.equal(body.migration.state, 'running',
+                            'state should be running');
                     }
 
                     var waitParams = {
@@ -406,10 +436,10 @@ function TestMigrationCfg(test, cfg) {
                             state, job) {
                         common.ifError(t, jerr, 'begin should be successful');
                         if (!jerr) {
-                            mig.started = (state === 'succeeded');
+                            migrationStarted = (state === 'succeeded');
                             t.equal(state, 'succeeded',
                                 'Migration begin job should succeed - ' +
-                                (mig.started ? 'ok' : getJobError(job)));
+                                (migrationStarted ? 'ok' : getJobError(job)));
                         }
                         t.done();
                     });
@@ -421,7 +451,7 @@ function TestMigrationCfg(test, cfg) {
     };
 
     test.migration_abort = function test_migration_abort(t) {
-        if (!mig.started) {
+        if (!migrationStarted) {
             t.ok(false, 'VM migration did not begin successfully');
             t.done();
             return;
@@ -429,7 +459,7 @@ function TestMigrationCfg(test, cfg) {
 
         client.post(
                 {path: format('/vms/%s?action=migrate&migration_action=abort',
-                    VM_UUID)},
+                    sourceVm.uuid)},
                 {},
                 function onMigrateBeginAbortCb(err, req, res, body) {
             common.ifError(t, err, 'no error when aborting the migration');
@@ -445,8 +475,10 @@ function TestMigrationCfg(test, cfg) {
                     t.ok(body.job_uuid, 'got a job uuid: ' + body.job_uuid);
                     t.ok(body.migration, 'got a migration record');
                     if (body.migration) {
-                        t.equal(body.migration.phase, 'abort');
-                        t.equal(body.migration.state, 'running');
+                        t.equal(body.migration.phase, 'abort',
+                            'phase should be abort');
+                        t.equal(body.migration.state, 'running',
+                            'state should be running');
                     }
 
                     var waitParams = {
@@ -459,10 +491,10 @@ function TestMigrationCfg(test, cfg) {
                             state, job) {
                         common.ifError(t, jerr, 'abort should be successful');
                         if (!jerr) {
-                            mig.started = (state === 'succeeded');
+                            migrationStarted = (state === 'succeeded');
                             t.equal(state, 'succeeded',
                                 'Migration abort job should succeed - ' +
-                                (mig.started ? 'ok' : getJobError(job)));
+                                (migrationStarted ? 'ok' : getJobError(job)));
                         }
                         t.done();
                     });
@@ -474,26 +506,30 @@ function TestMigrationCfg(test, cfg) {
     };
 
     test.migration_begin = function test_migration_begin(t) {
-        if (!VM_UUID) {
+        if (!sourceVm) {
             t.ok(false, 'Original VM was not created successfully');
             t.done();
             return;
         }
 
-        mig.started = false;
+        migrationStarted = false;
 
-        // XXX: Testing - tweak the uuid to allow on the same CN.
-        // TODO: Check server list to see if this is needed (i.e. when there is
-        // just one CN).
-        var override_uuid = VM_UUID.slice(0, -6) + 'aaaaaa';
-        var override_alias = cfg.vm.alias + '-aaaaaa';
+        var params = {};
+
+        if (migrationUuidOverride) {
+            // Change the uuid to allow on the same CN.
+            params = {
+                override_uuid: sourceVm.uuid.slice(0, -6) + 'aaaaaa',
+                override_alias: cfg.vm.alias + '-aaaaaa'
+            };
+        }
 
         // Trying to run a migration action when a migration has not started.
         client.post(
             { path:
                 format('/vms/%s?action=migrate&migration_action=begin',
-                    VM_UUID) },
-            { override_uuid: override_uuid, override_alias: override_alias },
+                    sourceVm.uuid) },
+            params,
             function onMigrateBeginCb(err, req, res, body) {
             common.ifError(t, err, 'no error when beginning the migration');
             if (!err) {
@@ -508,12 +544,14 @@ function TestMigrationCfg(test, cfg) {
                     t.ok(body.job_uuid, 'got a job uuid: ' + body.job_uuid);
                     t.ok(body.migration, 'got a migration record');
                     if (body.migration) {
-                        t.equal(body.migration.phase, 'begin');
-                        t.equal(body.migration.state, 'running');
+                        t.equal(body.migration.phase, 'begin',
+                            'phase should be begin');
+                        t.equal(body.migration.state, 'running',
+                            'state should be running');
                     }
 
                     // Watch for migration events.
-                    createMigrationWatcher(VM_UUID);
+                    createMigrationWatcher(sourceVm.uuid);
 
                     var waitParams = {
                         client: client,
@@ -525,10 +563,10 @@ function TestMigrationCfg(test, cfg) {
                             state, job) {
                         common.ifError(t, jerr, 'begin should be successful');
                         if (!jerr) {
-                            mig.started = (state === 'succeeded');
+                            migrationStarted = (state === 'succeeded');
                             t.equal(state, 'succeeded',
                                 'Migration begin job should succeed - ' +
-                                (mig.started ? 'ok' : getJobError(job)));
+                                (migrationStarted ? 'ok' : getJobError(job)));
                         }
                         t.done();
                     });
@@ -541,8 +579,8 @@ function TestMigrationCfg(test, cfg) {
 
     test.check_watch_entries = function check_watch_entries(t) {
 
-        t.ok(mig.watcher, 'mig.watcher exists');
-        if (!mig.watcher) {
+        t.ok(watcher, 'watcher exists');
+        if (!watcher) {
             t.done();
             return;
         }
@@ -552,7 +590,7 @@ function TestMigrationCfg(test, cfg) {
 
         function waitForWatcherEnd() {
             loopCount += 1;
-            if (!mig.watcher.ended) {
+            if (!watcher.ended) {
                 if (loopCount > timeoutSeconds) {
                     t.ok(false, 'Timed out waiting for the watcher to end');
                     t.done();
@@ -563,9 +601,9 @@ function TestMigrationCfg(test, cfg) {
             }
 
             // Check the events.
-            t.ok(mig.watcher.events.length > 0, 'Should be events seen');
+            t.ok(watcher.events.length > 0, 'Should be events seen');
 
-            var beginEvents = mig.watcher.events.filter(function _filtB(event) {
+            var beginEvents = watcher.events.filter(function _filtB(event) {
                 return event.type === 'progress' && event.phase === 'begin';
             });
             t.ok(beginEvents.length > 0, 'Should have begin events');
@@ -579,7 +617,7 @@ function TestMigrationCfg(test, cfg) {
                 });
             }
 
-            var endEvent = mig.watcher.events.filter(function _filtEnd(event) {
+            var endEvent = watcher.events.filter(function _filtEnd(event) {
                 return event.type === 'end';
             }).slice(-1)[0];
             t.ok(endEvent, 'Should have an end event');
@@ -598,7 +636,7 @@ function TestMigrationCfg(test, cfg) {
 
     test.bad_migrate_cannot_begin_from_begin_phase = function (t) {
         // Invalid action according to the current migration phase.
-        if (!mig.started) {
+        if (!migrationStarted) {
             t.ok(false, 'VM migration did not begin successfully');
             t.done();
             return;
@@ -606,7 +644,7 @@ function TestMigrationCfg(test, cfg) {
 
         client.post({
             path: format('/vms/%s?action=migrate&migration_action=begin',
-                    VM_UUID)
+                    sourceVm.uuid)
         }, function onMigrateNoAction(err) {
             t.ok(err, 'expect an error when the migration already started');
             if (err) {
@@ -619,7 +657,7 @@ function TestMigrationCfg(test, cfg) {
 
     test.bad_migrate_cannot_pause_from_paused_state = function (t) {
         // Invalid action according to the current migration state.
-        if (!mig.started) {
+        if (!migrationStarted) {
             t.ok(false, 'VM migration did not begin successfully');
             t.done();
             return;
@@ -627,7 +665,7 @@ function TestMigrationCfg(test, cfg) {
 
         client.post({
             path: format('/vms/%s?action=migrate&migration_action=pause',
-                    VM_UUID)
+                    sourceVm.uuid)
         }, function onMigrateNoAction(err) {
             t.ok(err, 'expect an error when the migration is already paused');
             if (err) {
@@ -639,14 +677,14 @@ function TestMigrationCfg(test, cfg) {
     };
 
     test.migration_list = function test_migration_list(t) {
-        if (!mig.started) {
+        if (!migrationStarted) {
             t.ok(false, 'VM migration did not begin successfully');
             t.done();
             return;
         }
 
         client.get({
-            path: '/migrations'
+            path: '/migrations?format=raw'
         }, function onMigrateListCb(err, req, res, body) {
             common.ifError(t, err, 'no error expected when listing migrations');
             if (err) {
@@ -674,7 +712,7 @@ function TestMigrationCfg(test, cfg) {
             }
 
             var migrations = body.filter(function _filtMig(entry) {
-                return entry.vm_uuid === VM_UUID;
+                return entry.vm_uuid === sourceVm.uuid;
             });
             t.ok(migrations.length >= 1, 'should be at least vm match');
             if (migrations.length === 0) {
@@ -686,7 +724,11 @@ function TestMigrationCfg(test, cfg) {
             t.equal(migration.automatic, false, 'automatic should be false');
             t.equal(migration.phase, 'begin', 'phase should be "begin"');
             t.equal(migration.state, 'paused', 'state should be "paused"');
-            t.equal(migration.vm_uuid, VM_UUID, 'vm_uuid should be the same');
+
+            targetVm = {
+                uuid: migration.target_vm_uuid,
+                server_uuid: migration.target_server_uuid
+            };
 
             t.ok(Array.isArray(migration.progress_history) &&
                     migration.progress_history.length >= 1,
@@ -711,7 +753,7 @@ function TestMigrationCfg(test, cfg) {
 
     test.migration_sync = function test_migration_sync(t) {
         // Start the migration sync phase.
-        if (!mig.started) {
+        if (!migrationStarted) {
             t.ok(false, 'VM migration did not begin successfully');
             t.done();
             return;
@@ -719,7 +761,7 @@ function TestMigrationCfg(test, cfg) {
 
         client.post({
             path: format('/vms/%s?action=migrate&migration_action=sync',
-                VM_UUID)
+                sourceVm.uuid)
         }, function onMigrateSyncCb(err, req, res, body) {
             common.ifError(t, err, 'no error when syncing the migration');
             if (!err) {
@@ -734,12 +776,14 @@ function TestMigrationCfg(test, cfg) {
                     t.ok(body.job_uuid, 'got a job uuid: ' + body.job_uuid);
                     t.ok(body.migration, 'got a migration record');
                     if (body.migration) {
-                        t.equal(body.migration.phase, 'sync');
-                        t.equal(body.migration.state, 'running');
+                        t.equal(body.migration.phase, 'sync',
+                            'phase should be sync');
+                        t.equal(body.migration.state, 'running',
+                            'state should be running');
                     }
 
                     // Watch for migration events.
-                    createMigrationWatcher(VM_UUID);
+                    createMigrationWatcher(sourceVm.uuid);
 
                     var waitParams = {
                         client: client,
@@ -759,7 +803,7 @@ function TestMigrationCfg(test, cfg) {
                                 (state === 'succeeded' ? 'ok' :
                                     getJobError(job)));
                         }
-                        mig.synced = (state === 'succeeded');
+                        migrationSynced = (state === 'succeeded');
                         t.done();
                     });
                     return;
@@ -772,8 +816,8 @@ function TestMigrationCfg(test, cfg) {
     test.check_watch_entries_after_sync =
     function check_watch_entries_after_sync(t) {
 
-        t.ok(mig.watcher, 'mig.watcher exists');
-        if (!mig.watcher) {
+        t.ok(watcher, 'watcher exists');
+        if (!watcher) {
             t.done();
             return;
         }
@@ -783,7 +827,7 @@ function TestMigrationCfg(test, cfg) {
 
         function waitForWatcherEnd() {
             loopCount += 1;
-            if (!mig.watcher.ended) {
+            if (!watcher.ended) {
                 if (loopCount > timeoutSeconds) {
                     t.ok(false, 'Timed out waiting for the watcher to end');
                     t.done();
@@ -794,9 +838,9 @@ function TestMigrationCfg(test, cfg) {
             }
 
             // Check the events.
-            t.ok(mig.watcher.events.length > 0, 'Should be events seen');
+            t.ok(watcher.events.length > 0, 'Should be events seen');
 
-            var syncEvents = mig.watcher.events.filter(function _filtS(event) {
+            var syncEvents = watcher.events.filter(function _filtS(event) {
                 return event.type === 'progress' && event.phase === 'sync';
             });
             t.ok(syncEvents.length > 0, 'Should have sync events');
@@ -817,7 +861,7 @@ function TestMigrationCfg(test, cfg) {
                 t.ok(sawBandwidthEvent, 'a bandwidth progress event was seen');
             }
 
-            var endEvent = mig.watcher.events.filter(function _filtEnd(event) {
+            var endEvent = watcher.events.filter(function _filtEnd(event) {
                 return event.type === 'end';
             }).slice(-1)[0];
             t.ok(endEvent, 'Should have an end event');
@@ -836,7 +880,7 @@ function TestMigrationCfg(test, cfg) {
 
     test.migration_sync_incremental = function test_migration_sync_inc(t) {
         // Start the migration sync phase again - should do an incremental sync.
-        if (!mig.synced) {
+        if (!migrationSynced) {
             t.ok(false, 'VM migration did not sync successfully');
             t.done();
             return;
@@ -844,7 +888,7 @@ function TestMigrationCfg(test, cfg) {
 
         client.post({
             path: format('/vms/%s?action=migrate&migration_action=sync',
-                VM_UUID)
+                sourceVm.uuid)
         }, function onMigrateSyncCb(err, req, res, body) {
             common.ifError(t, err, 'no error when syncing the migration');
             if (!err) {
@@ -859,8 +903,10 @@ function TestMigrationCfg(test, cfg) {
                     t.ok(body.job_uuid, 'got a job uuid: ' + body.job_uuid);
                     t.ok(body.migration, 'got a migration record');
                     if (body.migration) {
-                        t.equal(body.migration.phase, 'sync');
-                        t.equal(body.migration.state, 'running');
+                        t.equal(body.migration.phase, 'sync',
+                            'phase should be sync');
+                        t.equal(body.migration.state, 'running',
+                            'state should be running');
                     }
 
                     var waitParams = {
@@ -879,7 +925,7 @@ function TestMigrationCfg(test, cfg) {
                                 (state === 'succeeded' ? 'ok' :
                                     getJobError(job)));
                         }
-                        mig.synced = (state === 'succeeded');
+                        migrationSynced = (state === 'succeeded');
                         t.done();
                     });
                     return;
@@ -891,13 +937,13 @@ function TestMigrationCfg(test, cfg) {
 
     test.migration_switch = function test_migration_switch(t) {
         // Start the migration switch phase.
-        if (!mig.started) {
+        if (!migrationStarted) {
             t.ok(false, 'VM migration did not begin successfully');
             t.done();
             return;
         }
 
-        if (!mig.synced) {
+        if (!migrationSynced) {
             t.ok(false, 'VM migration did not sync successfully');
             t.done();
             return;
@@ -905,7 +951,7 @@ function TestMigrationCfg(test, cfg) {
 
         client.post({
             path: format('/vms/%s?action=migrate&migration_action=switch',
-                VM_UUID)
+                sourceVm.uuid)
         }, function onMigrateSwitchCb(err, req, res, body) {
             common.ifError(t, err, 'no error from migration switch call');
             if (!err) {
@@ -920,12 +966,14 @@ function TestMigrationCfg(test, cfg) {
                     t.ok(body.job_uuid, 'got a job uuid: ' + body.job_uuid);
                     t.ok(body.migration, 'got a migration record');
                     if (body.migration) {
-                        t.equal(body.migration.phase, 'switch');
-                        t.equal(body.migration.state, 'running');
+                        t.equal(body.migration.phase, 'switch',
+                            'phase should be switch');
+                        t.equal(body.migration.state, 'running',
+                            'state should be running');
                     }
 
                     // Watch for migration events.
-                    createMigrationWatcher(VM_UUID);
+                    createMigrationWatcher(sourceVm.uuid);
 
                     var waitParams = {
                         client: client,
@@ -943,8 +991,7 @@ function TestMigrationCfg(test, cfg) {
                                 (state === 'succeeded' ? 'ok' :
                                     getJobError(job)));
                         }
-                        mig.switched = (state === 'succeeded');
-                        mig.dni_vm_uuids.push(VM_UUID);
+                        migrationSwitched = (state === 'succeeded');
                         t.done();
                     });
                     return;
@@ -955,7 +1002,7 @@ function TestMigrationCfg(test, cfg) {
     };
 
     test.migration_switched_list = function test_migration_switched_list(t) {
-        if (!mig.switched) {
+        if (!migrationSwitched) {
             t.ok(false, 'VM migration did not switch successfully');
             t.done();
             return;
@@ -990,7 +1037,7 @@ function TestMigrationCfg(test, cfg) {
             }
 
             var migrations = body.filter(function _filtMig(entry) {
-                return entry.vm_uuid === VM_UUID;
+                return entry.vm_uuid === sourceVm.uuid;
             });
             t.ok(migrations.length >= 1, 'should be at least vm match');
             if (migrations.length === 0) {
@@ -1003,7 +1050,6 @@ function TestMigrationCfg(test, cfg) {
             t.equal(migration.phase, 'switch', 'phase should be "switch"');
             t.equal(migration.state, 'successful',
                 'state should be "successful"');
-            t.equal(migration.vm_uuid, VM_UUID, 'vm_uuid should be the same');
 
             t.ok(Array.isArray(migration.progress_history) &&
                     migration.progress_history.length >= 5,
@@ -1040,7 +1086,7 @@ function TestMigrationCfg(test, cfg) {
     };
 
     test.check_vmapi_state = function test_check_vmapi_state(t) {
-        if (!VM_UUID) {
+        if (!sourceVm) {
             t.ok(false, 'Original VM was not created successfully');
             t.done();
             return;
@@ -1049,21 +1095,32 @@ function TestMigrationCfg(test, cfg) {
         // The original vm should no longer be visible in vmapi. We use
         // 'sync=true' to ensure vmapi (via cnapi) will use the most
         // up-to-date information.
-        client.get({path: format('/vms/%s?sync=true', VM_UUID)},
-            onGetOrigVm);
+        client.get({path: format('/vms/%s?sync=true', sourceVm.uuid)},
+            onGetSourceVm);
 
-        function onGetOrigVm(err, req, res, vm) {
-            t.ifError(err, 'should not get an error fetching original vm');
+        function onGetSourceVm(err, req, res, vm) {
+            t.ifError(err, 'should not get an error fetching vm');
             if (res) {
                 t.equal(res.statusCode, 200,
                     format('err.statusCode === 200, got %s', res.statusCode));
             }
             t.ok(vm, 'should get a vm object');
             if (vm) {
-                t.equal(vm.state, 'destroyed', 'original vm should be gone');
-                mig.vms[vm.uuid] = vm;
-                if (mig.dni_vm_uuids.indexOf(vm.uuid) === -1) {
-                    mig.dni_vm_uuids.push(vm.uuid);
+                // In the case of an override the vm should now be seen as
+                // destroyed, else the vm will be active, but the server_uuid
+                // will have changed.
+                if (migrationUuidOverride) {
+                    t.equal(vm.state, 'destroyed',
+                        'original vm should have state destroyed');
+                    t.notEqual(sourceVm.uuid, vm.uuid,
+                        'vm uuid should be different');
+                    t.equal(sourceVm.server_uuid, vm.server_uuid,
+                        'vm server_uuid should be the same');
+                } else {
+                    t.equal(sourceVm.uuid, vm.uuid,
+                        'vm uuid should be the same');
+                    t.notEqual(sourceVm.server_uuid, vm.server_uuid,
+                        'vm server_uuid should be different');
                 }
             }
 
@@ -1072,8 +1129,7 @@ function TestMigrationCfg(test, cfg) {
 
         // The migrated vm *should* be visible through vmapi.
         function checkMigratedVm() {
-            var migrated_uuid = VM_UUID.slice(0, -6) + 'aaaaaa';
-            client.get({path: format('/vms/%s?sync=true', migrated_uuid)},
+            client.get({path: format('/vms/%s?sync=true', targetVm.uuid)},
                 onGetMigratedVm);
         }
 
@@ -1091,34 +1147,57 @@ function TestMigrationCfg(test, cfg) {
                 }
 
                 t.equal(vm.state, 'running', 'vm state should be "running"');
-                mig.vms[vm.uuid] = vm;
             }
             t.done();
         }
     };
 
+    test.delete_source_instance = function test_delete_source_instance(t) {
+        // To delete a hidden (DNI) vm, we execute a 'vmadm delete' on the
+        // server in question.
+        if (!sourceVm) {
+            t.ok(false, 'Source VM was not created successfully');
+            t.done();
+            return;
+        }
+
+        var server_uuid = sourceVm.server_uuid;
+        var params = {
+            script: format('#!/bin/bash\nvmadm delete %s', sourceVm.uuid),
+            server_uuid: server_uuid
+        };
+        client.cnapi.post({path: format('/servers/%s/execute',
+                server_uuid)},
+                params,
+                function _onServerExecuteCb(err) {
+            common.ifError(t, err, 'error running vmadm delete on server');
+            t.done();
+        });
+    };
+
     test.migration_full = function test_migration_full(t) {
-        if (!mig.switched) {
+        if (!migrationSwitched) {
             t.ok(false, 'VM migration did not switch successfully');
             t.done();
             return;
         }
 
-        // TODO: Check server list to see if this is needed (i.e. when there is
-        // just one CN).
-        var switched_uuid = VM_UUID.slice(0, -6) + 'aaaaaa';
-        var override_uuid = VM_UUID.slice(0, -6) + 'bbbbbb';
-        var override_alias = cfg.vm.alias + '-bbbbbb';
+        sourceVm = targetVm;
+        targetVm = null;
 
-        // Trying to run a migration action when a migration has not started.
         var params = {
             action: 'migrate',
             migration_action: 'begin',
-            migration_automatic: 'true',
-            override_uuid: override_uuid,
-            override_alias: override_alias
+            migration_automatic: 'true'
         };
-        client.post({path: format('/vms/%s', switched_uuid)},
+
+        if (migrationUuidOverride) {
+            // Change the uuid to allow on the same CN.
+            params.override_uuid = sourceVm.uuid.slice(0, -6) + 'bbbbbb';
+            params.override_alias = sourceVm.uuid.slice(0, -6) + 'bbbbbb';
+        }
+
+        client.post({path: format('/vms/%s', sourceVm.uuid)},
             params,
             onMigrateFullCb);
 
@@ -1135,12 +1214,14 @@ function TestMigrationCfg(test, cfg) {
                     t.ok(body.job_uuid, 'got a job uuid: ' + body.job_uuid);
                     t.ok(body.migration, 'got a migration record');
                     if (body.migration) {
-                        t.equal(body.migration.phase, 'begin');
-                        t.equal(body.migration.state, 'running');
+                        t.equal(body.migration.phase, 'begin',
+                            'phase should be begin');
+                        t.equal(body.migration.state, 'running',
+                            'state should be running');
                     }
 
                     // Watch for migration events.
-                    createMigrationWatcher(switched_uuid);
+                    createMigrationWatcher(sourceVm.uuid);
                 }
             }
             t.done();
@@ -1149,8 +1230,8 @@ function TestMigrationCfg(test, cfg) {
 
     test.check_full_watch_entries = function check_full_watch_entries(t) {
 
-        t.ok(mig.watcher, 'mig.watcher exists');
-        if (!mig.watcher) {
+        t.ok(watcher, 'watcher exists');
+        if (!watcher) {
             t.done();
             return;
         }
@@ -1160,7 +1241,7 @@ function TestMigrationCfg(test, cfg) {
 
         function waitForWatcherEnd() {
             loopCount += 1;
-            if (!mig.watcher.ended) {
+            if (!watcher.ended) {
                 if (loopCount > timeoutSeconds) {
                     t.ok(false, 'Timed out waiting for the watcher to end');
                     t.done();
@@ -1171,9 +1252,9 @@ function TestMigrationCfg(test, cfg) {
             }
 
             // Check the events.
-            t.ok(mig.watcher.events.length > 0, 'Should be events seen');
+            t.ok(watcher.events.length > 0, 'Should be events seen');
 
-            var beginEvents = mig.watcher.events.filter(function _filtB(event) {
+            var beginEvents = watcher.events.filter(function _filtB(event) {
                 return event.type === 'progress' && event.phase === 'begin';
             });
             t.ok(beginEvents.length > 0, 'Should have begin events');
@@ -1187,7 +1268,7 @@ function TestMigrationCfg(test, cfg) {
                 });
             }
 
-            var syncEvents = mig.watcher.events.filter(function _filt(event) {
+            var syncEvents = watcher.events.filter(function _filt(event) {
                 return event.type === 'progress' && event.phase === 'sync';
             });
             t.ok(syncEvents.length > 0, 'Should have sync events');
@@ -1213,7 +1294,7 @@ function TestMigrationCfg(test, cfg) {
                 t.ok(sawBandwidthEvent, 'a bandwidth progress event was seen');
             }
 
-            var endEvent = mig.watcher.events.filter(function _filtEnd(event) {
+            var endEvent = watcher.events.filter(function _filtEnd(event) {
                 return event.type === 'end';
             }).slice(-1)[0];
             t.ok(endEvent, 'Should have an end event');
@@ -1222,9 +1303,6 @@ function TestMigrationCfg(test, cfg) {
                     'end event phase is "switch"');
                 t.equal(endEvent.state, 'successful',
                     'end event state is "successful"');
-                if (endEvent.state === 'successful') {
-                    mig.dni_vm_uuids.push(mig.watcher.vm_uuid);
-                }
             }
 
             destroyMigrationWatcher();
@@ -1235,32 +1313,63 @@ function TestMigrationCfg(test, cfg) {
         waitForWatcherEnd();
     };
 
+    test.migration_get = function test_migration_get(t) {
+        client.get({
+            path: '/migrations/' + sourceVm.uuid + '?format=raw'
+        }, function onMigrateGetCb(err, req, res, migration) {
+            common.ifError(t, err, 'no error for migration get');
+            if (err) {
+                t.done();
+                return;
+            }
+
+            assert.object(migration, 'migration object');
+
+            targetVm = {
+                uuid: migration.target_vm_uuid,
+                server_uuid: migration.target_server_uuid
+            };
+
+            t.done();
+        });
+    };
+
     test.check_vmapi_state_2 = function test_check_vmapi_state_2(t) {
-        if (mig.dni_vm_uuids.length < 2) {
-            t.ok(false, 'Vms were not migrated successfully');
+        if (!targetVm) {
+            t.ok(false, 'Vm was not migrated successfully');
             t.done();
             return;
         }
 
-        // The original vm should no longer be visible in vmapi. We use
+        // The source vm should no longer be visible in vmapi. We use
         // 'sync=true' to ensure vmapi (via cnapi) will use the most
         // up-to-date information.
-        client.get({path: format('/vms/%s?sync=true',
-            mig.dni_vm_uuids.slice(-1)[0])},
-            onGetOrigVm);
+        client.get({path: format('/vms/%s?sync=true', sourceVm.uuid)},
+            onGetSourceVm);
 
-        function onGetOrigVm(err, req, res, vm) {
-            common.ifError(t, err, 'should not error fetching original vm');
+        function onGetSourceVm(err, req, res, vm) {
+            common.ifError(t, err, 'should not error fetching source vm');
             if (res) {
                 t.equal(res.statusCode, 200,
                     format('err.statusCode === 200, got %s', res.statusCode));
             }
             t.ok(vm, 'should get a vm object');
             if (vm) {
-                t.equal(vm.state, 'destroyed', 'original vm should be gone');
-                mig.vms[vm.uuid] = vm;
-                if (mig.dni_vm_uuids.indexOf(vm.uuid) === -1) {
-                    mig.dni_vm_uuids.push(vm.uuid);
+                // In the case of an override the vm should now be seen as
+                // destroyed, else the vm will be active, but the server_uuid
+                // will have changed.
+                if (migrationUuidOverride) {
+                    t.equal(vm.state, 'destroyed',
+                        'original vm should have state destroyed');
+                    t.notEqual(sourceVm.uuid, vm.uuid,
+                        'vm uuid should be different');
+                    t.equal(sourceVm.server_uuid, vm.server_uuid,
+                        'vm server_uuid should be the same');
+                } else {
+                    t.equal(sourceVm.uuid, vm.uuid,
+                        'vm uuid should be the same');
+                    t.notEqual(sourceVm.server_uuid, vm.server_uuid,
+                        'vm server_uuid should be different');
                 }
             }
 
@@ -1269,8 +1378,7 @@ function TestMigrationCfg(test, cfg) {
 
         // The migrated vm *should* be visible through vmapi.
         function checkMigratedVm() {
-            var migrated_uuid = VM_UUID.slice(0, -6) + 'bbbbbb';
-            client.get({path: format('/vms/%s?sync=true', migrated_uuid)},
+            client.get({path: format('/vms/%s?sync=true', targetVm.uuid)},
                 onGetMigratedVm);
         }
 
@@ -1288,59 +1396,47 @@ function TestMigrationCfg(test, cfg) {
                 }
 
                 t.equal(vm.state, 'running', 'vm state should be "running"');
-                mig.vms[vm.uuid] = vm;
             }
             t.done();
         }
     };
 
-    test.cleanup = function test_cleanup(t) {
-        if (!VM_UUID) {
-            t.ok(false, 'VM_UUID not found, cannot delete VM');
+    test.delete_source_instance_2 = function test_delete_source_instance_2(t) {
+        // To delete a hidden (DNI) vm, we execute a 'vmadm delete' on the
+        // server in question.
+        if (!sourceVm) {
+            t.ok(false, 'Source VM was not created successfully');
             t.done();
             return;
         }
 
-        vasync.forEachParallel({
-            inputs: Object.keys(mig.vms),
-            func: deleteOneVm
-        }, function onDeleteVmsCb(err) {
-            common.ifError(t, err, 'should be no error deleting vms');
+        var server_uuid = sourceVm.server_uuid;
+        var params = {
+            script: format('#!/bin/bash\nvmadm delete %s', sourceVm.uuid),
+            server_uuid: server_uuid
+        };
+        client.cnapi.post({path: format('/servers/%s/execute',
+                server_uuid)},
+                params,
+                function _onServerExecuteCb(err) {
+            common.ifError(t, err, 'error running vmadm delete on server');
             t.done();
         });
+    };
 
-        function deleteOneVm(vm_uuid, callback) {
-            if (mig.dni_vm_uuids.indexOf(vm_uuid) >= 0) {
-                deleteDniVm(vm_uuid, callback);
-                return;
-            }
-
-            client.del({path: format('/vms/%s', vm_uuid)}, callback);
+    test.cleanup = function test_cleanup(t) {
+        if (!targetVm) {
+            t.ok(false, 'target vm not found, cannot delete VM');
+            t.done();
+            return;
         }
 
-        // To delete a hidden (DNI) vm, we execute a 'vmadm delete' on the
-        // server in question.
-        function deleteDniVm(vm_uuid, callback) {
-            t.ok(mig.vms[vm_uuid], 'mig.vms entry exists for vm ' + vm_uuid);
-            if (!mig.vms[vm_uuid]) {
-                callback(new Error('No mig.vms entry for ' + vm_uuid));
-                return;
-            }
-            var server_uuid = mig.vms[vm_uuid].server_uuid;
-            var params = {
-                script: format('#!/bin/bash\nvmadm delete %s', vm_uuid),
-                server_uuid: server_uuid
-            };
-            client.cnapi.post({path: format('/servers/%s/execute',
-                    server_uuid)},
-                params,
-                onServerExecuteCb);
-
-            function onServerExecuteCb(err) {
-                common.ifError(t, err, 'error running vmadm delete on server');
-                callback(err);
-            }
-        }
+        client.del({
+            path: '/vms/' + targetVm.uuid
+        }, function onVmDeleted(err, req, res) {
+            common.ifError(t, err, 'vm delete target should not error');
+            t.done();
+        });
     };
 }
 
