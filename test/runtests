@@ -207,48 +207,8 @@ if [[ -n "$opt_test_pattern" ]]; then
 fi
 
 # Run the tests.
-retval=0
 if [[ -n "$test_files" ]]; then
-    if [[ $opt_reporter == "tap" ]]; then
-        VMAPI_IP=$VMAPI_IP CNAPI_IP=$CNAPI_IP NAPI_IP=$NAPI_IP \
-        PATH=$NODE_INSTALL/bin:$PATH $NODEUNIT --reporter \
-        $opt_reporter $test_files | tee $OUTPUT_DIR/vmapi.tap
-    else
-        VMAPI_IP=$VMAPI_IP CNAPI_IP=$CNAPI_IP NAPI_IP=$NAPI_IP \
-        PATH=$NODE_INSTALL/bin:$PATH $NODEUNIT --reporter \
-        $opt_reporter $test_files; retval=$?
-    fi
-fi
-
-
-if [[ $opt_reporter == "tap" ]]; then
-    echo ""
-    echo "# test output:"
-    ls $OUTPUT_DIR/*.tap
-
-    # Colored summary of results (borrowed from smartos-live.git/src/vm/run-tests).
-    echo ""
-    echo "# test results:"
-
-    end_time=$(date +%s)
-    elapsed=$((${end_time} - ${start_time}))
-
-    tests=$(grep "^# tests [0-9]" $OUTPUT_DIR/*.tap | cut -d ' ' -f3 | xargs | tr ' ' '+' | bc)
-    passed=$(grep "^# pass  [0-9]" $OUTPUT_DIR/*.tap | tr -s ' ' | cut -d ' ' -f3 | xargs | tr ' ' '+' | bc)
-    [[ -z ${tests} ]] && tests=0
-    [[ -z ${passed} ]] && passed=0
-    fail=$((${tests} - ${passed}))
-
-    echo "# Completed in ${elapsed} seconds."
-    echo -e "# \033[32mPASS: ${passed} / ${tests}\033[39m"
-    if [[ ${fail} -gt 0 ]]; then
-        echo -e "# \033[31mFAIL: ${fail} / ${tests}\033[39m"
-    fi
-    echo ""
-
-    if [[ ${tests} != ${passed} ]]; then
-        exit 1
-    fi
-else
-    exit $retval
+    VMAPI_IP=$VMAPI_IP CNAPI_IP=$CNAPI_IP NAPI_IP=$NAPI_IP \
+    PATH=$NODE_INSTALL/bin:$PATH $NODEUNIT --reporter \
+    $opt_reporter $test_files
 fi
