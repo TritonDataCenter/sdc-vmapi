@@ -136,7 +136,7 @@ exports.setUp = function (callback) {
 
 /* Tests */
 
-exports.get_admin_fabric_network = function (t) {
+exports.get_provision_network = function test_get_provision_network(t) {
     client.napi.get('/fabrics/' + ADMIN_USER_UUID + '/vlans',
             function (err, req, res, vlans) {
         if (err) {
@@ -147,7 +147,7 @@ exports.get_admin_fabric_network = function (t) {
                 t.ok(false, 'Error listing fabric vlans: ' + err);
             }
 
-            t.done();
+            lookupExternalNetwork();
             return;
         }
 
@@ -166,6 +166,28 @@ exports.get_admin_fabric_network = function (t) {
             t.ok(networks.length === 1, '1 network found');
 
             t.ok(networks[0], 'Admin fabric network should be found');
+            if (Array.isArray(networks) && networks.length >= 1) {
+                PROVISION_NETWORKS = [ {uuid: networks[0].uuid} ];
+                t.done();
+                return;
+            }
+
+            lookupExternalNetwork();
+        });
+    }
+
+    function lookupExternalNetwork() {
+        assert.equal(PROVISION_NETWORKS.length, 0,
+            'Should be no provision networks set');
+
+        client.napi.get('/networks?nic_tag=external',
+                function _getExternalNetworks(err, req, res, networks) {
+            common.ifError(t, err);
+            t.equal(res.statusCode, 200, '200 OK');
+            t.ok(networks, 'networks is set');
+            t.ok(Array.isArray(networks), 'networks is Array');
+            t.ok(networks.length >= 1, 'at least 1 external network found');
+
             if (Array.isArray(networks) && networks.length >= 1) {
                 PROVISION_NETWORKS = [ {uuid: networks[0].uuid} ];
             }
