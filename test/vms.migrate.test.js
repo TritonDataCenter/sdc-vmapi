@@ -92,20 +92,19 @@ var configurations = [
             }
         }
     },
-    // BHYVE testing is disabled due to failing snapshot (out of space).
-    // {
-    //     type: 'bhyve',
-    //     imageName: 'ubuntu-certified-16.04',
-    //     packageName: 'sample-2G',
-    //     vm: {
-    //         alias: 'vmapitest-migrate-' + testUuid.generateShortUuid(),
-    //         brand: 'bhyve',
-    //         owner_uuid: ADMIN_USER_UUID,
-    //         tags: {
-    //             'triton.placement.exclude_virtual_servers': true
-    //         }
-    //     }
-    // },
+    {
+        type: 'bhyve',
+        imageName: 'ubuntu-certified-16.04',
+        packageName: 'sample-2G',
+        vm: {
+            alias: 'vmapitest-migrate-' + testUuid.generateShortUuid(),
+            brand: 'bhyve',
+            owner_uuid: ADMIN_USER_UUID,
+            tags: {
+                'triton.placement.exclude_virtual_servers': true
+            }
+        }
+    },
     {
         type: 'kvm',
         imageName: 'ubuntu-certified-16.04',

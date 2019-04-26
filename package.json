@@ -1,7 +1,7 @@
 {
   "name": "vmapi",
   "description": "VMs API",
-  "version": "9.8.2",
+  "version": "9.8.3",
   "author": "Joyent (joyent.com)",
   "private": true,
   "dependencies": {
@@ -37,8 +37,7 @@
   },
   "devDependencies": {
     "byline": "5.0.0",
-    "nodeunit": "0.11.3",
-    "tap": "*"
+    "nodeunit": "0.11.3"
   },
   "scripts": {
     "start": "node ./server.js"
