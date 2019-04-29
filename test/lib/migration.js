@@ -1357,13 +1357,9 @@ function TestMigrationCfg(test, cfg) {
                 if (migrationUuidOverride) {
                     t.equal(vm.state, 'destroyed',
                         'original vm should have state destroyed');
-                    t.notEqual(sourceVm.uuid, vm.uuid,
-                        'vm uuid should be different');
                     t.equal(sourceVm.server_uuid, vm.server_uuid,
                         'vm server_uuid should be the same');
                 } else {
-                    t.equal(sourceVm.uuid, vm.uuid,
-                        'vm uuid should be the same');
                     t.notEqual(sourceVm.server_uuid, vm.server_uuid,
                         'vm server_uuid should be different');
                 }
