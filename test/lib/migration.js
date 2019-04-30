@@ -1086,8 +1086,8 @@ function TestMigrationCfg(test, cfg) {
     };
 
     test.check_vmapi_state = function test_check_vmapi_state(t) {
-        if (!sourceVm) {
-            t.ok(false, 'Original VM was not created successfully');
+        if (!targetVm) {
+            t.ok(false, 'Vm was not migrated successfully');
             t.done();
             return;
         }
