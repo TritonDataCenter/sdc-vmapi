@@ -141,6 +141,8 @@ function TestMigrationCfg(test, cfg) {
                     return s.status === 'running' &&
                         s.sysinfo && s.sysinfo['System Type'] !== 'Virtual';
                 });
+                t.ok(availableServers.length > 0,
+                    'number of available servers: ' + availableServers.length);
                 if (availableServers.length < 2) {
                     migrationUuidOverride = true;
                 }
