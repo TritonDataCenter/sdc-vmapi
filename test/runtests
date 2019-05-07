@@ -210,5 +210,5 @@ fi
 if [[ -n "$test_files" ]]; then
     VMAPI_IP=$VMAPI_IP CNAPI_IP=$CNAPI_IP NAPI_IP=$NAPI_IP \
     PATH=$NODE_INSTALL/bin:$PATH $NODEUNIT --reporter \
-    $opt_reporter $test_files
+    $opt_reporter $test_files | tee $OUTPUT_DIR/vmapi.tap
 fi
