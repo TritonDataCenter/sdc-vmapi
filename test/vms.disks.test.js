@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright (c) 2019, Joyent, Inc.
+ * Copyright 2019 Joyent, Inc.
  */
 
 var jsprim = require('jsprim');
@@ -149,7 +149,7 @@ exports.attempt_to_add_disk = function attempt_to_add_disk(t) {
     var path = '/vms/' + VM_UUID + '?action=create_disk';
     var opts = { size: 1536 };
 
-    CLIENT.post(path, opts, function postCb(err, req, res, job) {
+    CLIENT.post(path, opts, function postCb(err, req, res, _job) {
         t.ok(err, 'err');
         t.equal(err.name, 'VmWithoutFlexibleDiskSizeError');
         t.done();
@@ -167,18 +167,50 @@ exports.initialize_flexible_disk_vm = function initialize_flexible_disk_vm(t) {
     createVm(t, opts);
 };
 
+exports.add_disk_invalid_size = function add_disk_invalid_size(t) {
+    var path = '/vms/' + VM_UUID + '?action=create_disk';
+    var opts = { size: 'not-remaining' };
+
+    CLIENT.post(path, opts, function postCb(err, req, res, _job) {
+        t.ok(err, 'err');
+        t.equal(err.name, 'ValidationFailedError');
+        t.done();
+    });
+};
 
 exports.add_too_large_disk = function add_too_large_disk(t) {
     var path = '/vms/' + VM_UUID + '?action=create_disk';
     var opts = { size: 1536 };
 
-    CLIENT.post(path, opts, function postCb(err, req, res, job) {
+    CLIENT.post(path, opts, function postCb(err, req, res, _job) {
         t.ok(err, 'err');
         t.equal(err.name, 'InsufficientDiskSpaceError');
         t.done();
     });
 };
 
+exports.add_zero_size_disk = function add_zero_size_disk(t) {
+    var path = '/vms/' + VM_UUID + '?action=create_disk';
+    var opts = { size: 0 };
+
+    CLIENT.post(path, opts, function postCb(err, req, res, _job) {
+        t.ok(err, 'err');
+        t.equal(err.name, 'ValidationFailedError');
+        t.done();
+    });
+};
+
+
+exports.add_negative_size_disk = function add_negative_size_disk(t) {
+    var path = '/vms/' + VM_UUID + '?action=create_disk';
+    var opts = { size: -1530 };
+
+    CLIENT.post(path, opts, function postCb(err, req, res, _job) {
+        t.ok(err, 'err');
+        t.equal(err.name, 'ValidationFailedError');
+        t.done();
+    });
+};
 
 exports.add_disk = function add_disk(t) {
     var path = '/vms/' + VM_UUID + '?action=create_disk';
@@ -226,7 +258,7 @@ exports.add_additional_too_much_disk = function add_too_much_disk(t) {
     var path = '/vms/' + VM_UUID + '?action=create_disk';
     var opts = { size: 128 };
 
-    CLIENT.post(path, opts, function postCb(err, req, res, job) {
+    CLIENT.post(path, opts, function postCb(err, req, res, _job) {
         t.ok(err, 'err');
         t.equal(err.name, 'InsufficientDiskSpaceError');
         t.done();
@@ -336,7 +368,7 @@ exports.resize_disk_up_too_far = function resize_disk_up_too_far(t) {
         size: 1536
     };
 
-    CLIENT.post(path, opts, function postCb(err, req, res, body) {
+    CLIENT.post(path, opts, function postCb(err, req, res, _body) {
         t.ok(err, 'err');
         t.equal(err.name, 'InsufficientDiskSpaceError');
         t.done();
@@ -499,7 +531,6 @@ function add_disk_with_existing_uuid(t) {
 
     CLIENT.post(path, opts, function postCb(err, req, res, body) {
         t.ok(err, 'err');
-
         t.equal(err.name, 'ValidationFailedError', 'err.name');
         t.equal(body.errors[0].field, 'disk_uuid', 'field');
         t.equal(body.errors[0].message, 'Already in use', 'message');
@@ -510,3 +541,87 @@ function add_disk_with_existing_uuid(t) {
 
 
 exports.destroy_flexible_disk_vm = deleteVm;
+
+
+exports.init_other_flexible_disk_vm = function init_other_flexible_disk_vm(t) {
+    var opts = jsprim.deepCopy(VM_OPTS);
+    opts.alias = VM_ALIAS_BASE + '-' + process.pid;
+    opts.flexible_disk_size = 11264;
+    createVm(t, opts);
+};
+
+
+exports.add_disk_remaining_size = function add_disk_remaining_size(t) {
+    var path = '/vms/' + VM_UUID + '?action=create_disk';
+    var opts = { size: 'remaining' };
+
+    CLIENT.post(path, opts, function postCb(err, req, res, job) {
+        common.ifError(t, err, 'err');
+
+        t.ok(job, 'job');
+        t.ok(job.job_uuid, 'job.job_uuid');
+
+        var jobPath = '/jobs/' + job.job_uuid;
+        waitForValue(jobPath, 'execution', 'succeeded', {
+            client: CLIENT
+        }, function waitForValueCb(err2) {
+            common.ifError(t, err2, 'err2');
+            t.done();
+        });
+    });
+};
+
+
+exports.destroy_other_flexible_disk_vm = deleteVm;
+
+
+exports.init_vm_with_two_remaining_disks =
+    function init_vm_with_two_remaining_disks(t) {
+    var vmOpts = jsprim.deepCopy(VM_OPTS);
+    vmOpts.alias = VM_ALIAS_BASE + '-' + process.pid;
+    vmOpts.flexible_disk_size = 11264;
+
+    vmOpts.disks.push({size: 'remaining'});
+    vmOpts.disks.push({size: 'remaining'});
+
+    var opts = createOpts('/vms', vmOpts);
+    CLIENT.post(opts, vmOpts, function postCb(err, req, res) {
+        t.ok(err, 'err');
+        t.equal(err.name, 'ValidationFailedError', 'err.name');
+        t.done();
+    });
+};
+
+
+exports.init_vm_with_zero_size_disk =
+    function init_vm_with_zero_size_disk(t) {
+    var vmOpts = jsprim.deepCopy(VM_OPTS);
+    vmOpts.alias = VM_ALIAS_BASE + '-' + process.pid;
+    vmOpts.flexible_disk_size = 11264;
+
+    vmOpts.disks.push({size: 0});
+
+    var opts = createOpts('/vms', vmOpts);
+    CLIENT.post(opts, vmOpts, function postCb(err, req, res) {
+        t.ok(err, 'err');
+        t.equal(err.name, 'ValidationFailedError', 'err.name');
+        t.done();
+    });
+};
+
+
+exports.init_vm_with_negative_size_disk =
+    function init_vm_with_negative_size_disk(t) {
+    var vmOpts = jsprim.deepCopy(VM_OPTS);
+    vmOpts.alias = VM_ALIAS_BASE + '-' + process.pid;
+    vmOpts.flexible_disk_size = 11264;
+
+    vmOpts.disks.push({size: -1024});
+
+    var opts = createOpts('/vms', vmOpts);
+    CLIENT.post(opts, vmOpts, function postCb(err, req, res) {
+        t.ok(err, 'err');
+        t.equal(err.name, 'ValidationFailedError', 'err.name');
+        t.done();
+    });
+};
