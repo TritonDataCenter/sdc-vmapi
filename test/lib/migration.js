@@ -860,7 +860,26 @@ function TestMigrationCfg(test, cfg) {
                         sawBandwidthEvent = true;
                     }
                 });
-                t.ok(sawBandwidthEvent, 'a bandwidth progress event was seen');
+
+                if (sawBandwidthEvent) {
+                    t.ok(sawBandwidthEvent, 'bandwidth progress event seen');
+                } else {
+                    // In the case of a fast sync, it's possible that a
+                    // bandwidth event is not seen. So we let that slide if the
+                    // sync action completed within 10 seconds.
+                    var syncPhases = watcher.events.filter(
+                            function _filterSyncPhases(event) {
+                        return event.phase === 'sync' && event.duration_ms;
+                    });
+                    var lastSyncPhase = syncPhases.slice(-1)[0];
+                    t.ok(lastSyncPhase,
+                        'should have a sync phase with a duration_ms field');
+                    if (lastSyncPhase) {
+                        t.ok(lastSyncPhase.duration_ms < 10000,
+                            'no bandwidth event seen due to fast sync (' +
+                            lastSyncPhase.duration_ms + 'ms)');
+                    }
+                }
             }
 
             var endEvent = watcher.events.filter(function _filtEnd(event) {
@@ -1289,7 +1308,26 @@ function TestMigrationCfg(test, cfg) {
                         sawBandwidthEvent = true;
                     }
                 });
-                t.ok(sawBandwidthEvent, 'a bandwidth progress event was seen');
+
+                if (sawBandwidthEvent) {
+                    t.ok(sawBandwidthEvent, 'bandwidth progress event seen');
+                } else {
+                    // In the case of a fast sync, it's possible that a
+                    // bandwidth event is not seen. So we let that slide if the
+                    // sync action completed within 10 seconds.
+                    var syncPhases = watcher.events.filter(
+                            function _filterSyncPhases(event) {
+                        return event.phase === 'sync' && event.duration_ms;
+                    });
+                    var lastSyncPhase = syncPhases.slice(-1)[0];
+                    t.ok(lastSyncPhase,
+                        'should have a sync phase with a duration_ms field');
+                    if (lastSyncPhase) {
+                        t.ok(lastSyncPhase.duration_ms < 10000,
+                            'no bandwidth event seen due to fast sync (' +
+                            lastSyncPhase.duration_ms + 'ms)');
+                    }
+                }
             }
 
             var endEvent = watcher.events.filter(function _filtEnd(event) {
