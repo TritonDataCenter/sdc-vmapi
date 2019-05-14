@@ -32,6 +32,7 @@ ifeq ($(shell uname -s),SunOS)
 endif
 
 NAME = vmapi
+AGENT_PREBUILT_AGENT_BRANCH=ndp
 
 #
 # Tools
