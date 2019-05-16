@@ -106,7 +106,7 @@ exports.check_no_package_brand = function check_no_package_brand(t) {
         billing_id: PACKAGES['JOYENT_PACKAGE'].uuid,
         brand: 'joyent'
     }, errs, function _onValidated(err) {
-        t.ok(!err, 'package should be valid when it has no brand');
+        t.ok(!err, 'should be no err validating: err=' + err);
         t.deepEqual(errs, [],
             'should be no errors when package has no brand');
         t.done();
@@ -121,7 +121,7 @@ exports.check_valid_package_brand = function check_valid_package_brand(t) {
         billing_id: PACKAGES['BHYVE_PACKAGE'].uuid,
         brand: 'bhyve'
     }, errs, function _onValidated(err) {
-        t.ok(!err, 'package should be valid when brand matches provision');
+        t.ok(!err, 'should be no err validating: err=' + err);
         t.deepEqual(errs, [],
             'should be no errors when brand matches provision');
         t.done();
@@ -136,18 +136,13 @@ exports.check_invalid_package_brand = function check_invalid_package_brand(t) {
         billing_id: PACKAGES['BHYVE_PACKAGE'].uuid,
         brand: 'kvm'
     }, errs, function _onValidated(err) {
-        t.ok(err,
-            'package should be invalid when brand does not match provision');
-        t.equal(err.field, 'brand', 'field with problem should be "brand"');
-        t.equal(err.code, 'Invalid', 'error code should be "Invalid"');
-        t.equal(err.message,
-            'Package requires brand "bhyve", but brand "kvm" was specified',
-            'error message should indicate package and brand conflict');
-
-        // errs is only populated in rare cases. Not including this one.
-        t.deepEqual(errs, [],
-            'errs should be empty after brand does not match provision');
-
+        t.ok(!err, 'should be no err validating: err=' + err);
+        t.deepEqual(errs, [ {
+            code: 'Invalid',
+            field: 'brand',
+            message: 'Package requires brand "bhyve", but brand "kvm" was '
+                + 'specified'
+        } ], 'should be error in errs when package brand does not match');
         t.done();
     });
 };
