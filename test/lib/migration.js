@@ -224,6 +224,81 @@ function TestMigrationCfg(test, cfg) {
         });
     };
 
+    test.user_check_allow_migration_flag_unset = function (t) {
+        client.get('/vms/' + sourceVm.uuid,
+            function onListVms(err, req, res, vm) {
+                t.ifError(err);
+                t.ok(vm, 'getting vm should result in a non-empty response');
+
+                t.equal(vm.internal_metadata.user_migration_allowed, undefined);
+
+                t.done();
+            });
+    };
+
+    test.bad_user_migrate_not_allowed_by_vm_default = function (t) {
+        // Should not be able to migrate a zone with
+        // user_migration_allowed unset
+        client.post({
+            path: format('/vms/%s?action=migrate&migration_action=begin'
+                + '&owner_uuid=' + cfg.vm.owner_uuid,
+                sourceVm.uuid)
+        }, function onMigrateVm(err) {
+            t.ok(err,
+                'expect error attempting migration of a zone ' +
+                '(server user_migration_allowed flag not set)');
+            if (err) {
+                t.equal(err.statusCode, 412,
+                    format('err.statusCode === 412, got %s',
+                        err.statusCode));
+            }
+            t.done();
+        });
+    };
+
+    test.user_set_vm_explicitly_disallow_migrations = function (t) {
+        var payload = {
+            internal_metadata: { user_migration_allowed: false }
+        };
+        updateVmAndWait(t, client, sourceVm.uuid, payload,
+            function onUpdateVm(err) {
+                t.ifError(err);
+                t.done();
+            });
+    };
+
+    test.user_check_allow_migration_flag_false = function (t) {
+        client.get('/vms/' + sourceVm.uuid,
+            function onListVms(err, req, res, vm) {
+                t.ifError(err);
+                t.ok(vm, 'getting vm should result in a non-empty response');
+
+                t.equal(vm.internal_metadata.user_migration_allowed, false);
+
+                t.done();
+            });
+    };
+
+    test.bad_user_migrate_explicitly_not_allowed_by_vm = function (t) {
+        // Should not be able to migrate a zone with
+        // user_migration_allowed = false
+        client.post({
+            path: format('/vms/%s?action=migrate&migration_action=begin'
+                + '&owner_uuid=%s', sourceVm.uuid, cfg.vm.owner_uuid)
+        }, function onMigrateVm(err) {
+            t.ok(err,
+                'expect error attempting migration of a zone ' +
+                '(server user_migration_allowed flag false)');
+            if (err) {
+                t.equal(err.statusCode, 412,
+                    format('err.statusCode === 412, got %s',
+                        err.statusCode));
+            }
+            t.done();
+        });
+    };
+
+
     test.bad_migrate_unknown_action = function (t) {
         // Unknown migration action.
         client.post({
@@ -1470,6 +1545,28 @@ function TestMigrationCfg(test, cfg) {
             t.done();
         });
     };
+}
+
+function updateVmAndWait(t, client, vmUuid, payload, cb) {
+    var postOpts = {
+        path: format('/vms/%s?action=update', vmUuid)
+    };
+
+    client.post(postOpts, payload, function onUpdate(err, req, res, body) {
+        t.ifError(err, 'metadata should be set successfully');
+
+        t.ok(body.job_uuid, 'got a job uuid in the begin response');
+        var waitParams = {
+            client: client,
+            job_uuid: body.job_uuid,
+            timeout: 15 * 60
+        };
+
+        waitForJob(waitParams, function onUpdateJobCb(jerr, state, job) {
+            t.ifError(jerr, 'update job should be successful');
+            t.done();
+        });
+    });
 }
 
 
