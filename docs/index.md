@@ -2661,6 +2661,7 @@ production.
 | ------------------------------ | ------ | ---------------------------------------------------------------------------- |
 | **experimental_fluentd_host**  | String |                                                                              |
 | **docker_tag_re**              | String | Tags matching regex are treated with Docker tag semantics                    |
+| **migration_send_mbps_limit**  | Number | Limit of transfer rate, in megabits per second, for individual migrations    |
 
 `docker_tag_re` must be a valid regular expression string -- more concretely,
 what Javascript's RegExp() considers valid. Docker tags can be added during

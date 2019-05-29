@@ -303,6 +303,7 @@ function startVmapiService() {
                 metricsManager: metricsManager,
                 moray: moray,
                 morayBucketsInitializer: morayBucketsInitializer,
+                zfs_send_mbps_limit: config.migration_send_mbps_limit,
                 overlay: config.overlay,
                 cnapi: config.cnapi, // TODO: TRITON-1295
                 reserveKvmStorage: config.reserveKvmStorage,
