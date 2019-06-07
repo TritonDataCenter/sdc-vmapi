@@ -27,6 +27,9 @@
         "enabled": false
 {{/fabric_cfg}}
     },
+{{#user_migration_allowed}}
+    "user_migration_allowed": {{user_migration_allowed}},
+{{/user_migration_allowed}}
 {{#migration_send_mbps_limit}}
     "migration_send_mbps_limit": {{migration_send_mbps_limit}},
 {{/migration_send_mbps_limit}}

@@ -2267,6 +2267,11 @@ For any migration action (e.g. begin, sync, switch or abort) you can use the
 migration watch endpoint to show progress information for the running migration
 action.
 
+User migrations are disabled by default, but that can be changed globally by
+setting the VMAPI/SAPI user_migration_allowed setting to true, or
+changed on a per-instance basis by updating
+vm.internal_metadata.user_migration_allowed to true.
+
 ## VmMigrateList (GET /migrations)
 
 Returns the list of [Migration Objects](#migration-objects).
@@ -2662,6 +2667,7 @@ production.
 | **experimental_fluentd_host**  | String |                                                                              |
 | **docker_tag_re**              | String | Tags matching regex are treated with Docker tag semantics                    |
 | **migration_send_mbps_limit**  | Number | Limit of transfer rate, in megabits per second, for individual migrations    |
+| **user_migration_allowed**     | Boolean | Whether user migrations are allowed (default is false). This setting can also be overruled on a per-instance basis through the vm.internal_metadata.user_migration_allowed setting. |
 
 `docker_tag_re` must be a valid regular expression string -- more concretely,
 what Javascript's RegExp() considers valid. Docker tags can be added during

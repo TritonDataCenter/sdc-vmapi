@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright (c) 2018, Joyent, Inc.
+ * Copyright (c) 2019, Joyent, Inc.
  */
 
 /*
@@ -303,6 +303,7 @@ function startVmapiService() {
                 metricsManager: metricsManager,
                 moray: moray,
                 morayBucketsInitializer: morayBucketsInitializer,
+                userMigrationAllowed: config.user_migration_allowed,
                 zfs_send_mbps_limit: config.migration_send_mbps_limit,
                 overlay: config.overlay,
                 cnapi: config.cnapi, // TODO: TRITON-1295
