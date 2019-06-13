@@ -257,14 +257,21 @@ function TestMigrationCfg(test, cfg) {
     };
 
     test.user_set_vm_explicitly_disallow_migrations = function (t) {
-        var payload = {
-            internal_metadata: { user_migration_allowed: false }
-        };
-        updateVmAndWait(t, client, sourceVm.uuid, payload,
-            function onUpdateVm(err) {
-                t.ifError(err);
-                t.done();
-            });
+        var payload = {};
+
+        client.get('/vms/' + sourceVm.uuid, function (getErr, req, res, body) {
+            common.ifError(t, getErr, 'VM should appear in vmapi');
+
+            payload.internal_metadata = body.internal_metadata;
+            payload.internal_metadata.user_migration_allowed = false;
+
+            updateVmAndWait(t, client, sourceVm.uuid, payload,
+                function onUpdateVm(updateErr) {
+                    t.ifError(updateErr);
+                    t.done();
+                });
+        });
+
     };
 
     test.user_check_allow_migration_flag_false = function (t) {
@@ -1552,8 +1559,8 @@ function updateVmAndWait(t, client, vmUuid, payload, cb) {
         path: format('/vms/%s?action=update', vmUuid)
     };
 
-    client.post(postOpts, payload, function onUpdate(err, req, res, body) {
-        t.ifError(err, 'metadata should be set successfully');
+    client.post(postOpts, payload, function onPost(err, req, res, body) {
+        t.ifError(err, 'update should succeed');
 
         t.ok(body.job_uuid, 'got a job uuid in the begin response');
         var waitParams = {
