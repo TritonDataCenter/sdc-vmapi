@@ -13,6 +13,7 @@ var util = require('util');
 
 var assert = require('assert-plus');
 var byline = require('byline');
+var jsprim = require('jsprim');
 var restify = require('restify');
 var vasync = require('vasync');
 
@@ -809,10 +810,9 @@ function TestMigrationCfg(test, cfg) {
             t.equal(migration.phase, 'begin', 'phase should be "begin"');
             t.equal(migration.state, 'paused', 'state should be "paused"');
 
-            targetVm = {
-                uuid: migration.target_vm_uuid,
-                server_uuid: migration.target_server_uuid
-            };
+            targetVm = jsprim.deepCopy(sourceVm);
+            targetVm.uuid = migration.target_vm_uuid;
+            targetVm.server_uuid = migration.target_server_uuid;
 
             t.ok(Array.isArray(migration.progress_history) &&
                     migration.progress_history.length >= 1,
@@ -1221,6 +1221,10 @@ function TestMigrationCfg(test, cfg) {
                     t.notEqual(sourceVm.server_uuid, vm.server_uuid,
                         'vm server_uuid should be different');
                 }
+
+                // TRITON-1716 Ensure the create-timestamp has not changed.
+                t.equal(sourceVm.create_timestamp, vm.create_timestamp,
+                    'original create_timestamp should be maintained');
             }
 
             checkMigratedVm();
@@ -1443,10 +1447,9 @@ function TestMigrationCfg(test, cfg) {
 
             assert.object(migration, 'migration object');
 
-            targetVm = {
-                uuid: migration.target_vm_uuid,
-                server_uuid: migration.target_server_uuid
-            };
+            targetVm = jsprim.deepCopy(sourceVm);
+            targetVm.uuid = migration.target_vm_uuid;
+            targetVm.server_uuid = migration.target_server_uuid;
 
             t.done();
         });
@@ -1485,6 +1488,10 @@ function TestMigrationCfg(test, cfg) {
                     t.notEqual(sourceVm.server_uuid, vm.server_uuid,
                         'vm server_uuid should be different');
                 }
+
+                // TRITON-1716 Ensure the create-timestamp has not changed.
+                t.equal(sourceVm.create_timestamp, vm.create_timestamp,
+                    'original create_timestamp should be maintained');
             }
 
             checkMigratedVm();
