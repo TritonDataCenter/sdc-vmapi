@@ -2361,7 +2361,7 @@ Starts the specified migration action.
 
 Param            | Type     | Description
 ---------------- | -------- | -----------
-migration_action | String   | One of "begin", "sync", "switch", "pause" or "abort".
+migration_action | String   | One of "begin", "sync", "switch", "pause", "abort" or "finalize".
 
 ### Optional Inputs
 
@@ -2410,6 +2410,12 @@ This action is only actionable when the migration is paused or failed. It is
 used to abort the migration, removing the target placeholder vm and ensuring the
 source vm is returned to it's original state.
 
+### Migrate Finalize
+
+The "finalize" action will remove (decommission) the original source vm (which
+was hidden during the "switch" action). Finalize will return a 200 status code
+when successful and the migration record will have been removed.
+
 ### VmMigrate Response
 
 On a successful response, a [Migration Job Response Object](#migration-job-response-object) is
@@ -2418,11 +2424,12 @@ follow the progress of the migration.
 
 Code     | Description                                                                  | Response
 -------- | ---------------------------------------------------------------------------- | ------------------
-202      | New job created                                                              | VM job response object
+200      | Action was successful                                                        | None
+202      | New job created, use migration watch to track the progress                   | VM job response object
 404      | VM Not Found. VM does not exist or VM does not belong to the specified owner | Error object
 409      | VM failed to validate.                                                       | Error object
 
-#### Example
+#### Examples
 
     POST /vms/e9bd0ed1-7de3-4c66-a649-d675dbce6e83?action=migrate&migration_action=begin
 
@@ -2444,6 +2451,21 @@ Code     | Description                                                          
         ... see (Migration Object)
       }
     }
+
+    POST /vms/e9bd0ed1-7de3-4c66-a649-d675dbce6e83?action=migrate&migration_action=finalize
+
+    HTTP/1.1 200 OK
+    Connection: close
+    Content-Type: application/json
+    Content-Length: 2
+    Content-MD5: bs77tdERx4Kj7igpE33AbZ==
+    Date: Mon, 24 Apr 2019 10:30:00 GMT
+    Server: VMAPI
+    x-request-id: d169bbdf-a54c-4f71-a543-8928cda5b152
+    x-response-time: 1970
+    x-server-name: d6334b70-2e19-4af4-85ba-53776ef82820
+
+    {}
 
 ### Migration Job Response Object
 

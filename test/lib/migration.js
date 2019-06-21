@@ -1255,25 +1255,51 @@ function TestMigrationCfg(test, cfg) {
         }
     };
 
-    test.delete_source_instance = function test_delete_source_instance(t) {
-        // To delete a hidden (DNI) vm, we execute a 'vmadm delete' on the
-        // server in question.
-        if (!sourceVm) {
-            t.ok(false, 'Source VM was not created successfully');
+    test.bad_migration_begin_from_state_switch =
+            function test_bad_migration_begin_from_state_switch(t) {
+        if (!targetVm) {
+            t.ok(false, 'Target VM was not migrated successfully');
             t.done();
             return;
         }
 
-        var server_uuid = sourceVm.server_uuid;
-        var params = {
-            script: format('#!/bin/bash\nvmadm delete %s', sourceVm.uuid),
-            server_uuid: server_uuid
-        };
-        client.cnapi.post({path: format('/servers/%s/execute',
-                server_uuid)},
-                params,
-                function _onServerExecuteCb(err) {
-            common.ifError(t, err, 'error running vmadm delete on server');
+        // It should not be possible to start another migration until the recent
+        // migration is finalized.
+        client.post({
+            path: format('/vms/%s?action=migrate&migration_action=begin',
+                targetVm.uuid)
+        }, function onMigrateBeginFromStateSuccessCb(err) {
+            t.ok(err,
+                'expect an error for migration begin when a previous ' +
+                'migration exists');
+            if (err) {
+                t.equal(err.statusCode, 412,
+                    format('err.statusCode === 412, got %s', err.statusCode));
+            }
+            t.done();
+        });
+    };
+
+    test.migration_finalize = function test_migration_finalize(t) {
+        if (!targetVm) {
+            t.ok(false, 'Target VM was not migrated successfully');
+            t.done();
+            return;
+        }
+
+        client.post({
+            path: format('/vms/%s?action=migrate&migration_action=finalize',
+                targetVm.uuid)
+        }, function onMigrateFinalizeCb(err, req, res) {
+            common.ifError(t, err, 'no error from migration finalize call');
+            if (!err) {
+                t.ok(res, 'should get a restify response object');
+                if (res) {
+                    t.equal(res.statusCode, 200,
+                        format('err.statusCode === 200, got %s',
+                            res.statusCode));
+                }
+            }
             t.done();
         });
     };
@@ -1522,25 +1548,26 @@ function TestMigrationCfg(test, cfg) {
         }
     };
 
-    test.delete_source_instance_2 = function test_delete_source_instance_2(t) {
-        // To delete a hidden (DNI) vm, we execute a 'vmadm delete' on the
-        // server in question.
-        if (!sourceVm) {
-            t.ok(false, 'Source VM was not created successfully');
+    test.migration_full_finalize = function test_migration_full_finalize(t) {
+        if (!targetVm) {
+            t.ok(false, 'Target VM was not migrated successfully');
             t.done();
             return;
         }
 
-        var server_uuid = sourceVm.server_uuid;
-        var params = {
-            script: format('#!/bin/bash\nvmadm delete %s', sourceVm.uuid),
-            server_uuid: server_uuid
-        };
-        client.cnapi.post({path: format('/servers/%s/execute',
-                server_uuid)},
-                params,
-                function _onServerExecuteCb(err) {
-            common.ifError(t, err, 'error running vmadm delete on server');
+        client.post({
+            path: format('/vms/%s?action=migrate&migration_action=finalize',
+                targetVm.uuid)
+        }, function onMigrateFinalizeCb(err, req, res) {
+            common.ifError(t, err, 'no error from migration finalize call');
+            if (!err) {
+                t.ok(res, 'should get a restify response object');
+                if (res) {
+                    t.equal(res.statusCode, 200,
+                        format('err.statusCode === 200, got %s',
+                            res.statusCode));
+                }
+            }
             t.done();
         });
     };
