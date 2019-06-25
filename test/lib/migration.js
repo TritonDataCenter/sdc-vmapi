@@ -100,6 +100,7 @@ MigrationWatcher.prototype.start = function _migWatchStart() {
 
 function TestMigrationCfg(test, cfg) {
     var client;
+    var migrationRolledBack = false;
     var migrationStarted = false;
     var migrationSynced = false;
     var migrationSwitched = false;
@@ -1548,7 +1549,7 @@ function TestMigrationCfg(test, cfg) {
         }
     };
 
-    test.migration_full_finalize = function test_migration_full_finalize(t) {
+    test.migration_rollback = function test_migration_rollback(t) {
         if (!targetVm) {
             t.ok(false, 'Target VM was not migrated successfully');
             t.done();
@@ -1556,25 +1557,100 @@ function TestMigrationCfg(test, cfg) {
         }
 
         client.post({
-            path: format('/vms/%s?action=migrate&migration_action=finalize',
+            path: format('/vms/%s?action=migrate&migration_action=rollback',
                 targetVm.uuid)
-        }, function onMigrateFinalizeCb(err, req, res) {
-            common.ifError(t, err, 'no error from migration finalize call');
+        }, function onMigrateRollbackCb(err, req, res, body) {
+            common.ifError(t, err, 'no error from migration rollback call');
             if (!err) {
                 t.ok(res, 'should get a restify response object');
                 if (res) {
-                    t.equal(res.statusCode, 200,
-                        format('err.statusCode === 200, got %s',
+                    t.equal(res.statusCode, 202,
+                        format('err.statusCode === 202, got %s',
                             res.statusCode));
+                    t.ok(res.body, 'should get a restify response body object');
+                }
+                if (body) {
+                    t.ok(body.job_uuid, 'got a job uuid: ' + body.job_uuid);
+                    t.ok(body.migration, 'got a migration record');
+                    if (body.migration) {
+                        t.equal(body.migration.phase, 'rollback',
+                            'phase should be rollback');
+                        t.equal(body.migration.state, 'running',
+                            'state should be running');
+                    }
+
+                    var waitParams = {
+                        client: client,
+                        job_uuid: body.job_uuid,
+                        timeout: 20 * 60 // 20 minutes
+                    };
+
+                    waitForJob(waitParams, function onMigrationJobCb(jerr,
+                            state,
+                            job) {
+                        common.ifError(t, jerr,
+                            'rollback should be successful');
+                        if (!jerr) {
+                            t.equal(state, 'succeeded',
+                                'Migration rollback job should succeed - ' +
+                                (state === 'succeeded' ? 'ok' :
+                                    getJobError(job)));
+                        }
+                        migrationRolledBack = (state === 'succeeded');
+                        t.done();
+                    });
+                    return;
                 }
             }
             t.done();
         });
     };
 
+    test.check_vmapi_state_after_rollback =
+            function test_check_vmapi_state_after_rollback(t) {
+        if (!migrationRolledBack) {
+            t.ok(false, 'Vm did not rollback successfully');
+            t.done();
+            return;
+        }
+
+        // The target vm should no longer be visible in vmapi. We use
+        // 'sync=true' to ensure vmapi (via cnapi) will use the most up-to-date
+        // information.
+        client.get({path: format('/vms/%s?sync=true', targetVm.uuid)},
+            onGetTargetVm);
+
+        function onGetTargetVm(err, req, res, vm) {
+            common.ifError(t, err, 'should not error fetching target vm');
+            if (res) {
+                t.equal(res.statusCode, 200,
+                    format('err.statusCode === 200, got %s', res.statusCode));
+            }
+            t.ok(vm, 'should get a vm object');
+            if (vm) {
+                // In the case of an override the vm should now be seen as
+                // destroyed, else the vm will be active, but the server_uuid
+                // will have changed.
+                if (migrationUuidOverride) {
+                    t.equal(vm.state, 'destroyed',
+                        'original vm should have state destroyed');
+                    t.equal(targetVm.server_uuid, vm.server_uuid,
+                        'vm server_uuid should be the same');
+                } else {
+                    t.equal(sourceVm.server_uuid, vm.server_uuid,
+                        'vm server_uuid should be the source server uuid');
+                    t.notEqual(targetVm.server_uuid, vm.server_uuid,
+                        'vm target server_uuid should be different');
+                }
+            }
+
+            t.done();
+        }
+    };
+
     test.cleanup = function test_cleanup(t) {
-        if (!targetVm) {
-            t.ok(false, 'target vm not found, cannot delete VM');
+        if (!sourceVm) {
+            t.ok(false, 'source vm not found, cannot delete VM');
             t.done();
             return;
         }

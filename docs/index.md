@@ -2267,6 +2267,14 @@ For any migration action (e.g. begin, sync, switch or abort) you can use the
 migration watch endpoint to show progress information for the running migration
 action.
 
+After performing a migration switch (or full automatic migration), if everything
+is working in the newly migrated instance you can then use the migration
+*finalize* action, which will remove the original (now hidden) source instance
+and complete the migration process, else if the new instance is not working
+correctly, you can perform a migration *rollback* action, which will reinstate
+the original source instance and delete the migration target instance, reverting
+to the state of the instance before the migration switch action.
+
 User migrations are disabled by default, but that can be changed globally by
 setting the VMAPI/SAPI user_migration_allowed setting to true, or
 changed on a per-instance basis by updating
@@ -2361,7 +2369,7 @@ Starts the specified migration action.
 
 Param            | Type     | Description
 ---------------- | -------- | -----------
-migration_action | String   | One of "begin", "sync", "switch", "pause", "abort" or "finalize".
+migration_action | String   | One of "begin", "sync", "switch", "pause", "abort", "finalize" or "rollback".
 
 ### Optional Inputs
 
@@ -2409,6 +2417,14 @@ stop the migration sync operation and place the migration into a paused state.
 This action is only actionable when the migration is paused or failed. It is
 used to abort the migration, removing the target placeholder vm and ensuring the
 source vm is returned to it's original state.
+
+### Migrate Rollback
+
+The "rollback" action will remove (decommission) the newly migrated target
+instance and restore the original source instance back as the primary (and
+visible) instance. Any filesystem changes made to the target instance since it
+was primary (i.e. since the migration switch) will be lost. After a successful
+migration rollback, the migration record will have been removed.
 
 ### Migrate Finalize
 

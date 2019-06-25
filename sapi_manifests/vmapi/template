@@ -53,6 +53,7 @@
             "migrate-abort",
             "migrate-begin",
             "migrate-pause",
+            "migrate-rollback",
             "migrate-sync",
             "migrate-switch"
         ],
