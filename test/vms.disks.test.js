@@ -14,7 +14,6 @@ var uuid = require('libuuid');
 var common = require('./common');
 var waitForValue = common.waitForValue;
 
-
 // --- Globals
 
 
@@ -34,8 +33,8 @@ var VM_OPTS = {
     vcpus: 1,
     cpu_cap: 100,
     ram: 1024,
-    disks: [],     // filled in later
-    networks: [],  // filled in later
+    disks: [], // filled in later
+    networks: [], // filled in later
     creator_uuid: CUSTOMER_UUID,
     tags: {
         'triton.placement.exclude_virtual_servers': true
@@ -47,6 +46,7 @@ var CALLER = {
     keyId: '/foo@joyent.com/keys/id_rsa'
 };
 
+var IMG_DISK_SIZE;
 
 // --- Helpers
 
@@ -104,6 +104,16 @@ function deleteVm(t) {
 }
 
 
+function createVmAttempt(t, vmOpts) {
+    var opts = createOpts('/vms', vmOpts);
+    CLIENT.post(opts, vmOpts, function postCb(err, req, res) {
+        t.ok(err, 'Failed Attempt Error');
+        t.equal(res.statusCode, 409, 'status code: ' + res.statusCode);
+        t.done();
+    });
+}
+
+
 // --- Tests
 
 
@@ -129,12 +139,51 @@ exports.setup = function setup(t) {
                 })[0];
 
                 VM_OPTS.disks.push({ image_uuid: newestImg.uuid });
+                IMG_DISK_SIZE = newestImg.image_size;
 
                 t.done();
             });
         });
     });
 };
+
+
+exports.attempt_to_use_remaining_disk_size_not_enough_quota =
+function attempt_to_use_remaining_disk_size_not_enough_quota(t) {
+    var opts = jsprim.deepCopy(VM_OPTS);
+    opts.alias = VM_ALIAS_BASE + '-' + process.pid;
+    opts.flexible_disk_size = IMG_DISK_SIZE / 2;
+    opts.quota = IMG_DISK_SIZE / 2;
+    opts.disks.push({size: 'remaining'});
+    createVmAttempt(t, opts);
+};
+
+
+exports.initialize_remaining_correctly_with_flexible_disk_size =
+function initialize_remaining_correctly_with_flexible_disk_size(t) {
+    var opts = jsprim.deepCopy(VM_OPTS);
+    opts.alias = VM_ALIAS_BASE + '-' + process.pid;
+    opts.flexible_disk_size = IMG_DISK_SIZE + 1024;
+    opts.quota = IMG_DISK_SIZE + 1024;
+    opts.disks.push({size: 'remaining'});
+    createVm(t, opts);
+};
+
+exports.destroy_remaining_correctly_with_flexible_disk_size = deleteVm;
+
+exports.initialize_remaining_correctly_without_flexible_disk_size =
+function initialize_remaining_correctly_without_flexible_disk_size(t) {
+    var opts = jsprim.deepCopy(VM_OPTS);
+    opts.alias = VM_ALIAS_BASE + '-' + process.pid;
+    opts.quota = 22528;
+    opts.disks.push({size: 'remaining'});
+    opts.package = {
+        flexible_disk: true
+    };
+    createVm(t, opts);
+};
+
+exports.destroy_remaining_correctly_without_flexible_disk_size = deleteVm;
 
 
 exports.initialize_non_flexible_disk_vm =
@@ -164,6 +213,7 @@ exports.initialize_flexible_disk_vm = function initialize_flexible_disk_vm(t) {
     var opts = jsprim.deepCopy(VM_OPTS);
     opts.alias = VM_ALIAS_BASE + '-' + process.pid;
     opts.flexible_disk_size = 11264;
+    opts.quota = 22528;
     createVm(t, opts);
 };
 
