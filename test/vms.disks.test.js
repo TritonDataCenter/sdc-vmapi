@@ -289,11 +289,23 @@ exports.check_added_disk = function check_added_disk(t) {
         common.ifError(t, err, 'err');
         t.ok(vm);
         t.ok(vm.disks);
+        // Provision failed, skip the following tests:
+        if (!vm || !vm.disks) {
+            console.log('Skipping tests: provision failed');
+            t.done();
+            return;
+        }
 
         var disks = vm.disks;
         t.equal(disks.length, 2);
         t.equal(disks[0].pci_slot, '0:4:0', '[0].pci_slot');
         t.equal(disks[0].size, 10240, '[0].size');
+        // Add disk failed, no need throw exceptions here:
+        if (disks.length <= 1) {
+            console.log('Skipping tests: disk addition failed');
+            t.done();
+            return;
+        }
         t.equal(disks[1].pci_slot, '0:4:1', '[1].pci_slot');
         t.equal(disks[1].size, 1024, '[1].size');
 
@@ -318,6 +330,11 @@ exports.add_additional_too_much_disk = function add_too_much_disk(t) {
 
 exports.resize_disk_down_without_flag =
 function resize_disk_down_without_flag(t) {
+    if (!PCI_SLOTS[1]) {
+        // Add disk failed
+        t.done();
+        return;
+    }
     var path = '/vms/' + VM_UUID + '?action=resize_disk';
     var opts = {
         pci_slot: PCI_SLOTS[1],
@@ -335,6 +352,11 @@ function resize_disk_down_without_flag(t) {
 
 
 exports.resize_disk_down_with_flag = function resize_disk_down_with_flag(t) {
+    if (!PCI_SLOTS[1]) {
+        // Add disk failed
+        t.done();
+        return;
+    }
     var path = '/vms/' + VM_UUID + '?action=resize_disk';
     var opts = {
         pci_slot: PCI_SLOTS[1],
@@ -360,6 +382,11 @@ exports.resize_disk_down_with_flag = function resize_disk_down_with_flag(t) {
 
 
 exports.check_resized_down_disk = function check_resized_down_disk(t) {
+    if (!PCI_SLOTS[1]) {
+        // Add disk failed
+        t.done();
+        return;
+    }
     var path = '/vms/' + VM_UUID;
     CLIENT.get(path, function getCb(err, req, res, vm) {
         common.ifError(t, err, 'err');
@@ -374,6 +401,11 @@ exports.check_resized_down_disk = function check_resized_down_disk(t) {
 
 
 exports.resize_disk_up = function resize_disk_up(t) {
+    if (!PCI_SLOTS[1]) {
+        // Add disk failed
+        t.done();
+        return;
+    }
     var path = '/vms/' + VM_UUID + '?action=resize_disk';
     var opts = {
         pci_slot: PCI_SLOTS[1],
@@ -398,6 +430,11 @@ exports.resize_disk_up = function resize_disk_up(t) {
 
 
 exports.check_resized_up_disk = function check_resized_up_disk(t) {
+    if (!PCI_SLOTS[1]) {
+        // Add disk failed
+        t.done();
+        return;
+    }
     var path = '/vms/' + VM_UUID;
     CLIENT.get(path, function getCb(err, req, res, vm) {
         common.ifError(t, err, 'err');
@@ -412,6 +449,11 @@ exports.check_resized_up_disk = function check_resized_up_disk(t) {
 
 
 exports.resize_disk_up_too_far = function resize_disk_up_too_far(t) {
+    if (!PCI_SLOTS[1]) {
+        // Add disk failed
+        t.done();
+        return;
+    }
     var path = '/vms/' + VM_UUID + '?action=resize_disk';
     var opts = {
         pci_slot: PCI_SLOTS[1],
@@ -427,6 +469,11 @@ exports.resize_disk_up_too_far = function resize_disk_up_too_far(t) {
 
 
 exports.delete_disk = function delete_disk(t) {
+    if (!PCI_SLOTS[1]) {
+        // Add disk failed
+        t.done();
+        return;
+    }
     var path = '/vms/' + VM_UUID + '?action=delete_disk';
     var opts = { pci_slot: PCI_SLOTS[1] };
 
@@ -448,6 +495,11 @@ exports.delete_disk = function delete_disk(t) {
 };
 
 exports.check_deleted_disk = function check_deleted_disk(t) {
+    if (!PCI_SLOTS[1]) {
+        // Add disk failed
+        t.done();
+        return;
+    }
     var path = '/vms/' + VM_UUID;
     CLIENT.get(path, function getCb(err, req, res, vm) {
         common.ifError(t, err, 'err');
@@ -455,7 +507,7 @@ exports.check_deleted_disk = function check_deleted_disk(t) {
         var disks = vm.disks;
         t.equal(disks.length, 1);
         t.equal(disks[0].size, 10240, '[0].size');
-
+        PCI_SLOTS = disks.map(function (d) { return d.pci_slot; });
         t.done();
     });
 };
@@ -491,14 +543,24 @@ function check_added_disk_with_pci_slot(t) {
     var path = '/vms/' + VM_UUID;
     CLIENT.get(path, function getCb(err, req, res, vm) {
         common.ifError(t, err, 'err');
-
+        // Provision failed, skip the following tests:
+        if (!vm || !vm.disks) {
+            console.log('Skipping tests: provision failed');
+            t.done();
+            return;
+        }
         var disks = vm.disks;
         t.equal(disks.length, 2);
         t.equal(disks[0].pci_slot, '0:4:0', '[0].pci_slot');
         t.equal(disks[0].size, 10240, '[0].size');
+        // Add disk failed, no need throw exceptions here:
+        if (disks.length <= 1) {
+            t.done();
+            return;
+        }
         t.equal(disks[1].pci_slot, '0:4:5', '[1].pci_slot');
         t.equal(disks[1].size, 512, '[1].size');
-
+        PCI_SLOTS = disks.map(function (d) { return d.pci_slot; });
         t.done();
     });
 };
@@ -553,7 +615,12 @@ function check_added_disk_with_uuid(t) {
     var path = '/vms/' + VM_UUID;
     CLIENT.get(path, function getCb(err, req, res, vm) {
         common.ifError(t, err, 'err');
-
+        // Provision failed, skip the following tests:
+        if (!vm || !vm.disks) {
+            console.log('Skipping tests: provision failed');
+            t.done();
+            return;
+        }
         var disks = vm.disks;
         t.equal(disks.length, 3);
         t.equal(disks[0].pci_slot, '0:4:0', '[0].pci_slot');
@@ -562,10 +629,15 @@ function check_added_disk_with_uuid(t) {
         t.equal(disks[1].pci_slot, '0:4:5', '[1].pci_slot');
         t.equal(disks[1].size, 512, '[1].size');
 
+        // Add disk failed, no need throw exceptions here:
+        if (disks.length <= 2) {
+            t.done();
+            return;
+        }
         t.equal(disks[2].uuid, DISK_UUID, '[1].uuid');
         t.equal(disks[2].pci_slot, '0:4:1', '[1].pci_slot');
         t.equal(disks[2].size, 256, '[1].size');
-
+        PCI_SLOTS = disks.map(function (d) { return d.pci_slot; });
         t.done();
     });
 };
