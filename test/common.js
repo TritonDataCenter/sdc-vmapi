@@ -5,29 +5,21 @@
  */
 
 /*
- * Copyright (c) 2019, Joyent, Inc.
+ * Copyright 2019 Joyent, Inc.
  */
 
 var assert = require('assert-plus');
 var bunyan = require('bunyan');
-var crypto = require('crypto');
 var fs = require('fs');
-var jsprim = require('jsprim');
-var moray = require('moray');
 var path = require('path');
 var restify = require('restify');
 var mod_url = require('url');
 var util = require('util');
-var vasync = require('vasync');
 
-var morayBucketsConfig = require('../lib/moray/moray-buckets-config');
-var Moray = require('../lib/apis/moray');
 
 
 // --- Globals
 
-var USER = 'admin';
-var PASSWD = 'z3cr3t';
 
 var DEFAULT_CFG = path.join(__dirname, '..', '/config.json');
 var config = {};

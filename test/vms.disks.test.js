@@ -8,11 +8,12 @@
  * Copyright 2019 Joyent, Inc.
  */
 
-var jsprim = require('jsprim');
-var uuid = require('libuuid');
+const tap = require('tap');
+const jsprim = require('jsprim');
+const uuid = require('libuuid');
 
-var common = require('./common');
-var waitForValue = common.waitForValue;
+const common = require('./common');
+const waitForValue = common.waitForValue;
 
 // --- Globals
 
@@ -117,11 +118,11 @@ function createVmAttempt(t, vmOpts) {
 // --- Tests
 
 
-exports.setup = function setup(t) {
-    common.setUp(function setUpCb(setupErr, _client) {
+tap.test(function setup(t) {
+    common.setUp(function setUpCb(setupErr, client) {
         common.ifError(t, setupErr, 'setupErr');
-        t.ok(_client, 'restify client');
-        CLIENT = _client;
+        t.ok(client, 'restify client');
+        CLIENT = client;
 
         CLIENT.napi.get('/networks', function getNet(err, req, res, networks) {
             common.ifError(t, err, 'err');
@@ -140,39 +141,39 @@ exports.setup = function setup(t) {
 
                 VM_OPTS.disks.push({ image_uuid: newestImg.uuid });
                 IMG_DISK_SIZE = newestImg.image_size;
-
                 t.done();
             });
         });
     });
-};
+});
 
 
-exports.attempt_to_use_remaining_disk_size_not_enough_quota =
-function attempt_to_use_remaining_disk_size_not_enough_quota(t) {
+tap.test(function attempt_to_use_remaining_disk_size_not_enough_quota(t) {
     var opts = jsprim.deepCopy(VM_OPTS);
     opts.alias = VM_ALIAS_BASE + '-' + process.pid;
     opts.flexible_disk_size = IMG_DISK_SIZE / 2;
     opts.quota = IMG_DISK_SIZE / 2;
     opts.disks.push({size: 'remaining'});
     createVmAttempt(t, opts);
-};
+});
 
 
-exports.initialize_remaining_correctly_with_flexible_disk_size =
-function initialize_remaining_correctly_with_flexible_disk_size(t) {
+tap.test(function initialize_remaining_correctly_with_flexible_disk_size(t) {
     var opts = jsprim.deepCopy(VM_OPTS);
     opts.alias = VM_ALIAS_BASE + '-' + process.pid;
     opts.flexible_disk_size = IMG_DISK_SIZE + 1024;
     opts.quota = IMG_DISK_SIZE + 1024;
     opts.disks.push({size: 'remaining'});
     createVm(t, opts);
-};
+});
 
-exports.destroy_remaining_correctly_with_flexible_disk_size = deleteVm;
 
-exports.initialize_remaining_correctly_without_flexible_disk_size =
-function initialize_remaining_correctly_without_flexible_disk_size(t) {
+tap.test(function destroy_remaining_correctly_with_flexible_disk_size(t) {
+    deleteVm(t);
+});
+
+
+tap.test(function initialize_remaining_correctly_without_flexible_disk_size(t) {
     var opts = jsprim.deepCopy(VM_OPTS);
     opts.alias = VM_ALIAS_BASE + '-' + process.pid;
     opts.quota = 22528;
@@ -181,20 +182,22 @@ function initialize_remaining_correctly_without_flexible_disk_size(t) {
         flexible_disk: true
     };
     createVm(t, opts);
-};
-
-exports.destroy_remaining_correctly_without_flexible_disk_size = deleteVm;
+});
 
 
-exports.initialize_non_flexible_disk_vm =
-function initialize_non_flexible_disk_vms(t) {
+tap.test(function destroy_remaining_correctly_without_flexible_disk_size(t) {
+    deleteVm(t);
+});
+
+
+tap.test(function initialize_non_flexible_disk_vms(t) {
     var opts = jsprim.deepCopy(VM_OPTS);
     opts.alias = VM_ALIAS_BASE + '-' + process.pid;
     createVm(t, opts);
-};
+});
 
 
-exports.attempt_to_add_disk = function attempt_to_add_disk(t) {
+tap.test(function attempt_to_add_disk(t) {
     var path = '/vms/' + VM_UUID + '?action=create_disk';
     var opts = { size: 1536 };
 
@@ -203,21 +206,24 @@ exports.attempt_to_add_disk = function attempt_to_add_disk(t) {
         t.equal(err.name, 'VmWithoutFlexibleDiskSizeError');
         t.done();
     });
-};
+});
 
 
-exports.destroy_non_flexible_disk_vm = deleteVm;
+tap.test(function destroy_non_flexible_disk_vm(t) {
+    deleteVm(t);
+});
 
 
-exports.initialize_flexible_disk_vm = function initialize_flexible_disk_vm(t) {
+tap.test(function initialize_flexible_disk_vm(t) {
     var opts = jsprim.deepCopy(VM_OPTS);
     opts.alias = VM_ALIAS_BASE + '-' + process.pid;
     opts.flexible_disk_size = 11264;
     opts.quota = 22528;
     createVm(t, opts);
-};
+});
 
-exports.add_disk_invalid_size = function add_disk_invalid_size(t) {
+
+tap.test(function add_disk_invalid_size(t) {
     var path = '/vms/' + VM_UUID + '?action=create_disk';
     var opts = { size: 'not-remaining' };
 
@@ -226,9 +232,10 @@ exports.add_disk_invalid_size = function add_disk_invalid_size(t) {
         t.equal(err.name, 'ValidationFailedError');
         t.done();
     });
-};
+});
 
-exports.add_too_large_disk = function add_too_large_disk(t) {
+
+tap.test(function add_too_large_disk(t) {
     var path = '/vms/' + VM_UUID + '?action=create_disk';
     var opts = { size: 1536 };
 
@@ -237,9 +244,10 @@ exports.add_too_large_disk = function add_too_large_disk(t) {
         t.equal(err.name, 'InsufficientDiskSpaceError');
         t.done();
     });
-};
+});
 
-exports.add_zero_size_disk = function add_zero_size_disk(t) {
+
+tap.test(function add_zero_size_disk(t) {
     var path = '/vms/' + VM_UUID + '?action=create_disk';
     var opts = { size: 0 };
 
@@ -248,10 +256,10 @@ exports.add_zero_size_disk = function add_zero_size_disk(t) {
         t.equal(err.name, 'ValidationFailedError');
         t.done();
     });
-};
+});
 
 
-exports.add_negative_size_disk = function add_negative_size_disk(t) {
+tap.test(function add_negative_size_disk(t) {
     var path = '/vms/' + VM_UUID + '?action=create_disk';
     var opts = { size: -1530 };
 
@@ -260,9 +268,10 @@ exports.add_negative_size_disk = function add_negative_size_disk(t) {
         t.equal(err.name, 'ValidationFailedError');
         t.done();
     });
-};
+});
 
-exports.add_disk = function add_disk(t) {
+
+tap.test(function add_disk(t) {
     var path = '/vms/' + VM_UUID + '?action=create_disk';
     var opts = { size: 1024 };
 
@@ -280,10 +289,10 @@ exports.add_disk = function add_disk(t) {
             t.done();
         });
     });
-};
+});
 
 
-exports.check_added_disk = function check_added_disk(t) {
+tap.test(function check_added_disk(t) {
     var path = '/vms/' + VM_UUID;
     CLIENT.get(path, function getCb(err, req, res, vm) {
         common.ifError(t, err, 'err');
@@ -313,10 +322,10 @@ exports.check_added_disk = function check_added_disk(t) {
 
         t.done();
     });
-};
+});
 
 
-exports.add_additional_too_much_disk = function add_too_much_disk(t) {
+tap.test(function add_too_much_disk(t) {
     var path = '/vms/' + VM_UUID + '?action=create_disk';
     var opts = { size: 128 };
 
@@ -325,11 +334,10 @@ exports.add_additional_too_much_disk = function add_too_much_disk(t) {
         t.equal(err.name, 'InsufficientDiskSpaceError');
         t.done();
     });
-};
+});
 
 
-exports.resize_disk_down_without_flag =
-function resize_disk_down_without_flag(t) {
+tap.test(function resize_disk_down_without_flag(t) {
     if (!PCI_SLOTS[1]) {
         // Add disk failed
         t.done();
@@ -348,10 +356,10 @@ function resize_disk_down_without_flag(t) {
             'Reducing disk size is a dangerous operation');
         t.done();
     });
-};
+});
 
 
-exports.resize_disk_down_with_flag = function resize_disk_down_with_flag(t) {
+tap.test(function resize_disk_down_with_flag(t) {
     if (!PCI_SLOTS[1]) {
         // Add disk failed
         t.done();
@@ -378,10 +386,10 @@ exports.resize_disk_down_with_flag = function resize_disk_down_with_flag(t) {
             t.done();
         });
     });
-};
+});
 
 
-exports.check_resized_down_disk = function check_resized_down_disk(t) {
+tap.test(function check_resized_down_disk(t) {
     if (!PCI_SLOTS[1]) {
         // Add disk failed
         t.done();
@@ -397,10 +405,10 @@ exports.check_resized_down_disk = function check_resized_down_disk(t) {
 
         t.done();
     });
-};
+});
 
 
-exports.resize_disk_up = function resize_disk_up(t) {
+tap.test(function resize_disk_up(t) {
     if (!PCI_SLOTS[1]) {
         // Add disk failed
         t.done();
@@ -426,10 +434,10 @@ exports.resize_disk_up = function resize_disk_up(t) {
             t.done();
         });
     });
-};
+});
 
 
-exports.check_resized_up_disk = function check_resized_up_disk(t) {
+tap.test(function check_resized_up_disk(t) {
     if (!PCI_SLOTS[1]) {
         // Add disk failed
         t.done();
@@ -445,10 +453,10 @@ exports.check_resized_up_disk = function check_resized_up_disk(t) {
 
         t.done();
     });
-};
+});
 
 
-exports.resize_disk_up_too_far = function resize_disk_up_too_far(t) {
+tap.test(function resize_disk_up_too_far(t) {
     if (!PCI_SLOTS[1]) {
         // Add disk failed
         t.done();
@@ -465,10 +473,10 @@ exports.resize_disk_up_too_far = function resize_disk_up_too_far(t) {
         t.equal(err.name, 'InsufficientDiskSpaceError');
         t.done();
     });
-};
+});
 
 
-exports.delete_disk = function delete_disk(t) {
+tap.test(function delete_disk(t) {
     if (!PCI_SLOTS[1]) {
         // Add disk failed
         t.done();
@@ -492,9 +500,10 @@ exports.delete_disk = function delete_disk(t) {
             t.done();
         });
     });
-};
+});
 
-exports.check_deleted_disk = function check_deleted_disk(t) {
+
+tap.test(function check_deleted_disk(t) {
     if (!PCI_SLOTS[1]) {
         // Add disk failed
         t.done();
@@ -510,10 +519,10 @@ exports.check_deleted_disk = function check_deleted_disk(t) {
         PCI_SLOTS = disks.map(function (d) { return d.pci_slot; });
         t.done();
     });
-};
+});
 
 
-exports.add_disk_with_pci_slot = function add_disk_with_pci_slot(t) {
+tap.test(function add_disk_with_pci_slot(t) {
     var path = '/vms/' + VM_UUID + '?action=create_disk';
     var opts = {
         pci_slot: '0:4:5',
@@ -535,11 +544,10 @@ exports.add_disk_with_pci_slot = function add_disk_with_pci_slot(t) {
             t.done();
         });
     });
-};
+});
 
 
-exports.check_added_disk_with_pci_slot =
-function check_added_disk_with_pci_slot(t) {
+tap.test(function check_added_disk_with_pci_slot(t) {
     var path = '/vms/' + VM_UUID;
     CLIENT.get(path, function getCb(err, req, res, vm) {
         common.ifError(t, err, 'err');
@@ -563,11 +571,10 @@ function check_added_disk_with_pci_slot(t) {
         PCI_SLOTS = disks.map(function (d) { return d.pci_slot; });
         t.done();
     });
-};
+});
 
 
-exports.add_disk_with_existing_pci_slot =
-function add_disk_with_existing_pci_slot(t) {
+tap.test(function add_disk_with_existing_pci_slot(t) {
     var path = '/vms/' + VM_UUID + '?action=create_disk';
     var opts = {
         pci_slot: '0:4:5',
@@ -583,10 +590,10 @@ function add_disk_with_existing_pci_slot(t) {
 
         t.done();
     });
-};
+});
 
 
-exports.add_disk_with_uuid = function add_disk_with_uuid(t) {
+tap.test(function add_disk_with_uuid(t) {
     var path = '/vms/' + VM_UUID + '?action=create_disk';
     var opts = {
         disk_uuid: DISK_UUID,
@@ -607,11 +614,10 @@ exports.add_disk_with_uuid = function add_disk_with_uuid(t) {
             t.done();
         });
     });
-};
+});
 
 
-exports.check_added_disk_with_uuid =
-function check_added_disk_with_uuid(t) {
+tap.test(function check_added_disk_with_uuid(t) {
     var path = '/vms/' + VM_UUID;
     CLIENT.get(path, function getCb(err, req, res, vm) {
         common.ifError(t, err, 'err');
@@ -640,11 +646,10 @@ function check_added_disk_with_uuid(t) {
         PCI_SLOTS = disks.map(function (d) { return d.pci_slot; });
         t.done();
     });
-};
+});
 
 
-exports.add_disk_with_existing_uuid =
-function add_disk_with_existing_uuid(t) {
+tap.test(function add_disk_with_existing_uuid(t) {
     var path = '/vms/' + VM_UUID + '?action=create_disk';
     var opts = {
         disk_uuid: DISK_UUID,
@@ -659,21 +664,23 @@ function add_disk_with_existing_uuid(t) {
 
         t.done();
     });
-};
+});
 
 
-exports.destroy_flexible_disk_vm = deleteVm;
+tap.test(function destroy_flexible_disk_vm(t) {
+    deleteVm(t);
+});
 
 
-exports.init_other_flexible_disk_vm = function init_other_flexible_disk_vm(t) {
+tap.test(function init_other_flexible_disk_vm(t) {
     var opts = jsprim.deepCopy(VM_OPTS);
     opts.alias = VM_ALIAS_BASE + '-' + process.pid;
     opts.flexible_disk_size = 11264;
     createVm(t, opts);
-};
+});
 
 
-exports.add_disk_remaining_size = function add_disk_remaining_size(t) {
+tap.test(function add_disk_remaining_size(t) {
     var path = '/vms/' + VM_UUID + '?action=create_disk';
     var opts = { size: 'remaining' };
 
@@ -691,14 +698,15 @@ exports.add_disk_remaining_size = function add_disk_remaining_size(t) {
             t.done();
         });
     });
-};
+});
 
 
-exports.destroy_other_flexible_disk_vm = deleteVm;
+tap.test(function destroy_other_flexible_disk_vm(t) {
+    deleteVm(t);
+});
 
 
-exports.init_vm_with_two_remaining_disks =
-    function init_vm_with_two_remaining_disks(t) {
+tap.test(function init_vm_with_two_remaining_disks(t) {
     var vmOpts = jsprim.deepCopy(VM_OPTS);
     vmOpts.alias = VM_ALIAS_BASE + '-' + process.pid;
     vmOpts.flexible_disk_size = 11264;
@@ -712,11 +720,10 @@ exports.init_vm_with_two_remaining_disks =
         t.equal(err.name, 'ValidationFailedError', 'err.name');
         t.done();
     });
-};
+});
 
 
-exports.init_vm_with_zero_size_disk =
-    function init_vm_with_zero_size_disk(t) {
+tap.test(function init_vm_with_zero_size_disk(t) {
     var vmOpts = jsprim.deepCopy(VM_OPTS);
     vmOpts.alias = VM_ALIAS_BASE + '-' + process.pid;
     vmOpts.flexible_disk_size = 11264;
@@ -729,11 +736,10 @@ exports.init_vm_with_zero_size_disk =
         t.equal(err.name, 'ValidationFailedError', 'err.name');
         t.done();
     });
-};
+});
 
 
-exports.init_vm_with_negative_size_disk =
-    function init_vm_with_negative_size_disk(t) {
+tap.test(function init_vm_with_negative_size_disk(t) {
     var vmOpts = jsprim.deepCopy(VM_OPTS);
     vmOpts.alias = VM_ALIAS_BASE + '-' + process.pid;
     vmOpts.flexible_disk_size = 11264;
@@ -746,4 +752,4 @@ exports.init_vm_with_negative_size_disk =
         t.equal(err.name, 'ValidationFailedError', 'err.name');
         t.done();
     });
-};
+});
