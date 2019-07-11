@@ -239,6 +239,13 @@ function TestMigrationCfg(test, cfg) {
     };
 
     test.bad_user_migrate_not_allowed_by_vm_default = function (t) {
+        // Check if the vmapi config allows migrations by default, if is is
+        // enabled then we can skip this test.
+        if (common.config.user_migration_allowed === true) {
+            t.ok(true, 'Skip - user migrations are enabled globally');
+            t.done();
+            return;
+        }
         // Should not be able to migrate a zone with
         // user_migration_allowed unset
         client.post({
