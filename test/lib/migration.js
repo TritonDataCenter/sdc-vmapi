@@ -14,6 +14,7 @@ var util = require('util');
 var assert = require('assert-plus');
 var byline = require('byline');
 var jsprim = require('jsprim');
+var libuuid = require('libuuid');
 var restify = require('restify');
 var vasync = require('vasync');
 
@@ -488,9 +489,10 @@ function TestMigrationCfg(test, cfg) {
 
         if (migrationUuidOverride) {
             // Change the uuid to allow on the same CN.
+            var uuidEnd = '-ab0' + libuuid.create().slice(-9);
             params = {
-                override_uuid: sourceVm.uuid.slice(0, -6) + 'ab0ab0',
-                override_alias: cfg.vm.alias + '-abort'
+                override_uuid: sourceVm.uuid.slice(0, -13) + uuidEnd,
+                override_alias: cfg.vm.alias + uuidEnd
             };
         }
 
@@ -611,9 +613,10 @@ function TestMigrationCfg(test, cfg) {
 
         if (migrationUuidOverride) {
             // Change the uuid to allow on the same CN.
+            var uuidEnd = '-abc' + libuuid.create().slice(-9);
             params = {
-                override_uuid: sourceVm.uuid.slice(0, -6) + 'aaaaaa',
-                override_alias: cfg.vm.alias + '-aaaaaa'
+                override_uuid: sourceVm.uuid.slice(0, -13) + uuidEnd,
+                override_alias: cfg.vm.alias + uuidEnd
             };
         }
 
@@ -1330,8 +1333,9 @@ function TestMigrationCfg(test, cfg) {
 
         if (migrationUuidOverride) {
             // Change the uuid to allow on the same CN.
-            params.override_uuid = sourceVm.uuid.slice(0, -6) + 'bbbbbb';
-            params.override_alias = sourceVm.uuid.slice(0, -6) + 'bbbbbb';
+            var uuidEnd = '-bbb' + libuuid.create().slice(-9);
+            params.override_uuid = sourceVm.uuid.slice(0, -13) + uuidEnd;
+            params.override_alias = cfg.vm.alias + uuidEnd;
         }
 
         client.post({path: format('/vms/%s', sourceVm.uuid)},
