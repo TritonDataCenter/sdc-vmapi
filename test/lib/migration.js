@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright (c) 2019, Joyent, Inc.
+ * Copyright 2019 Joyent, Inc.
  */
 
 var stream = require('stream');
@@ -1278,7 +1278,7 @@ function TestMigrationCfg(test, cfg) {
         // migration is finalized.
         client.post({
             path: format('/vms/%s?action=migrate&migration_action=begin',
-                targetVm.uuid)
+                sourceVm.uuid)
         }, function onMigrateBeginFromStateSuccessCb(err) {
             t.ok(err,
                 'expect an error for migration begin when a previous ' +
@@ -1569,7 +1569,7 @@ function TestMigrationCfg(test, cfg) {
 
         client.post({
             path: format('/vms/%s?action=migrate&migration_action=rollback',
-                targetVm.uuid)
+                sourceVm.uuid)
         }, function onMigrateRollbackCb(err, req, res, body) {
             common.ifError(t, err, 'no error from migration rollback call');
             if (!err) {
