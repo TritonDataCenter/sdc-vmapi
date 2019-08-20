@@ -1300,7 +1300,7 @@ function TestMigrationCfg(test, cfg) {
 
         client.post({
             path: format('/vms/%s?action=migrate&migration_action=finalize',
-                targetVm.uuid)
+                sourceVm.uuid)
         }, function onMigrateFinalizeCb(err, req, res) {
             common.ifError(t, err, 'no error from migration finalize call');
             if (!err) {
