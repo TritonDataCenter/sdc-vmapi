@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright (c) 2019, Joyent, Inc.
+ * Copyright 2019 Joyent, Inc.
  */
 
 // var test = require('tap').test;
@@ -31,7 +31,6 @@ var newUuid;
 var jobLocation;
 var vmLocation;
 var vmCount;
-var nicCount;
 var pkgId;
 var nicMac;
 
@@ -1294,6 +1293,102 @@ exports.check_add_nics_with_network_nics_running = function (t) {
     });
 };
 
+exports.verify_add_nics_with_networks = function (t) {
+    client.napi.get({
+        path: '/nics',
+        query: {
+            belongs_to_uuid: newUuid,
+            belongs_to_type: 'zone',
+            nic_tag: EXTERNAL_NETWORK.nic_tag
+        }
+    }, function (err, req, res, nics) {
+        common.ifError(t, err);
+        if (nics && nics[0]) {
+            nicMac = nics[0].mac;
+        }
+        t.done();
+    });
+};
+
+exports.update_nics = function (t) {
+    if (!nicMac) {
+        t.done();
+        return;
+    }
+    var params = {
+        action: 'update_nics',
+        nics: [ {
+            mac: nicMac,
+            allow_ip_spoofing: true
+        }]
+    };
+
+    var opts = createOpts(vmLocation, params);
+
+    client.post(opts, params, function (err, req, res, body) {
+        common.ifError(t, err);
+        t.equal(res.statusCode, 202, '202 Accepted');
+        common.checkHeaders(t, res.headers);
+        t.ok(body, 'body is set');
+        t.ok(body.job_uuid, 'job_uuid: ' + body.job_uuid);
+        jobLocation = '/jobs/' + body.job_uuid;
+        t.ok(true, 'jobLocation: ' + jobLocation);
+        t.done();
+    });
+};
+
+
+exports.wait_update_nics = function (t) {
+    if (!nicMac) {
+        t.done();
+        return;
+    }
+    waitForValue(jobLocation, 'execution', 'succeeded', {
+        client: client
+    }, function (err) {
+        common.ifError(t, err);
+        t.done();
+    });
+};
+
+
+exports.check_update_nics = function (t) {
+    if (!nicMac) {
+        t.done();
+        return;
+    }
+    var query = {
+        belongs_to_uuid: newUuid,
+        belongs_to_type: 'zone',
+        nic_tag: EXTERNAL_NETWORK.nic_tag
+    };
+
+    waitForNicState(t, query, 'running', function (err) {
+        common.ifError(t, err);
+        t.done();
+    });
+};
+
+
+exports.verify_update_nics = function (t) {
+    client.napi.get({
+        path: '/nics',
+        query: {
+            belongs_to_uuid: newUuid,
+            belongs_to_type: 'zone'
+        }
+    }, function (err, req, res, nics) {
+        common.ifError(t, err);
+        if (Array.isArray(nics)) {
+            var foundNics = nics.filter(function (nic) {
+                return nic.nic_tag === 'external';
+            });
+            t.ok(foundNics.length && foundNics[0].allow_ip_spoofing,
+                'IP spoofing is true');
+        }
+        t.done();
+    });
+};
 
 exports.add_nics_with_macs = function (t) {
     var params = {
@@ -2878,7 +2973,6 @@ exports.destroy_test_vms_final = function (t) {
  * test that a NAT zone was provisioned as part of the vm provisioning process.
  * Destroy the vm, then check back to ensure the NAT zone was also destroyed.
  */
-
 exports.find_fabric_network = function (t) {
     assert.arrayOfObject(NETWORKS, 'NETWORKS');
 
@@ -2917,9 +3011,7 @@ exports.ensure_no_fabric_nat_provisioned = function (t) {
     };
 
     client.get(opts, function (err, req, res, vms) {
-        /**
-         * We exect that vms is an empty array.
-         */
+        // We expect that vms is an empty array.
         common.ifError(t, err);
         t.equal(res.statusCode, 200, 'expected a 200 status');
         t.equal(vms.length, 0, 'should be no NAT vm found');
@@ -2991,9 +3083,7 @@ exports.ensure_fabric_nat_provisioned = function (t) {
     client.get(opts, function (err, req, res, vms) {
         var vm;
 
-        /**
-         * We expect to get back an array containing one running vm.
-         */
+         // We expect to get back an array containing one running vm.
         common.ifError(t, err);
         t.equal(res.statusCode, 200, 'expected a 200 status');
 
@@ -3075,9 +3165,7 @@ exports.ensure_fabric_nat_destroyed = function (t) {
     var opts = createOpts('/vms/' + natZoneUuid);
 
     client.get(opts, function (err, req, res, vm) {
-        /**
-         * We expect to get back a destroyed vm.
-         */
+         // We expect to get back a destroyed vm.
         common.ifError(t, err);
         t.equal(res.statusCode, 200, 'expected a 200 status');
         t.ok(vm, 'expected a vm');
@@ -3104,9 +3192,7 @@ exports.ensure_no_fabric_nat_zone = function (t) {
     };
 
     client.get(opts, function (err, req, res, vms) {
-        /**
-         * There should get no vms returned.
-         */
+        // There should get no vms returned.
         common.ifError(t, err);
         t.equal(res.statusCode, 200, 'expected a 200 status');
         t.equal(vms.length, 0, 'should be no NAT vm found');
