@@ -10,7 +10,7 @@ markdown2extras: tables, code-friendly
 -->
 
 <!--
-    Copyright (c) 2019, Joyent, Inc.
+    Copyright 2019 Joyent, Inc.
 -->
 
 # Introduction to VMs API
@@ -298,13 +298,16 @@ Since resizing a VM might cause unwanted effects depending on the current
 resources being utilized on the machine, this feature is only partially
 supported at the moment. For more information about how to resize a VM please
 refer to the [UpdateVm](#UpdateVm) section of this document. The following table
-describes the current resize support for KVM and OS VMs. Upsizing means when
-some VM attributes are increased and downsizing refers to the opposite.
+describes the current resize support. Upsizing means when some VM attributes
+are increased and downsizing refers to the opposite.
 
 | VM Type | Upsize        | Downsize      |
 | ------- | ------------- | ------------- |
-| KVM     | Not supported | Not supported |
 | OS      | Supported     | Supported     |
+| docker  | Supported     | Supported     |
+| lx      | Supported     | Supported     |
+| bhyve   | Supported     | Supported     |
+| KVM     | Not supported | Not supported |
 
 ## Delegate Dataset
 
@@ -1306,7 +1309,7 @@ Image UUID is a required input for reprovisioning a VM.
 
 ## UpdateVm (POST /vms/:uuid?action=update)
 
-Similar to CreateVm, this endpoint allows udpating a VM to a new SDC Package. Individual SDC Package related attributes can still be provided if one needs to override specific values. **UpdateVm is only supported for OS VMs**. See
+Similar to CreateVm, this endpoint allows updating a VM to a new SDC Package. Individual SDC Package related attributes can still be provided if one needs to override specific values. **UpdateVm is only supported for OS VMs**. See
 [VM Resize](#vm-resize) for more information.
 
 ### Updating VM to an SDC Package
@@ -1344,6 +1347,7 @@ In addition to 'billing_id', the following values can be specified to update add
 | cpu_cap                   | Number                        | CPU Cap                                                                                  |
 | max_lwps                  | Number                        | Max. Lightweight Processes                                                               |
 | quota (GiB)               | Number                        | VM quota (disk)                                                                          |
+| flexible_disk_size (MiB)  | Number                        | Total allowed VM disk space (Bhyve only)                                                 |
 | tags                      | Object                        | VM tags                                                                                  |
 | customer_metadata         | Object                        | VM metadata                                                                              |
 | internal_metadata         | Object                        | VM metadata                                                                              |
