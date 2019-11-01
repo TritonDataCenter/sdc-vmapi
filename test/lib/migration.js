@@ -35,6 +35,28 @@ function getJobError(job) {
     return null;
 }
 
+function expectErrorProperties(t, err, expectedErr) {
+    assert.object(t, 't');
+    assert.object(err, 'err');
+    assert.object(expectedErr, 'expectedErr');
+
+    Object.keys(expectedErr).forEach(function (prop) {
+        if (!err.hasOwnProperty(prop)) {
+            t.ok(false, 'Error object is missing the "' + prop + '" field');
+            return;
+        }
+
+        if (err[prop] != expectedErr[prop]) {
+            t.ok(false, 'Error property "' + prop + '" is not as expected. ' +
+                'Expected "' + expectedErr[prop] + '" but got "' +
+                err[prop] + '"');
+            return;
+        }
+
+        t.ok(true, 'Error property "' + prop + '" is as expected');
+    });
+}
+
 function MigrationWatcher(client, vm_uuid) {
     this.client = client;
     this.vm_uuid = vm_uuid;
@@ -326,6 +348,46 @@ function TestMigrationCfg(test, cfg) {
             if (err) {
                 t.equal(err.statusCode, 409,
                     format('err.statusCode === 409, got %s', err.statusCode));
+            }
+            t.done();
+        });
+    };
+
+    test.bad_migrate_invalid_override_server_uuid = function (t) {
+        // No action.
+        client.post({
+            path: format('/vms/%s?action=migrate&migration_action=begin&' +
+                'override_server_uuid=foobar', sourceVm.uuid)
+        }, function onMigrateBadOverrideServerUuid(err, req, res, body) {
+            t.ok(err, 'expect error when an invalid server_uuid is supplied');
+            if (err && body) {
+                t.equal(err.statusCode, 409,
+                    format('err.statusCode === 409, got %s', err.statusCode));
+                expectErrorProperties(t, body, {
+                    code: 'ValidationFailed',
+                    message: 'Invalid parameters: override_server_uuid ' +
+                        '(foobar) is not a valid UUID'
+                });
+            }
+            t.done();
+        });
+    };
+
+    test.bad_migrate_invalid_override_uuid = function (t) {
+        // No action.
+        client.post({
+            path: format('/vms/%s?action=migrate&migration_action=begin&' +
+                'override_uuid=fishstick', sourceVm.uuid)
+        }, function onMigrateBadOverrideUuid(err, req, res, body) {
+            t.ok(err, 'expect error when an invalid override_uuid is supplied');
+            if (err && body) {
+                t.equal(err.statusCode, 409,
+                    format('err.statusCode === 409, got %s', err.statusCode));
+                expectErrorProperties(t, body, {
+                    code: 'ValidationFailed',
+                    message: 'Invalid parameters: override_uuid (fishstick) ' +
+                        'is not a valid UUID'
+                });
             }
             t.done();
         });
