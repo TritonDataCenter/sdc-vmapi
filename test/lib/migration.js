@@ -46,7 +46,7 @@ function expectErrorProperties(t, err, expectedErr) {
             return;
         }
 
-        if (err[prop] != expectedErr[prop]) {
+        if (err[prop] !== expectedErr[prop]) {
             t.ok(false, 'Error property "' + prop + '" is not as expected. ' +
                 'Expected "' + expectedErr[prop] + '" but got "' +
                 err[prop] + '"');
