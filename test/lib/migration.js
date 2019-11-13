@@ -57,6 +57,15 @@ function expectErrorProperties(t, err, expectedErr) {
     });
 }
 
+function snapshotsSupported(cfg) {
+    assert.object(cfg, 'cfg');
+    assert.string(cfg.type, 'cfg.type');
+
+    var unsupported = [ 'kvm' ];
+
+    return unsupported.indexOf(cfg.type) === -1;
+}
+
 function MigrationWatcher(client, vm_uuid) {
     this.client = client;
     this.vm_uuid = vm_uuid;
@@ -221,12 +230,53 @@ function TestMigrationCfg(test, cfg) {
                         next();
                     });
             },
+            function createSnapshot(ctx, next) {
+                if (!snapshotsSupported(cfg)) {
+                    t.ok(true, '(SKIP) snapshots not supported');
+                    next();
+                    return;
+                }
+                client.post('/vms/' + vmUuid + '?action=create_snapshot',
+                        function (err, req, res, body) {
+                    common.ifError(t, err, 'Snapshot should be created');
+                    ctx.snapshotJob = body && body.job_uuid;
+                    t.ok(ctx.snapshotJob, 'response contains a job_uuid');
+                    next();
+                });
+            },
+            function waitForSnapshotJob(ctx, next) {
+                if (!snapshotsSupported(cfg)) {
+                    next();
+                    return;
+                }
+                if (!ctx.snapshotJob) {
+                    t.ok(false, 'No snapshot job_uuid');
+                    next();
+                    return;
+                }
+                waitForValue('/jobs/' + ctx.snapshotJob, 'execution',
+                        'succeeded', { client: client, timeout: 3 * 60 },
+                        function onSnapshotCreated(err) {
+                    common.ifError(t, err,
+                        'Snapshot job should run successfully');
+                    next();
+                });
+            },
             function getVmServer(ctx, next) {
-                client.get('/vms/' + vmUuid, function (err, req, res, body) {
+                client.get({path: format('/vms/%s?sync=true', vmUuid)},
+                        function (err, req, res, body) {
                     common.ifError(t, err, 'VM should appear in vmapi');
                     sourceVm = body;
                     next();
                 });
+            },
+            function checkSnapshotsExist(ctx, next) {
+                if (snapshotsSupported(cfg) && sourceVm && sourceVm.snapshots) {
+                    t.ok(Array.isArray(sourceVm.snapshots) &&
+                        sourceVm.snapshots.length === 1,
+                        'snapshots should be an array with one entry');
+                }
+                next();
             }
         ]}, function _provisionPipelineCb(err) {
             common.ifError(t, err, 'no provision pipeline err');
@@ -1372,6 +1422,41 @@ function TestMigrationCfg(test, cfg) {
                         format('err.statusCode === 200, got %s',
                             res.statusCode));
                 }
+            }
+            t.done();
+        });
+    };
+
+    test.check_snapshots_exist = function test_check_snapshots_exist(t) {
+        if (!targetVm) {
+            t.ok(false, 'Vm was not migrated successfully');
+            t.done();
+            return;
+        }
+        if (!snapshotsSupported(cfg)) {
+            t.ok(true, '(SKIP) snapshots not supported');
+            t.done();
+            return;
+        }
+        if (!sourceVm || !Array.isArray(sourceVm.snapshots)) {
+            t.ok(false, 'Source vm does not contain any snapshots');
+            t.done();
+            return;
+        }
+
+        client.get({path: format('/vms/%s?sync=true', targetVm.uuid)},
+                function onGetTargetVm(err, req, res, vm) {
+
+            t.ifError(err, 'should not get an error fetching vm');
+            if (res) {
+                t.equal(res.statusCode, 200,
+                    format('err.statusCode === 200, got %s', res.statusCode));
+            }
+            t.ok(vm, 'should get a vm object');
+            if (vm) {
+                t.ok(Array.isArray(vm.snapshots) &&
+                    vm.snapshots.length === 1,
+                    'snapshots should be an array with one entry');
             }
             t.done();
         });
