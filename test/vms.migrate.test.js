@@ -85,7 +85,7 @@ var configurations = [
                 'docker:cmd': '["sh","-c","sleep 86400"]',
                 'docker:env': '["PATH=/usr/local/sbin:/usr/local/bin:' +
                     '/usr/sbin:/usr/bin:/sbin:/bin"]',
-                'docker:volumesfrom': '"[]"'
+                'docker:volumesfrom': '[]'
             },
             owner_uuid: ADMIN_USER_UUID,
             tags: {
