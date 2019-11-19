@@ -35,6 +35,7 @@ var vasync = require('vasync');
 var common = require('./common');
 var testUuid = require('./lib/uuid');
 var testMigration = require('./lib/migration');
+var uuid = require('uuid');
 
 
 /* Globals */
@@ -90,7 +91,16 @@ var configurations = [
             owner_uuid: ADMIN_USER_UUID,
             tags: {
                 'sdc-docker': true
-            }
+            },
+            // TRITON-1726 Create a docker data volume.
+            filesystems: [
+                {
+                    source: uuid.v4(),
+                    target: '/data/db',
+                    type: 'lofs',
+                    options: []
+                }
+            ]
         }
     },
     {
