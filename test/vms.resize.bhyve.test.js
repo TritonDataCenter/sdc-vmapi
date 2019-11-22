@@ -196,7 +196,13 @@ exports.create_bhyve_vm = function (t) {
         disks: [
             { image_uuid: IMAGE.uuid }, // 10 GiB image
             { size: 20 * 1024 } // 20 GiB disk
-        ]
+        ],
+        // Exclude virtual servers to avoid issues with vm.quota not being set
+        // on the resulting vm - which will cause resize to work when we would
+        // otherwise expect it to fail.
+        tags: {
+            'triton.placement.exclude_virtual_servers': true
+        }
     };
 
     var opts = createOpts('/vms', vm);
@@ -208,7 +214,7 @@ exports.create_bhyve_vm = function (t) {
         t.ok(body, 'vm ok');
 
         var jobLocation = '/jobs/' + body.job_uuid;
-        t.ok(body.job_uuid, 'body.job_uuid', 'jobLocation: ' + jobLocation);
+        t.ok(body.job_uuid, 'body.job_uuid: ' + jobLocation);
 
         if (!body.job_uuid) {
             t.done();
@@ -220,7 +226,7 @@ exports.create_bhyve_vm = function (t) {
         }, function (err2) {
             common.ifError(t, err2, 'no error when creating vm');
             if (!err2) {
-                t.ok(body.vm_uuid, 'body.vm_uuid', 'vm_uuid: ' + body.vm_uuid);
+                t.ok(body.vm_uuid, 'body.vm_uuid: ' + body.vm_uuid);
                 vmLocation = '/vms/' + body.vm_uuid;
             }
             t.done();
@@ -307,7 +313,7 @@ exports.resize_vm_to_ginormous_package_gets_error = function (t) {
                 t.equal(body.errors[0].code, 'InsufficientCapacity',
                     'error code should be InsufficientCapacity');
                 t.ok(body.errors[0].message.match(
-                    'Required additional disk \\(\\d+\\) ' +
+                    'Required (additional )?disk \\(\\d+\\) ' +
                     'exceeds the server\'s available disk \\(-?\\d+\\)'),
                     'error message should explain additional disk required');
             } else {
