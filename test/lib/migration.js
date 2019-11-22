@@ -57,9 +57,23 @@ function expectErrorProperties(t, err, expectedErr) {
     });
 }
 
+function delegateDatasetSupported(cfg) {
+    assert.object(cfg, 'cfg');
+    assert.string(cfg.type, 'cfg.type');
+
+    var supported = [ 'smartos', 'lx' ];
+
+    return supported.indexOf(cfg.type) >= 0;
+}
+
 function snapshotsSupported(cfg) {
     assert.object(cfg, 'cfg');
     assert.string(cfg.type, 'cfg.type');
+
+    // Snapshots are not supported in vms with delegate datasets.
+    if (cfg.vm.delegate_dataset) {
+        return false;
+    }
 
     var unsupported = [ 'kvm' ];
 
@@ -1457,6 +1471,43 @@ function TestMigrationCfg(test, cfg) {
                 t.ok(Array.isArray(vm.snapshots) &&
                     vm.snapshots.length === 1,
                     'snapshots should be an array with one entry');
+            }
+            t.done();
+        });
+    };
+
+    test.check_delegate_dataset = function test_check_delegate_dataset(t) {
+        if (!targetVm) {
+            t.ok(false, 'Vm was not migrated successfully');
+            t.done();
+            return;
+        }
+        if (!delegateDatasetSupported(cfg)) {
+            t.ok(true, '(SKIP) delegate datasets are not supported');
+            t.done();
+            return;
+        }
+        if (!sourceVm || !Array.isArray(sourceVm.datasets)) {
+            t.ok(false, 'Source vm does not contain any datasets');
+            t.done();
+            return;
+        }
+
+        client.get({path: format('/vms/%s?sync=true', targetVm.uuid)},
+                function onGetTargetVm(err, req, res, vm) {
+
+            t.ifError(err, 'should not get an error fetching vm');
+            if (res) {
+                t.equal(res.statusCode, 200,
+                    format('err.statusCode === 200, got %s', res.statusCode));
+            }
+            t.ok(vm, 'should get a vm object');
+            if (vm) {
+                t.ok(Array.isArray(vm.datasets) &&
+                    vm.datasets.length === 1,
+                    'snapshots should be an array with one entry');
+                t.deepEqual(sourceVm.datasets, targetVm.datasets,
+                    'source and target datasets should be equal');
             }
             t.done();
         });
