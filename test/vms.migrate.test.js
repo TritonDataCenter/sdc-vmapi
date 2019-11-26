@@ -29,6 +29,8 @@
  *  test cleanup
  */
 
+var util = require('util');
+
 var assert = require('assert-plus');
 var vasync = require('vasync');
 
@@ -44,6 +46,41 @@ var ADMIN_USER_UUID = common.config.ufdsAdminUuid;
 var PROVISION_NETWORKS = [];
 var client;
 
+function getUserScript(type) {
+    var lines;
+
+    // The idea is to create a new zfs dataset and mount it under the
+    // delegate dataset.
+
+    if (type === 'smartos') {
+        lines = [
+            '#!/usr/bin/bash',
+            'echo "hi" > /var/tmp/todd-hi.txt',
+            'export ZFS=/usr/sbin/zfs',
+            'export ZONE=$(/usr/bin/zonename)'
+        ];
+    } else if (type === 'lx') {
+        lines = [
+            '#!/bin/bash',
+            'export ZFS=/native/sbin/zfs',
+            'export ZONE=$(/native/sbin/zonename)'
+        ];
+    } else {
+        throw new Error('"' + type + '" does not support delegate datasets');
+    }
+
+    lines = lines.concat([
+        'export > /var/tmp/todd-env.txt',
+        'export FILESYSTEM="zones/${ZONE}/data/mydata"',
+        '${ZFS} create "${FILESYSTEM}"',
+        '${ZFS} set mountpoint=/data "${FILESYSTEM}"',
+        '${ZFS} mount "${FILESYSTEM}"',
+        'echo "hi" > /data/file.txt'
+    ]);
+
+    return lines.join('\n') + '\n';
+}
+
 var configurations = [
     {
         type: 'smartos',
@@ -55,6 +92,11 @@ var configurations = [
             owner_uuid: ADMIN_USER_UUID,
             tags: {
                 'triton.placement.exclude_virtual_servers': true
+            },
+            // TRITON-1986 Create a delegate dataset.
+            delegate_dataset: true,
+            customer_metadata: {
+                'user-script': getUserScript('smartos')
             }
         }
     },
@@ -68,6 +110,11 @@ var configurations = [
             owner_uuid: ADMIN_USER_UUID,
             tags: {
                 'triton.placement.exclude_virtual_servers': true
+            },
+            // TRITON-1986 Create a delegate dataset.
+            delegate_dataset: true,
+            customer_metadata: {
+                'user-script': getUserScript('lx')
             }
         }
     },
