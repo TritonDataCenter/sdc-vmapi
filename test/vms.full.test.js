@@ -2078,8 +2078,8 @@ exports.get_audit = function (t) {
 
         var expectedNames = [
             'destroy', 'reprovision', 'delete-snapshot', 'rollback', 'snapshot',
-            'update', 'update', 'update', 'update', 'remove-nic', 'add-nics',
-            'add-nics', 'reboot', 'start', 'stop', 'provision'
+            'update', 'update', 'update', 'update', 'remove-nics', 'add-nics',
+            'update-nics', 'add-nics', 'reboot', 'start', 'stop', 'provision'
         ];
 
         for (var i = 0; i !== expectedNames.length; i++) {
@@ -2087,7 +2087,9 @@ exports.get_audit = function (t) {
             var job = jobs[i];
             var context = job.params.context;
 
-            t.ok(job.name.indexOf(expectedName) !== -1);
+            t.ok(job.name.indexOf(expectedName) !== -1,
+                'expect to find job name: "' + expectedName +
+                '", found: "' + job.name + '"');
             t.ok(typeof (context.params) === 'object');
             t.deepEqual(context.caller, CALLER);
         }
