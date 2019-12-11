@@ -153,7 +153,7 @@ var configurations = [
     {
         type: 'bhyve',
         imageName: 'ubuntu-certified-16.04',
-        packageName: 'sample-2G',
+        packageName: 'sample-bhyve-flexible-1G',
         vm: {
             alias: 'vmapitest-migrate-' + testUuid.generateShortUuid(),
             brand: 'bhyve',
