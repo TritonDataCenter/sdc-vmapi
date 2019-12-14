@@ -12,3 +12,5 @@ cscope.po.out
 cscope.out
 config.json
 vmapi-pkg-*.tar.gz
+*.vim
+*.swp
