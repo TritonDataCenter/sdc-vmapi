@@ -130,7 +130,7 @@ exports.create_vm_256m = function (t) {
         t.ok(body, 'vm ok');
 
         var jobLocation = '/jobs/' + body.job_uuid;
-        t.ok(body.job_uuid, 'body.job_uuid', 'jobLocation: ' + jobLocation);
+        t.ok(body.job_uuid, 'body.job_uuid jobLocation: ' + jobLocation);
 
         if (!body.job_uuid) {
             t.done();
@@ -185,7 +185,7 @@ exports.destroy_vm = function (t) {
         t.ok(body, 'body is set');
 
         var jobLocation = '/jobs/' + body.job_uuid;
-        t.ok(body.job_uuid, 'body.job_uuid', 'jobLocation: ' + jobLocation);
+        t.ok(body.job_uuid, 'body.job_uuid jobLocation: ' + jobLocation);
 
         if (!body.job_uuid) {
             t.done();
