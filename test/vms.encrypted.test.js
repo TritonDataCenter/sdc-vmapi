@@ -115,7 +115,9 @@ exports.create_vm_256m = function (t) {
         networks: [ { uuid: ADMIN_NETWORK.uuid } ],
         brand: 'joyent-minimal',
         billing_id: pkg256.uuid,
-        encrypted: true,
+        internal_metadata: {
+            encrypted: true
+        },
         tags: {
             'triton.placement.exclude_virtual_servers': true
         }
