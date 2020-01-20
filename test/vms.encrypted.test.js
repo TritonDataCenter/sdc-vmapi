@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright 2019 Joyent, Inc.
+ * Copyright 2020 Joyent, Inc.
  */
 
 // Test instance encryption.
@@ -27,6 +27,7 @@ var EXTERNAL_NETWORK = null;
 var CUSTOMER = common.config.ufdsAdminUuid;
 var IMAGE = 'fd2cc906-8938-11e3-beab-4359c665ac99'; // sdc-smartos
 var PACKAGE_NAME_256 = 'sample-256M';
+var ZPOOL_ENCRYPTION_AVAILABLE = false;
 
 var CALLER = {
     type: 'signature',
@@ -62,6 +63,31 @@ exports.setUp = function (callback) {
     });
 };
 
+// Count the servers that support encryption.
+exports.count_encrypted_servers = function test_count_running_servers(t) {
+    client.cnapi.get({path: '/servers?setup=true&extras=sysinfo'},
+            function _onGetServersCb(err, req, res, servers) {
+        common.ifError(t, err, 'get cnapi setup servers');
+
+        if (servers) {
+            // Filter running servers and virtual servers.
+            var availableServers = servers.filter(function _checkZpoolEnc(s) {
+                return s.status === 'running' && s.sysinfo &&
+                    s.sysinfo.hasOwnProperty('Zpool Encrypted') &&
+                    Boolean(s.sysinfo['Zpool Encrypted']);
+            });
+
+            t.ok(true, 'number of zpool encrypted servers: ' +
+                availableServers.length);
+
+            if (availableServers.length) {
+                ZPOOL_ENCRYPTION_AVAILABLE = true;
+            }
+        }
+
+        t.done();
+    });
+};
 
 // Other tests depend on there being both an 'admin' and 'external' network.
 // This test loads these and ensures we have both.
@@ -105,6 +131,12 @@ exports.find_256M_package = function (t) {
 exports.create_vm_256m = function (t) {
     if (!pkg256) {
         t.ok(false, 'Skipping - no package was found');
+        t.done();
+        return;
+    }
+
+    if (!ZPOOL_ENCRYPTION_AVAILABLE) {
+        t.ok(true, 'Skipping - no servers support zpool encryption');
         t.done();
         return;
     }
@@ -153,11 +185,18 @@ exports.create_vm_256m = function (t) {
 
 
 exports.get_vm_ok = function (t) {
+    if (!ZPOOL_ENCRYPTION_AVAILABLE) {
+        t.ok(true, 'Skipping - no servers support zpool encryption');
+        t.done();
+        return;
+    }
+
     if (!vmLocation) {
         t.ok(false, 'Skipping - no vm was created');
         t.done();
         return;
     }
+
     var path = vmLocation + '?owner_uuid=' + CUSTOMER + '&state=active';
 
     client.get(path, function (err, req, res, body) {
@@ -172,6 +211,12 @@ exports.get_vm_ok = function (t) {
 };
 
 exports.destroy_vm = function (t) {
+    if (!ZPOOL_ENCRYPTION_AVAILABLE) {
+        t.ok(true, 'Skipping - no servers support zpool encryption');
+        t.done();
+        return;
+    }
+
     if (!vmLocation) {
         t.ok(false, 'Skipping - no vm was created');
         t.done();
