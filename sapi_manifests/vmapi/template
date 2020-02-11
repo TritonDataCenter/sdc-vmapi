@@ -33,6 +33,11 @@
 {{#migration_send_mbps_limit}}
     "migration_send_mbps_limit": {{migration_send_mbps_limit}},
 {{/migration_send_mbps_limit}}
+
+{{#server_state_affects_vm_state}}
+    "server_state_affects_vm_state": {{server_state_affects_vm_state}},
+{{/server_state_affects_vm_state}}
+
     "wfapi": {
         "forceMd5Check": true,
         "workflows": [

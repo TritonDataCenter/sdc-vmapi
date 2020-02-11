@@ -10,7 +10,7 @@ markdown2extras: tables, code-friendly
 -->
 
 <!--
-    Copyright 2019 Joyent, Inc.
+    Copyright 2020 Joyent, Inc.
 -->
 
 # Introduction to VMs API
@@ -266,6 +266,7 @@ endpoint:
 | incomplete   | |
 | failed       | VM provisioning has failed |
 | active       | When used in ListVms, denotes machines that are not 'destroyed' or 'failed' |
+| unknown      | The VM was last seen as 'running', but the server the VM is running on is no longer contactable (e.g. the server is down and we can no longer be sure of what state the VM is in). |
 
 <!-- TODO: validate this is the complete set. What is the translation from
 zone_state? -->
@@ -2710,6 +2711,7 @@ production.
 | **docker_tag_re**              | String | Tags matching regex are treated with Docker tag semantics                    |
 | **migration_send_mbps_limit**  | Number | Limit of transfer rate, in megabits per second, for individual migrations    |
 | **user_migration_allowed**     | Boolean | Whether user migrations are allowed (default is false). This setting can also be overruled on a per-instance basis through the vm.internal_metadata.user_migration_allowed setting. |
+| **server_state_affects_vm_state** | Boolean | When enabled (default is false) each running vm that is on a server that is not running (CNAPI.server.status) will have it's state changed to 'unknown'. |
 
 `docker_tag_re` must be a valid regular expression string -- more concretely,
 what Javascript's RegExp() considers valid. Docker tags can be added during
