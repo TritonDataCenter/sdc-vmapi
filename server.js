@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright (c) 2019, Joyent, Inc.
+ * Copyright 2020 Joyent, Inc.
  */
 
 /*
@@ -295,7 +295,7 @@ function startVmapiService() {
 
             process.exitCode = 1;
         } else {
-            var vmapiApp = new VmapiApp({
+            var vmapiOptions = jsprim.mergeObjects(config, {
                 apiClients: apiClients,
                 changefeedPublisher: changefeedPublisher,
                 dataMigrationsCtrl: dataMigrationsCtrl,
@@ -303,16 +303,14 @@ function startVmapiService() {
                 metricsManager: metricsManager,
                 moray: moray,
                 morayBucketsInitializer: morayBucketsInitializer,
+                // TODO: These config items should use the same name(s).
                 userMigrationAllowed: config.user_migration_allowed,
                 zfs_send_mbps_limit: config.migration_send_mbps_limit,
-                overlay: config.overlay,
-                cnapi: config.cnapi, // TODO: TRITON-1295
-                reserveKvmStorage: config.reserveKvmStorage,
                 serverConfig: {
                     bindPort: config.api.port
-                },
-                version: config.version
+                }
             });
+            var vmapiApp = new VmapiApp(vmapiOptions);
 
             vmapiApp.listen();
         }
