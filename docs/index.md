@@ -2598,7 +2598,7 @@ Field                    | Type               | Description
 ------------------------ | ------------------ | -----------------
 type                     | String             | Type is "end".
 phase                    | String             | Phase that just ended. See [Migration Phases](#migration-phases).
-state                    | String             | State, one of "paused", "failed" or "successful". See [Migration States](#migration-states).
+state                    | String             | State, one of "running", "paused", "failed" or "successful". See [Migration States](#migration-states).
 
 # Running Status for VMs
 
