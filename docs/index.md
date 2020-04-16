@@ -2531,7 +2531,6 @@ State         | Description
 ------------- | ----------------
 running       | Migration running, see also `progress_history`.
 paused        | The "begin" phase (and possibly "sync" phase) has been run - now waiting for a call to "sync" or the final call to "switch".
-aborted       | User or operator aborted the migration attempt.
 failed        | Migration operation could not complete, see migration "error" field.
 successful    | Migration was successfully completed.
 
@@ -2599,7 +2598,7 @@ Field                    | Type               | Description
 ------------------------ | ------------------ | -----------------
 type                     | String             | Type is "end".
 phase                    | String             | Phase that just ended. See [Migration Phases](#migration-phases).
-state                    | String             | State, one of "paused", "failed", "aborted" or "successful". See [Migration States](#migration-states).
+state                    | String             | State, one of "paused", "failed" or "successful". See [Migration States](#migration-states).
 
 # Running Status for VMs
 
