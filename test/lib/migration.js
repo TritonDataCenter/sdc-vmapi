@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright 2019 Joyent, Inc.
+ * Copyright 2020 Joyent, Inc.
  */
 
 var stream = require('stream');
@@ -479,92 +479,6 @@ function TestMigrationCfg(test, cfg) {
             });
         };
     });
-
-    test.bad_migrate_core_zone = function (t) {
-        // Should not be able to migrate a triton core zone.
-        vasync.pipeline({arg: {}, funcs: [
-            function findCoreZone(ctx, next) {
-                client.get({
-                    path: '/vms?tag.smartdc_type=core&state=active&limit=1'
-                }, function onFindCoreZone(err, req, res, body) {
-                    if (err) {
-                        t.ok(false, 'unable to query vmapi for core zone: ' +
-                            err);
-                        next(true);
-                        return;
-                    }
-                    if (!body || !body[0] || !body[0].uuid) {
-                        t.ok(false, 'no core zone found');
-                        next(true);
-                        return;
-                    }
-                    ctx.vm = body[0];
-                    next();
-                });
-            },
-
-            function migrateCoreZone(ctx, next) {
-                client.post({
-                    path: format(
-                        '/vms/%s?action=migrate&migration_action=begin',
-                        ctx.vm.uuid)
-                }, function onMigrateCoreZoneCb(err) {
-                    t.ok(err, 'expect an error for migration of a core zone');
-                    if (err) {
-                        t.equal(err.statusCode, 412,
-                            format('err.statusCode === 412, got %s',
-                                err.statusCode));
-                    }
-                    next();
-                });
-            }
-        ]}, function _pipelineCb() {
-            t.done();
-        });
-    };
-
-    test.bad_migrate_nat_zone = function (t) {
-        // Should not be able to migrate a triton NAT zone.
-        vasync.pipeline({arg: {}, funcs: [
-            function findNatZone(ctx, next) {
-                client.get({
-                    path: '/vms?tag.smartdc_role=nat&state=active&limit=1'
-                }, function onFindNatZone(err, req, res, body) {
-                    if (err) {
-                        t.ok(false, 'unable to query vmapi for nat zone: ' +
-                            err);
-                        next(true);
-                        return;
-                    }
-                    if (!body || !body[0] || !body[0].uuid) {
-                        t.ok(true, 'SKIP - no nat zone found');
-                        next(true);
-                        return;
-                    }
-                    ctx.vm = body[0];
-                    next();
-                });
-            },
-
-            function migrateNatZone(ctx, next) {
-                client.post({
-                    path: format(
-                        '/vms/%s?action=migrate&migration_action=begin',
-                        ctx.vm.uuid)
-                }, function onMigrateNatZoneCb(err) {
-                    t.ok(err, 'expect an error for migration of a nat zone');
-                    if (err) {
-                        t.equal(err.statusCode, 412,
-                            format('err.statusCode === 412, got %s',
-                                err.statusCode));
-                    }
-                    next();
-                });
-            }
-        ]}, function _pipelineCb() {
-            t.done();
-        });
-    };
 
     test.migration_estimate = function test_migration_estimate(t) {
         if (!sourceVm) {
