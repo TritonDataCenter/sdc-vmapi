@@ -95,6 +95,8 @@ var configurations = [
             },
             // TRITON-1986 Create a delegate dataset.
             delegate_dataset: true,
+            // TRITON-2127 Use an indestructible_delegated dataset.
+            indestructible_delegated: true,
             customer_metadata: {
                 'user-script': getUserScript('smartos')
             }
@@ -113,6 +115,8 @@ var configurations = [
             },
             // TRITON-1986 Create a delegate dataset.
             delegate_dataset: true,
+            // TRITON-2127 Use an indestructible_zoneroot.
+            indestructible_zoneroot: true,
             customer_metadata: {
                 'user-script': getUserScript('lx')
             }
