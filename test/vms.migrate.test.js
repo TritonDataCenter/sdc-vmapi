@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright 2019 Joyent, Inc.
+ * Copyright 2020 Joyent, Inc.
  */
 
 /*
@@ -224,7 +224,10 @@ exports.get_provision_network = function test_get_provision_network(t) {
 
             t.ok(networks[0], 'Admin fabric network should be found');
             if (Array.isArray(networks) && networks.length >= 1) {
-                PROVISION_NETWORKS = [ {uuid: networks[0].uuid} ];
+                PROVISION_NETWORKS = [
+                    { uuid: networks[0].uuid },
+                    { uuid: networks[0].uuid }
+                ];
                 t.done();
                 return;
             }
@@ -252,6 +255,50 @@ exports.get_provision_network = function test_get_provision_network(t) {
             t.done();
         });
     }
+};
+
+
+exports.bad_migrate_core_zone = function (t) {
+    // Should not be able to migrate a triton core zone.
+    vasync.pipeline({arg: {}, funcs: [
+        function findCoreZone(ctx, next) {
+            client.get({
+                path: '/vms?tag.smartdc_type=core&state=active&limit=1'
+            }, function onFindCoreZone(err, req, res, body) {
+                if (err) {
+                    t.ok(false, 'unable to query vmapi for core zone: ' +
+                        err);
+                    next(true);
+                    return;
+                }
+                if (!body || !body[0] || !body[0].uuid) {
+                    t.ok(false, 'no core zone found');
+                    next(true);
+                    return;
+                }
+                ctx.vm = body[0];
+                next();
+            });
+        },
+
+        function migrateCoreZone(ctx, next) {
+            client.post({
+                path: util.format(
+                    '/vms/%s?action=migrate&migration_action=begin',
+                    ctx.vm.uuid)
+            }, function onMigrateCoreZoneCb(err) {
+                t.ok(err, 'expect an error for migration of a core zone');
+                if (err) {
+                    t.equal(err.statusCode, 412,
+                        util.format('err.statusCode === 412, got %s',
+                            err.statusCode));
+                }
+                next();
+            });
+        }
+    ]}, function _pipelineCb() {
+        t.done();
+    });
 };
 
 
