@@ -1276,6 +1276,16 @@ function TestMigrationCfg(test, cfg) {
                 // TRITON-1716 Ensure the create-timestamp has not changed.
                 t.equal(sourceVm.create_timestamp, vm.create_timestamp,
                     'original create_timestamp should be maintained');
+
+                if (cfg.vm.indestructible_zoneroot) {
+                    t.ok(vm.indestructible_zoneroot, 'vm should have ' +
+                        'indestructible_zoneroot set after switch');
+                }
+
+                if (cfg.vm.indestructible_delegated) {
+                    t.ok(vm.indestructible_delegated, 'vm should have ' +
+                        'indestructible_delegated set after switch');
+                }
             }
 
             checkMigratedVm();
@@ -1765,6 +1775,16 @@ function TestMigrationCfg(test, cfg) {
                     t.notEqual(targetVm.server_uuid, vm.server_uuid,
                         'vm target server_uuid should be different');
                 }
+
+                if (cfg.vm.indestructible_zoneroot) {
+                    t.ok(vm.indestructible_zoneroot, 'vm should still have ' +
+                        'indestructible_zoneroot set after rollback');
+                }
+
+                if (cfg.vm.indestructible_delegated) {
+                    t.ok(vm.indestructible_delegated, 'vm should still have ' +
+                        'indestructible_delegated set after rollback');
+                }
             }
 
             t.done();
@@ -1778,9 +1798,45 @@ function TestMigrationCfg(test, cfg) {
             return;
         }
 
-        client.del({
-            path: '/vms/' + targetVm.uuid
-        }, function onVmDeleted(err, req, res) {
+        vasync.pipeline({funcs: [
+            // Remove the indestructible parts before performing the final
+            // instance deletion.
+            function removeIndestructibleZoneroot(_, next) {
+                if (!cfg.vm.indestructible_zoneroot) {
+                    next();
+                    return;
+                }
+
+                var payload = {
+                    indestructible_zoneroot: false
+                };
+                updateVmAndWait(t, client, targetVm.uuid, payload,
+                        function onUpdateVm(updateErr) {
+                    t.ifError(updateErr);
+                    next();
+                });
+            },
+            function removeIndestructibleDelegated(_, next) {
+                if (!cfg.vm.indestructible_delegated) {
+                    next();
+                    return;
+                }
+
+                var payload = {
+                    indestructible_delegated: false
+                };
+                updateVmAndWait(t, client, targetVm.uuid, payload,
+                        function onUpdateVm(updateErr) {
+                    t.ifError(updateErr);
+                    next();
+                });
+            },
+            function deleteVm(_, next) {
+                client.del({
+                    path: '/vms/' + targetVm.uuid
+                }, next);
+            }
+        ]}, function _onPipelineDone(err) {
             common.ifError(t, err, 'vm delete target should not error');
             t.done();
         });
@@ -1794,6 +1850,10 @@ function updateVmAndWait(t, client, vmUuid, payload, cb) {
 
     client.post(postOpts, payload, function onPost(err, req, res, body) {
         t.ifError(err, 'update should succeed');
+        if (err) {
+            cb(err);
+            return;
+        }
 
         t.ok(body.job_uuid, 'got a job uuid in the begin response');
         var waitParams = {
@@ -1804,7 +1864,7 @@ function updateVmAndWait(t, client, vmUuid, payload, cb) {
 
         waitForJob(waitParams, function onUpdateJobCb(jerr, state, job) {
             t.ifError(jerr, 'update job should be successful');
-            t.done();
+            cb(jerr);
         });
     });
 }
