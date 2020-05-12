@@ -97,6 +97,7 @@ update time.
 | tmpfs                    | Number                        | Amount of memory for the /tmp filesystem                                                                                                                                                                                  | No                  | Yes    | Yes    |
 | zfs_data_compression     | String                        | Specifies a compression algorithm used for the VM's data dataset                                                                                                                                                          | No                  | Yes    | Yes    |
 | zfs_io_priority          | Number                        | ZFS IO Priority                                                                                                                                                                                                           | Yes                 | Yes    | Yes    |
+| zfs_snapshot_limit       | Number                        | Sets the number of ZFS snapshots a VM can take.                                                                                            | Yes                 | Yes    | Yes    |
 | zlog_max_size            | Number                        | Sets the maximum size of the stdio.log file for a docker zone before rotation. NOTE: To be used by sdc-docker only.                                                                                                       | No                  | Yes    | Yes    |
 
 Furthermore, when dealing with KVM VMs there are additional attributes to know
@@ -1112,13 +1113,14 @@ VMs can optionally be provisioned by only providing a 'billing_id' SDC Package i
 | max_swap            | Number (MiB) |
 | quota               | Number (GiB) |
 | zfs_io_priority     | Number       |
+| zfs_snapshot_limit  | Number       |
 | vcpus               | Number       |
 
 However, these values can still be individualy overriden by providing new values for them in the VM provisionm payload. Note that for the purpose of having a 1:1 VM - SDC Package correspondence it is advised that individual values should not be overriden when it is needed to refer a VM back to its original SDC Package.
 
 ### General Optional Inputs
 
-These inputs can be passed and will be validated wether or not a 'billing_id' SDC Package parameter has been provided.
+These inputs can be passed and will be validated whether or not a 'billing_id' SDC Package parameter has been provided.
 
 | Param               | Type         | Description                                 |
 | ------------------- | ------------ | ------------------------------------------- |
@@ -1128,6 +1130,7 @@ These inputs can be passed and will be validated wether or not a 'billing_id' SD
 | max_physical_memory | Number (MiB) | Same as RAM                                 |
 | max_swap            | Number (MiB) | Defaults to 2 x RAM if not specified        |
 | zfs_io_priority     | Number       | ZFS IO Priority                             |
+| zfs_snapshot_limit  | Number       | Number of ZFS snapshots a VM can take       |
 | cpu_cap             | Number       | CPU Cap                                     |
 | max_lwps            | Number       | Max. Lightweight Processes                  |
 | quota               | Number (GiB) | VM quota                                    |
@@ -1330,6 +1333,7 @@ The UpdateVm payload would automatically retrieve the following values from the 
 | max_swap            | Number (MiB) |
 | quota               | Number (GiB) |
 | zfs_io_priority     | Number       |
+| zfs_snapshot_limit  | Number       |
 | vcpus               | Number       |
 
 ### Updating a VM With Individual VM Values
@@ -1345,6 +1349,7 @@ In addition to 'billing_id', the following values can be specified to update add
 | max_physical_memory (MiB) | Number                        | Same as RAM                                                                              |
 | max_swap (MiB)            | Number                        | Defaults to 2 x RAM if not specified                                                     |
 | zfs_io_priority           | Number                        | ZFS IO Priority                                                                          |
+| zfs_snapshot_limit        | Number                        | Number of ZFS snapshots a VM can take                                                 |
 | cpu_cap                   | Number                        | CPU Cap                                                                                  |
 | max_lwps                  | Number                        | Max. Lightweight Processes                                                               |
 | quota (GiB)               | Number                        | VM quota (disk)                                                                          |
