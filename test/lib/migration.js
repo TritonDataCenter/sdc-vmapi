@@ -640,6 +640,37 @@ function TestMigrationCfg(test, cfg) {
         });
     };
 
+    test.check_reserved_ips = function test_check_reserved_ips(t) {
+        if (!sourceVm) {
+            t.ok(false, 'Original VM was not created successfully');
+            t.done();
+            return;
+        }
+
+        vasync.forEachParallel({
+            inputs: sourceVm.nics,
+            func: function _checkNicReserved(nic, cb) {
+                var ipPath = util.format('/networks/%s/ips/%s',
+                    nic.network_uuid, nic.ip);
+                client.napi.get({path: ipPath},
+                        function _onGetIpCb(err, req, res, ipObj) {
+                    common.ifError(t, err, 'get napi ip');
+                    if (err) {
+                        cb();
+                        return;
+                    }
+
+                    t.ok(ipObj, 'got an ip object');
+                    if (ipObj) {
+                        t.equal(ipObj.reserved, false,
+                            'ip should not be reserved after abort');
+                    }
+                    cb();
+                });
+            }
+        }, t.done.bind(t));
+    };
+
     test.migration_begin = function test_migration_begin(t) {
         if (!sourceVm) {
             t.ok(false, 'Original VM was not created successfully');
@@ -1316,6 +1347,40 @@ function TestMigrationCfg(test, cfg) {
         }
     };
 
+    test.check_reserved_ips_2 = function test_check_reserved_ips_2(t) {
+        if (!targetVm) {
+            t.ok(false, 'Vm was not migrated successfully');
+            t.done();
+            return;
+        }
+
+        t.equal(sourceVm.nics.length, targetVm.nics.length,
+            'number of nics should not have changed');
+
+        vasync.forEachParallel({
+            inputs: targetVm.nics,
+            func: function _checkNicReserved(nic, cb) {
+                var ipPath = util.format('/networks/%s/ips/%s',
+                    nic.network_uuid, nic.ip);
+                client.napi.get({path: ipPath},
+                        function _onGetIpCb(err, req, res, ipObj) {
+                    common.ifError(t, err, 'get napi ip');
+                    if (err) {
+                        cb();
+                        return;
+                    }
+
+                    t.ok(ipObj, 'got an ip object');
+                    if (ipObj) {
+                        t.equal(ipObj.reserved, false,
+                            'ip should not be reserved after switch');
+                    }
+                    cb();
+                });
+            }
+        }, t.done.bind(t));
+    };
+
     test.bad_migration_begin_from_state_switch =
             function test_bad_migration_begin_from_state_switch(t) {
         if (!targetVm) {
@@ -1785,10 +1850,43 @@ function TestMigrationCfg(test, cfg) {
                     t.ok(vm.indestructible_delegated, 'vm should still have ' +
                         'indestructible_delegated set after rollback');
                 }
+
+                sourceVm = vm;
             }
 
             t.done();
         }
+    };
+
+    test.check_reserved_ips_3 = function test_check_reserved_ips_3(t) {
+        if (!sourceVm) {
+            t.ok(false, 'Vm was not rolled back successfully');
+            t.done();
+            return;
+        }
+
+        vasync.forEachParallel({
+            inputs: sourceVm.nics,
+            func: function _checkNicReserved(nic, cb) {
+                var ipPath = util.format('/networks/%s/ips/%s',
+                    nic.network_uuid, nic.ip);
+                client.napi.get({path: ipPath},
+                        function _onGetIpCb(err, req, res, ipObj) {
+                    common.ifError(t, err, 'get napi ip');
+                    if (err) {
+                        cb();
+                        return;
+                    }
+
+                    t.ok(ipObj, 'got an ip object');
+                    if (ipObj) {
+                        t.equal(ipObj.reserved, false,
+                            'ip should not be reserved after rollback');
+                    }
+                    cb();
+                });
+            }
+        }, t.done.bind(t));
     };
 
     test.cleanup = function test_cleanup(t) {

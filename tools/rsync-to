@@ -6,7 +6,7 @@
 #
 
 #
-# Copyright (c) 2017, Joyent, Inc.
+# Copyright 2020 Joyent, Inc.
 #
 
 #
@@ -46,6 +46,7 @@ rsync -av ${TOP}/ \
     --exclude /config.json \
     --exclude /deps/ \
     --exclude /doc/ \
+    --exclude /node_modules/ \
     --exclude /tools/ \
     --exclude /tmp/
 
