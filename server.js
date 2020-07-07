@@ -165,6 +165,7 @@ function startVmapiService() {
             var changefeedOptions = jsprim.deepCopy(config.changefeed);
             changefeedOptions.log = vmapiLog.child({ component: 'changefeed' },
                 true);
+            changefeedOptions.log.level(bunyan.WARN);
 
             changefeedPublisher =
                 changefeed.createPublisher(changefeedOptions);
