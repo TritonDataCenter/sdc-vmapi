@@ -2258,6 +2258,70 @@ Returns a job with the specified UUID.
       ]
     }
 
+## WaitJob (GET /jobs/:uuid/wait)
+
+Waits until the given job with the specified UUID is finished (i.e. when the
+job execution state is one of "succeeded", "failed" or "canceled").
+
+### Inputs
+
+| Param | Type | Description | Required? |
+| ----- | ---- | ----------- | --------- |
+| uuid  | UUID | Job UUID    | Yes       |
+
+### Example
+
+    GET /jobs/6ad3a288-31cf-44e0-8d18-9b3f2a031067/wait
+
+    {
+      "name": "provision-4e4ff04b-5cc4-437e-92da-2403a634e74f",
+      "uuid": "6ad3a288-31cf-44e0-8d18-9b3f2a031067",
+      "execution": "succeeded",
+      "params": {
+        "owner_uuid": "930896af-bf8c-48d4-885c-6573a94b1853",
+        "image_uuid": "28445220-6eac-11e1-9ce8-5f14ed22e782",
+        "brand": "joyent",
+        "ram": "128",
+        "zonename": "e9bd0ed1-7de3-4c66-a649-d675dbce6e83",
+        "uuid": "e9bd0ed1-7de3-4c66-a649-d675dbce6e83",
+        "server_uuid": "564da914-5047-48f0-ba5e-26761097330a",
+        "task": {
+          "id": "70129767",
+          "progress": 100,
+          "status": "complete"
+        }
+      },
+      "exec_after": "2012-04-13T18:17:15.194Z",
+      "created_at": "2012-04-13T18:17:15.198Z",
+      "timeout": 180,
+      "chain_results": [
+        {
+          "result": "All parameters OK!",
+          "error": "",
+          "started_at": "2012-04-13T18:17:17.512Z",
+          "finished_at": "2012-04-13T18:17:18.619Z"
+        },
+        {
+          "result": "Got servers!",
+          "error": "",
+          "started_at": "2012-04-13T18:17:18.628Z",
+          "finished_at": "2012-04-13T18:17:21.737Z"
+        },
+        {
+          "result": "Server allocated!",
+          "error": "",
+          "started_at": "2012-04-13T18:17:21.743Z",
+          "finished_at": "2012-04-13T18:17:23.137Z"
+        },
+        {
+          "result": "Provision succeeded!",
+          "error": "",
+          "started_at": "2012-04-13T18:17:23.197Z",
+          "finished_at": "2012-04-13T18:18:42.726Z"
+        }
+      ]
+    }
+
 # VM Migration
 
 It is possible to migrate (move a VM) to another CN using these APIs. See
