@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright (c) 2018, Joyent, Inc.
+ * Copyright 2020 Joyent, Inc.
  */
 
 var assert = require('assert-plus');
@@ -247,7 +247,12 @@ exports.create_vm = function (t) {
         cpu_cap: 100,
         customer_metadata: md,
         creator_uuid: CUSTOMER,
-        role_tags: ['fd48177c-d7c3-11e3-9330-28cfe91a33c9']
+        role_tags: ['fd48177c-d7c3-11e3-9330-28cfe91a33c9'],
+        // Exclude virtual servers, as we need a server with an 'external'
+        // network, which virtual servers do not have.
+        tags: {
+            'triton.placement.exclude_virtual_servers': true
+        }
     };
 
     var opts = createOpts('/vms', VM);
