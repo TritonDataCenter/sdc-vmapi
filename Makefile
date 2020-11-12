@@ -36,7 +36,7 @@ NAME = vmapi
 #
 # Tools
 #
-NODEUNIT  := ./node_modules/.bin/nodeunit
+TAP_EXEC = ./node_modules/.bin/tap
 
 #
 # Files
@@ -76,13 +76,13 @@ RELSTAGEDIR          := /tmp/$(NAME)-$(STAMP)
 # Repo-specific targets
 #
 .PHONY: all
-all: $(SMF_MANIFESTS) | $(NODEUNIT) sdc-scripts
+all: $(SMF_MANIFESTS) | $(TAP_EXEC) sdc-scripts
 	$(NPM) install
 
-$(NODEUNIT): | $(NPM_EXEC)
+$(TAP_EXEC): | $(NPM_EXEC)
 	$(NPM) install
 
-CLEAN_FILES += $(NODEUNIT) ./node_modules/nodeunit
+CLEAN_FILES += $(TAP_EXEC) ./node_modules/.bin/tap
 
 BASE_IMAGE_UUID = 04a48d7d-6bb5-4e83-8c3b-e60a99e0f48f
 BUILDIMAGE_NAME = $(NAME)

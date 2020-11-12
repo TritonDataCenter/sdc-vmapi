@@ -37,7 +37,7 @@
   },
   "devDependencies": {
     "byline": "5.0.0",
-    "nodeunit": "0.11.3"
+    "tap": "12.6.1"
   },
   "scripts": {
     "start": "node ./server.js"

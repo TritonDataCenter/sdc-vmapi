@@ -85,7 +85,9 @@ start_time=$(date +%s)
 
 TOP=$(cd $(dirname $0)/../; pwd)
 NODE_INSTALL=$TOP/build/node
-NODEUNIT=./node_modules/.bin/nodeunit
+TAP_EXEC=./node_modules/.bin/tap
+TEST_JOBS=1
+TEST_TIMEOUT_S=12000
 
 
 # Options.
@@ -209,6 +211,7 @@ fi
 # Run the tests.
 if [[ -n "$test_files" ]]; then
     VMAPI_IP=$VMAPI_IP CNAPI_IP=$CNAPI_IP NAPI_IP=$NAPI_IP \
-    PATH=$NODE_INSTALL/bin:$PATH $NODEUNIT --reporter \
-    $opt_reporter $test_files | tee $OUTPUT_DIR/vmapi.tap
+    PATH=$NODE_INSTALL/bin:$PATH $TAP_EXEC --timeout $TEST_TIMEOUT_S \
+    -j $TEST_JOBS -o $OUTPUT_DIR/vmapi.tap $test_files \
+    -R $opt_reporter
 fi
