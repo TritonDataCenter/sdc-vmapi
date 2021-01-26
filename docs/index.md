@@ -10,7 +10,7 @@ markdown2extras: tables, code-friendly
 -->
 
 <!--
-    Copyright 2020 Joyent, Inc.
+    Copyright 2021 Joyent, Inc.
 -->
 
 # Introduction to VMs API
@@ -2399,6 +2399,21 @@ owner_uuid | UUID     | VM Owner
 Code | Description   | Response
 ---- | ------------- | ------------------
 200  | Successful    | A JSON [Migration Object](#migration-objects).
+
+## VmMigrateDelete (DELETE /migrations/:uuid)
+
+Forcibly delete a [Migration Object](#migration-objects). This should only be
+used when the abort/rollback migration actions have failed.
+
+### VmMigrateDelete Examples
+
+    DELETE /migrations/5ad11be4-605c-4f64-b673-e0920ac0ac64
+
+### VmMigrateDelete Responses
+
+Code | Description   | Response
+---- | ------------- | ------------------
+200  | Successful    | Nothing.
 
 ## VmMigrateEstimate (POST /vms/:uuid?action=migrate&migration_action=estimate)
 
