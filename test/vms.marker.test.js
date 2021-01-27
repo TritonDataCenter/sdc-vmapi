@@ -5,17 +5,13 @@
  */
 
 /*
- * Copyright (c) 2017, Joyent, Inc.
+ * Copyright 2021 Joyent, Inc.
  */
 
 var assert = require('assert-plus');
 var async = require('async');
-var jsprim = require('jsprim');
-var libuuid = require('libuuid');
-var Logger = require('bunyan');
-var moray = require('moray');
-var restify = require('restify');
 var url = require('url');
+var uuid = require('uuid');
 
 var changefeedUtils = require('../lib/changefeed');
 var common = require('./common');
@@ -371,7 +367,7 @@ exports.delete_test_vms_marker_and_sort_on_uuid_desc_ok = function (t) {
 };
 
 exports.marker_key_not_in_sort_field_not_ok = function (t) {
-    var TEST_MARKER = {create_timestamp: Date.now(), uuid: libuuid.create()};
+    var TEST_MARKER = {create_timestamp: Date.now(), uuid: uuid.v4()};
     var expectedError = {
         code: 'ValidationFailed',
         message: 'Invalid Parameters',
@@ -419,10 +415,10 @@ exports.marker_key_not_in_sort_field_not_ok = function (t) {
  * not sufficient.
  */
 var NON_STRICT_TOTAL_ORDER_SORT_KEYS = {
-    owner_uuid: libuuid.create(),
-    image_uuid: libuuid.create(),
-    billing_id: libuuid.create(),
-    server_uuid: libuuid.create(),
+    owner_uuid: uuid.v4(),
+    image_uuid: uuid.v4(),
+    billing_id: uuid.v4(),
+    server_uuid: uuid.v4(),
     tags: vmCommon.objectToTagFormat({sometag: 'foo'}),
     brand: 'foobrand',
     state: 'test',

@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright (c) 2017, Joyent, Inc.
+ * Copyright 2021 Joyent, Inc.
  */
 
 // The goal of this test is to make sure that, when sending a DELETE request for
@@ -13,10 +13,7 @@
 // the request results in an error right away.
 
 var assert = require('assert-plus');
-var jsprim = require('jsprim');
-var libuuid = require('libuuid');
-var Logger = require('bunyan');
-var restify = require('restify');
+var uuid = require('uuid');
 
 var changefeedUtils = require('../lib/changefeed');
 var common = require('./common');
@@ -24,8 +21,8 @@ var morayInit = require('../lib/moray/moray-init');
 var vmTest = require('./lib/vm');
 
 var client;
-var TEST_VM_UUID = libuuid.create();
-var NON_EXISTING_CN_UUID = libuuid.create();
+var TEST_VM_UUID = uuid.v4();
+var NON_EXISTING_CN_UUID = uuid.v4();
 
 exports.setUp = function (callback) {
     common.setUp(function (err, _client) {
