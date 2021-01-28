@@ -5,12 +5,11 @@
  */
 
 /*
- * Copyright (c) 2018, Joyent, Inc.
+ * Copyright 2021 Joyent, Inc.
  */
 
-var libuuid = require('libuuid');
 var mod_vmapiClient = require('sdc-clients').VMAPI;
-var path = require('path');
+var uuid = require('uuid');
 var vasync = require('vasync');
 
 var changefeedUtils = require('../../lib/changefeed');
@@ -18,7 +17,7 @@ var NoopDataMigrationsController =
     require('../../lib/data-migrations/noop-controller');
 var VmapiApp = require('../../lib/vmapi');
 
-var UNIQUE_ENDPOINT_PATH = '/' + libuuid.create();
+var UNIQUE_ENDPOINT_PATH = '/' + uuid.v4();
 
 function throwingRestifyHandler(req, res, next) {
     throw new Error('boom');

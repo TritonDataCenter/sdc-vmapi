@@ -5,16 +5,16 @@
  */
 
 /*
- * Copyright 2019 Joyent, Inc.
+ * Copyright 2021 Joyent, Inc.
  */
 
 // var test = require('tap').test;
 var assert = require('assert-plus');
-var uuid = require('libuuid');
 var qs = require('querystring');
 var async = require('async');
 var util = require('util');
 var jsprim = require('jsprim');
+var uuid = require('uuid');
 var vasync = require('vasync');
 
 var common = require('./common');
@@ -42,7 +42,7 @@ var EXTERNAL_NETWORK = null;
 var VALID_NIC; // Create a new NIC with valid parameters for a later test
 var FAKE_NETWORK_UUID = 'caaaf10c-a587-49c6-9cf6-9b0a14ba960b';
 var FAKE_NETWORK_NAME = 'fakeNetworkName';
-var VM_UUID = uuid.create(); // Needs to be different everytime the test runs
+var VM_UUID = uuid.v4(); // Needs to be different everytime the test runs
 var CALLER = {
     type: 'signature',
     ip: '127.0.0.68',
@@ -150,7 +150,7 @@ function createOpts(path, params) {
     return {
         path: path,
         headers: {
-            'x-request-id': uuid.create(),
+            'x-request-id': uuid.v4(),
             'x-context': JSON.stringify({
                 caller: CALLER,
                 params: params || {}
@@ -605,7 +605,7 @@ exports.offset_fields_vms_beyond = function (t) {
 
 
 exports.get_vm_not_found = function (t) {
-    var nouuid = uuid.create();
+    var nouuid = uuid.v4();
     var path = '/vms/' + nouuid + '?owner_uuid=' + CUSTOMER;
 
     client.get(path, function (err, req, res, body) {

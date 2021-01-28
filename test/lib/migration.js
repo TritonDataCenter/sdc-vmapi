@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright 2020 Joyent, Inc.
+ * Copyright 2021 Joyent, Inc.
  */
 
 var stream = require('stream');
@@ -14,8 +14,8 @@ var util = require('util');
 var assert = require('assert-plus');
 var byline = require('byline');
 var jsprim = require('jsprim');
-var libuuid = require('libuuid');
 var restify = require('restify');
+var uuid = require('uuid');
 var vasync = require('vasync');
 
 var common = require('../common');
@@ -529,7 +529,7 @@ function TestMigrationCfg(test, cfg) {
 
         if (migrationUuidOverride) {
             // Change the uuid to allow on the same CN.
-            var uuidEnd = '-ab0' + libuuid.create().slice(-9);
+            var uuidEnd = '-ab0' + uuid.v4().slice(-9);
             params = {
                 override_uuid: sourceVm.uuid.slice(0, -13) + uuidEnd,
                 override_alias: cfg.vm.alias + uuidEnd
@@ -684,7 +684,7 @@ function TestMigrationCfg(test, cfg) {
 
         if (migrationUuidOverride) {
             // Change the uuid to allow on the same CN.
-            var uuidEnd = '-abc' + libuuid.create().slice(-9);
+            var uuidEnd = '-abc' + uuid.v4().slice(-9);
             params = {
                 override_uuid: sourceVm.uuid.slice(0, -13) + uuidEnd,
                 override_alias: cfg.vm.alias + uuidEnd
@@ -1520,7 +1520,7 @@ function TestMigrationCfg(test, cfg) {
 
         if (migrationUuidOverride) {
             // Change the uuid to allow on the same CN.
-            var uuidEnd = '-bbb' + libuuid.create().slice(-9);
+            var uuidEnd = '-bbb' + uuid.v4().slice(-9);
             params.override_uuid = sourceVm.uuid.slice(0, -13) + uuidEnd;
             params.override_alias = cfg.vm.alias + uuidEnd;
         }
