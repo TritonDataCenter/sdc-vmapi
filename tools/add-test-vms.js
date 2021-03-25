@@ -6,7 +6,7 @@
  */
 
 /*
- * Copyright (c) 2017, Joyent, Inc.
+ * Copyright 2021 Joyent, Inc.
  */
 
 /*
@@ -21,9 +21,7 @@
 var assert = require('assert-plus');
 var bunyan = require('bunyan');
 var dashdash = require('dashdash');
-var fs = require('fs');
 var jsprim = require('jsprim');
-var libuuid = require('libuuid');
 var path = require('path');
 var restify = require('restify');
 

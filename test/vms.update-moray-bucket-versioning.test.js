@@ -5,16 +5,11 @@
  */
 
 /*
- * Copyright (c) 2019, Joyent, Inc.
+ * Copyright 2021 Joyent, Inc.
  */
 
 var assert = require('assert-plus');
-var jsprim = require('jsprim');
-var libuuid = require('libuuid');
 var once = require('once');
-var path = require('path');
-var restify = require('restify');
-var util = require('util');
 var vasync = require('vasync');
 var VMAPI = require('sdc-clients').VMAPI;
 

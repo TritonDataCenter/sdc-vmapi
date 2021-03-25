@@ -5,11 +5,11 @@
  */
 
 /*
- * Copyright 2019 Joyent, Inc.
+ * Copyright 2021 Joyent, Inc.
  */
 
 var jsprim = require('jsprim');
-var uuid = require('libuuid');
+var uuid = require('uuid');
 
 var common = require('./common');
 var waitForValue = common.waitForValue;
@@ -55,7 +55,7 @@ function createOpts(path, params) {
     return {
         path: path,
         headers: {
-            'x-request-id': uuid.create(),
+            'x-request-id': uuid.v4(),
             'x-context': JSON.stringify({
                 caller: CALLER,
                 params: params || {}

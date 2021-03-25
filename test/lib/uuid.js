@@ -1,11 +1,11 @@
-var uuid = require('libuuid');
+var uuid = require('uuid');
 
 /*
  * Returns a string that represents the first few characters of a version 4
  * UUID.
  */
 function generateShortUuid() {
-    return uuid.create().split('-')[0];
+    return uuid.v4().split('-')[0];
 }
 
 module.exports = {

@@ -5,15 +5,15 @@
  */
 
 /*
- * Copyright (c) 2019, Joyent, Inc.
+ * Copyright 2021 Joyent, Inc.
  */
 
 var assert = require('assert-plus');
 var bunyan = require('bunyan');
 var jsprim = require('jsprim');
-var libuuid = require('libuuid');
 var moray = require('moray');
 var restify = require('restify');
+var uuid = require('uuid');
 var vasync = require('vasync');
 var verror = require('verror');
 
@@ -111,7 +111,7 @@ function writeObjects(morayClient, bucketName, valueTemplate, nbObjects,
     var requests = [];
     for (i = 0; i < nbObjects; ++i) {
         var newObjectValue = jsprim.deepCopy(valueTemplate);
-        var newObjectUuid = libuuid.create();
+        var newObjectUuid = uuid.v4();
         newObjectValue.uuid = newObjectUuid;
         requests.push({
             bucket: bucketName,

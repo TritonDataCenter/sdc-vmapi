@@ -5,12 +5,12 @@
  */
 
 /*
- * Copyright (c) 2017, Joyent, Inc.
+ * Copyright 2021 Joyent, Inc.
  */
 
 var assert = require('assert-plus');
 
-var libuuid = require('libuuid');
+var uuid = require('uuid');
 
 var common = require('../../lib/common');
 
@@ -51,7 +51,7 @@ function createTestVm(moray, options, vmParams, callback) {
     if (vmParams.last_modified === undefined)
         vmParams.last_modified = Date.now();
 
-    vmParams.uuid = libuuid.create();
+    vmParams.uuid = uuid.v4();
 
     log.debug({vmParams: vmParams}, 'params before translation');
 

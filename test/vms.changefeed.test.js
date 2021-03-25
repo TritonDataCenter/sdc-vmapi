@@ -5,14 +5,14 @@
  */
 
 /*
- * Copyright (c) 2018, Joyent, Inc.
+ * Copyright 2021 Joyent, Inc.
  */
 
 var assert = require('assert-plus');
 var async = require('async');
 var bunyan = require('bunyan');
 var changefeed = require('changefeed');
-var uuid = require('libuuid');
+var uuid = require('uuid');
 
 var common = require('./common');
 
@@ -165,7 +165,7 @@ function createOpts(path, params) {
     return {
         path: path,
         headers: {
-            'x-request-id': uuid.create(),
+            'x-request-id': uuid.v4(),
             'x-context': JSON.stringify({
                 caller: CALLER,
                 params: params || {}
@@ -236,7 +236,7 @@ exports.create_vm = function (t) {
 
     VM = {
         alias: 'sdcvmapitest_create_vm_' + process.pid,
-        uuid: uuid.create(),
+        uuid: uuid.v4(),
         owner_uuid: CUSTOMER,
         image_uuid: IMAGE,
         networks: [ { uuid: ADMIN_NETWORK.uuid } ],
@@ -247,7 +247,12 @@ exports.create_vm = function (t) {
         cpu_cap: 100,
         customer_metadata: md,
         creator_uuid: CUSTOMER,
-        role_tags: ['fd48177c-d7c3-11e3-9330-28cfe91a33c9']
+        role_tags: ['fd48177c-d7c3-11e3-9330-28cfe91a33c9'],
+        // Exclude virtual servers, as we need a server with an 'external'
+        // network, which virtual servers do not have.
+        tags: {
+            'triton.placement.exclude_virtual_servers': true
+        }
     };
 
     var opts = createOpts('/vms', VM);
@@ -628,8 +633,8 @@ exports.listen_for_destroy = function (t) {
 exports.put_new_vm = function (t) {
     t.expect(2);
     var vm = VM;
-    vm.alias = 'sdcvmapitest_garbage' + uuid.create();
-    vm.uuid = uuid.create();
+    vm.alias = 'sdcvmapitest_garbage' + uuid.v4();
+    vm.uuid = uuid.v4();
     var opts = { path: '/vms/' + vm.uuid };
 
     client.put(opts, vm, function (err, req, res) {
@@ -646,8 +651,8 @@ exports.put_new_vm = function (t) {
 exports.put_new_vms = function (t) {
     t.expect(2);
     var vm = VM;
-    vm.alias = 'sdcvmapitest_garbage' + uuid.create();
-    vm.uuid = uuid.create();
+    vm.alias = 'sdcvmapitest_garbage' + uuid.v4();
+    vm.uuid = uuid.v4();
     var query = { server_uuid: SERVER.uuid };
     var opts = { path: '/vms', query: query };
     var vms = {};
