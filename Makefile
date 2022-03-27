@@ -5,7 +5,7 @@
 #
 
 #
-# Copyright 2019 Joyent, Inc.
+# Copyright 2022 Joyent, Inc.
 #
 
 #
@@ -24,11 +24,11 @@
 
 # The prebuilt sdcnode version we want. See
 # "tools/mk/Makefile.node_prebuilt.targ" for details.
-NODE_PREBUILT_VERSION=v6.17.0
+NODE_PREBUILT_VERSION=v6.17.1
 ifeq ($(shell uname -s),SunOS)
-	NODE_PREBUILT_TAG=zone
-	# Allow building on other than sdc-minimal-multiarch-lts@15.4.1
-	NODE_PREBUILT_IMAGE=18b094b0-eb01-11e5-80c1-175dac7ddf02
+	NODE_PREBUILT_TAG=zone64
+	# minimal-64-lts@21.4.0
+	NODE_PREBUILT_IMAGE=a7199134-7e94-11ec-be67-db6f482136c2
 endif
 
 NAME = vmapi
@@ -45,8 +45,7 @@ DOC_FILES	 = index.md
 RESTDOWN_FLAGS   = --brand-dir=deps/restdown-brand-remora
 EXTRA_DOC_DEPS += deps/restdown-brand-remora/.git
 JS_FILES	:= $(shell find tools lib test -name '*.js')
-JSL_CONF_NODE	 = tools/jsl.node.conf
-JSL_FILES_NODE   = server.js $(JS_FILES)
+ESLINT_FILES   = $(JS_FILES)
 JSSTYLE_FILES	 = server.js $(JS_FILES)
 JSSTYLE_FLAGS    = -o indent=4,doxygen,unparenthesized-return=0,leading-right-paren-ok=1
 SMF_MANIFESTS	 = smf/manifests/vmapi.xml
@@ -55,6 +54,8 @@ ENGBLD_USE_BUILDIMAGE	= true
 ENGBLD_REQUIRE		:= $(shell git submodule update --init deps/eng)
 include ./deps/eng/tools/mk/Makefile.defs
 TOP ?= $(error Unable to access eng.git submodule Makefiles.)
+
+BUILD_PLATFORM  = 20210826T002459Z
 
 ifeq ($(shell uname -s),SunOS)
 	include ./deps/eng/tools/mk/Makefile.node_prebuilt.defs
@@ -84,7 +85,8 @@ $(NODEUNIT): | $(NPM_EXEC)
 
 CLEAN_FILES += $(NODEUNIT) ./node_modules/nodeunit
 
-BASE_IMAGE_UUID = 04a48d7d-6bb5-4e83-8c3b-e60a99e0f48f
+# triton-origin-x86_64-21.4.0
+BASE_IMAGE_UUID = 502eeef2-8267-489f-b19c-a206906f57ef
 BUILDIMAGE_NAME = $(NAME)
 BUILDIMAGE_DESC	= SDC-VMAPI
 AGENTS		= amon config registrar
