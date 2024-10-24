@@ -907,11 +907,11 @@ exports.create_vm = function (t) {
         },
         affinity: [
             {
-                "key": "instance",
-                "operator": "!=",
-                "value": "00000000-0000-0000-0000-000000000001",
-                "isSoft": true,
-                "valueType": "exact"
+                'key': 'instance',
+                'operator': '!=',
+                'value': '00000000-0000-0000-0000-000000000001',
+                'isSoft': true,
+                'valueType': 'exact'
             }
         ]
     };
