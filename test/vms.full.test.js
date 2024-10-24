@@ -6,6 +6,7 @@
 
 /*
  * Copyright 2021 Joyent, Inc.
+ * Copyright 2024 MNX Cloud, Inc.
  */
 
 // var test = require('tap').test;
@@ -903,7 +904,16 @@ exports.create_vm = function (t) {
         locality: {
             strict: false,
             far: [ '00000000-0000-0000-0000-000000000001' ]
-        }
+        },
+        affinity: [
+            {
+                "key": "instance",
+                "operator": "!=",
+                "value": "00000000-0000-0000-0000-000000000001",
+                "isSoft": true,
+                "valueType": "exact"
+            }
+        ]
     };
 
     var opts = createOpts('/vms', vm);
@@ -966,7 +976,7 @@ exports.check_create_vm_nics_running = function (t) {
 };
 
 
-exports.check_locality_in_internal_metadata = function (t) {
+exports.check_affinity_locality_in_internal_metadata = function (t) {
     client.get(vmLocation, function getVm(err, req, res, body) {
         common.ifError(t, err);
 
@@ -974,6 +984,15 @@ exports.check_locality_in_internal_metadata = function (t) {
             strict: false,
             far: [ '00000000-0000-0000-0000-000000000001' ]
         });
+        t.deepEqual(JSON.parse(body.internal_metadata.affinity), [
+            {
+                "key": "instance",
+                "operator": "!=",
+                "value": "00000000-0000-0000-0000-000000000001",
+                "isSoft": true,
+                "valueType": "exact"
+            }
+        ]);
 
         t.done();
     });
