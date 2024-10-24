@@ -986,11 +986,11 @@ exports.check_affinity_locality_in_internal_metadata = function (t) {
         });
         t.deepEqual(JSON.parse(body.internal_metadata.affinity), [
             {
-                "key": "instance",
-                "operator": "!=",
-                "value": "00000000-0000-0000-0000-000000000001",
-                "isSoft": true,
-                "valueType": "exact"
+                'key': 'instance',
+                'operator': '!=',
+                'value': '00000000-0000-0000-0000-000000000001',
+                'isSoft': true,
+                'valueType': 'exact'
             }
         ]);
 
