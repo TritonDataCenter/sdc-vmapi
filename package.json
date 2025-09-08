@@ -1,7 +1,7 @@
 {
   "name": "vmapi",
   "description": "VMs API",
-  "version": "9.16.0",
+  "version": "9.16.1",
   "author": "MNX Cloud (mnx.io)",
   "private": true,
   "dependencies": {
