@@ -1,8 +1,8 @@
 {
   "name": "vmapi",
   "description": "VMs API",
-  "version": "9.16.0",
-  "author": "MNX Cloud (mnx.io)",
+  "version": "9.17.0",
+  "author": "Edgecast Cloud (edgecast.io)",
   "private": true,
   "dependencies": {
     "assert-plus": "1.0.0",
@@ -26,7 +26,7 @@
     "strsplit": "1.0.0",
     "trace-event": "1.3.0",
     "triton-metrics": "0.1.1",
-    "triton-tags": "1.4.0",
+    "triton-tags": "1.5.0",
     "uuid": "3.3.3",
     "vasync": "2.2.0",
     "verror": "1.10.0",
