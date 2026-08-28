@@ -1,7 +1,7 @@
 {
   "name": "vmapi",
   "description": "VMs API",
-  "version": "9.17.0",
+  "version": "9.18.0",
   "author": "Edgecast Cloud (edgecast.io)",
   "private": true,
   "dependencies": {
