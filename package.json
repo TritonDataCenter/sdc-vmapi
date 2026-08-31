@@ -20,7 +20,7 @@
     "moray": "3.8.1",
     "once": "^1.3.3",
     "restify": "4.3.0",
-    "sdc-clients": "git+https://github.com/TritonDataCenter/node-sdc-clients.git#b1c7fe8aa6f9e1958534a557b9163ffee3db1a54",
+    "sdc-clients": "13.1.0",
     "sigyan": "0.2.0",
     "sprintf": "0.1.1",
     "strsplit": "1.0.0",
