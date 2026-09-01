@@ -55,6 +55,7 @@ update time.
 | disks                    | Array                         | Array of virtual disks (zvols) that are used by a bhyve VM.                                                                                                                                                               | No                  | No     | No     |
 | disks.*.path             | String                        | File path in GZ.                                                                                                                                                                                                          | No                  | No     | No     |
 | disks.*.size             | Number (MiB)                  | Size of disk.                                                                                                                                                                                                             | No                  | No     | No     |
+| disks.*.block_size       | Number (bytes)                | Size of disk blocks                                                                                                                                                                                                       | No                  | No     | No     |
 | disks.*.pci_slot         | String                        | Specifies the virtual PCI slot a disk occupies.                                                                                                                                                                           | No                  | No     | No     |
 | disks.*.boot             | Boolean                       | If this is a VM's boot disk.                                                                                                                                                                                              | No                  | No     | No     |
 | flexible_disk_size       | Number (MiB)                  | Maximum amount of space that can be used by the sum of all disks.                                                                                                                                                         | No                  | Yes    | No     |
@@ -1475,9 +1476,10 @@ and have flexible_disk_size set.
 
 | Param     | Type         | Description                                                                                                         |
 | --------- | ------------ | ------------------------------------------------------------------------------------------------------------------- |
-| pci_slot  | String       | Optional. Free PCI slot of disk to create. This is typically in the 0:4:[0-7] and 0:5:[0-7] range.                  |
-| disk_uuid | String       | Optional. UUID to uniquely identify disk to create.  Useful for client apps.                                        |
-| size      | Number (MiB) | Size of new virtual disk. Can also use string "remaining" to use up all remaining free space in flexible_disk_size. |
+| pci_slot   | String         | Optional. Free PCI slot of disk to create. This is typically in the 0:4:[0-7] and 0:5:[0-7] range.                  |
+| disk_uuid  | String         | Optional. UUID to uniquely identify disk to create.  Useful for client apps.                                        |
+| block_size | Number (bytes) | Optional. Block size of new disk. Must be power of 2, and between 512 and 131072. Defaults to ZFS block size (currently 8192).
+| size       | Number (MiB)   | Size of new virtual disk. Can also use string "remaining" to use up all remaining free space in flexible_disk_size. |
 
 If `pci_slot` is not provided when creating the disk, a slot will be
 automatically assigned. See [Disk PCI Slot](#disk-pci-slot) for more
@@ -1486,10 +1488,11 @@ information about proper assignment of PCI slots.
 Likewise with `disk_uuid` -- if not provided, one will be automatically
 assigned.
 
-### Example of creating a new 5GiB virtual disk using a JSON payload
+### Example of creating a new 5GiB virtual disk of 4KiB blocks using a JSON payload
 
     POST /vms/e9bd0ed1-7de3-4c66-a649-d675dbce6e83?action=create_disk -d '{
         "pci_slot": "0:4:3",
+        "block_size": 4096,
         "size": 5120
     }'
 
