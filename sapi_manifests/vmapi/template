@@ -57,10 +57,13 @@
             "remove-nics",
             "migrate-abort",
             "migrate-begin",
+            "migrate-begin-live",
             "migrate-pause",
             "migrate-rollback",
             "migrate-sync",
-            "migrate-switch"
+            "migrate-sync-live",
+            "migrate-switch",
+            "migrate-switch-live"
         ],
         "url": "http://{{{WORKFLOW_SERVICE}}}"
     },
